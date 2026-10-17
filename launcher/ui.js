@@ -860,11 +860,11 @@ const Splash = {
        kind: 'warn',
        icon: 'i-alert',
        title: 'Java est requis pour jouer',
-       html: 'Pour lancer Minecraft, il faut <b>Java 17</b> (ou Java 21 pour les versions les plus recentes).' +
-             '<br><br>Aucun Java n\'a ete detecte sur cette machine. Le launcher peut telecharger ' +
+       html: 'Pour lancer Minecraft, il faut <b>Java 17</b> (ou Java 21 pour les versions les plus récentes).' +
+             '<br><br>Aucun Java n\'a été détecté sur cette machine. Le launcher peut télécharger ' +
              '<b>Temurin</b> (la version libre de Java) directement dans son dossier : ' +
-             'aucune installation systeme, aucun droit administrateur, environ 190 Mo.' +
-             '<br><br>Tu peux aussi l\'installer toi-meme plus tard, ou l\'ignorer pour l\'instant.',
+             'aucune installation système, aucun droit administrateur, environ 190 Mo.' +
+             '<br><br>Tu peux aussi l\'installer toi-même plus tard, ou l\'ignorer pour l\'instant.',
        ok: 'Installer Java',
        cancel: 'Plus tard'
      });
@@ -872,7 +872,7 @@ const Splash = {
 
      Dialog.open({
        title: 'Installation de Java',
-       text: 'Telechargement de Temurin…',
+       text: 'Téléchargement de Temurin…',
        progress: true,
        hideCancel: true,
        hideOk: true
