@@ -253,6 +253,16 @@ footer a:hover{color:var(--v1)}
 }
 </style>
 </head>
+<!-- ==================================================================
+     LIENS A PERSONNALISER
+     ZIP_LIEN : l'URL de telechargement du .zip (206 Mo).
+              Le fichier doit heberger le ZIP LUI-MEME, pas le site.
+              Exemples qui tiennent 206 Mo :
+                · itch.io       https://<projet>.itch.io/XRNLauncher-v3.5.0-win-x64.zip
+                · GitHub Release .../releases/latest/download/XRNLauncher-v3.5.0-win-x64.zip
+              Netlify et Cloudflare Pages refusent tout fichier > 30 Mo.
+     SRC_LIEN  : le depot du code source (facultatif).
+     ================================================================== -->
 <body class="verrou">
 
 <!-- ══════ SPLASH ══════ -->
@@ -335,6 +345,7 @@ footer a:hover{color:var(--v1)}
       <div class="tabs">
         <div class="tab on" data-mk="accueil" data-fr="Accueil" data-en="Home">Home</div>
         <div class="tab" data-mk="versions" data-fr="Versions" data-en="Versions">Versions</div>
+        <div class="tab" data-mk="mods" data-fr="Mods" data-en="Mods">Mods</div>
         <div class="tab" data-mk="saves" data-fr="Sauvegardes" data-en="Saves">Saves</div>
         <div class="tab" data-mk="srv" data-fr="Serveurs" data-en="Servers">Servers</div>
         <div class="tab" data-mk="conf" data-fr="Connexion" data-en="Login">Login</div>
@@ -346,7 +357,7 @@ footer a:hover{color:var(--v1)}
             <div class="mk-nav">
               <div class="on" data-fr="Accueil" data-en="Home">Home</div>
               <div data-fr="Téléchargements" data-en="Downloads">Downloads</div>
-              <div data-fr="Versions" data-en="Versions">Versions</div>
+              <div data-fr="Versions" data-en="Versions">Versions</div><div data-fr="Mods" data-en="Mods">Mods</div>
               <div data-fr="Sauvegardes" data-en="Saves">Saves</div>
               <div data-fr="Fichiers" data-en="Files">Files</div>
               <div data-fr="Serveurs" data-en="Servers">Servers</div>
@@ -372,7 +383,7 @@ footer a:hover{color:var(--v1)}
           <div class="mock">
             <div class="mk-nav">
               <div data-fr="Accueil" data-en="Home">Home</div><div data-fr="Téléchargements" data-en="Downloads">Downloads</div>
-              <div class="on" data-fr="Versions" data-en="Versions">Versions</div><div data-fr="Sauvegardes" data-en="Saves">Saves</div>
+              <div class="on" data-fr="Versions" data-en="Versions">Versions</div><div data-fr="Mods" data-en="Mods">Mods</div><div data-fr="Sauvegardes" data-en="Saves">Saves</div>
               <div data-fr="Fichiers" data-en="Files">Files</div><div data-fr="Serveurs" data-en="Servers">Servers</div>
               <div data-fr="Vidéos" data-en="Videos">Videos</div><div data-fr="Connexion" data-en="Login">Login</div>
               <div data-fr="Paramètres" data-en="Settings">Settings</div>
@@ -386,11 +397,30 @@ footer a:hover{color:var(--v1)}
           </div>
         </div>
 
+        <div data-p="mods">
+          <div class="mock">
+            <div class="mk-nav">
+              <div data-fr="Accueil" data-en="Home">Home</div><div data-fr="Téléchargements" data-en="Downloads">Downloads</div>
+              <div data-fr="Versions" data-en="Versions">Versions</div><div data-fr="Mods" data-en="Mods">Mods</div><div class="on" data-fr="Mods" data-en="Mods">Mods</div>
+              <div data-fr="Sauvegardes" data-en="Saves">Saves</div><div data-fr="Fichiers" data-en="Files">Files</div>
+              <div data-fr="Serveurs" data-en="Servers">Servers</div><div data-fr="Vidéos" data-en="Videos">Videos</div>
+              <div data-fr="Connexion" data-en="Login">Login</div><div data-fr="Paramètres" data-en="Settings">Settings</div>
+            </div>
+            <div>
+              <div class="mk-sec" data-fr="Chargeur de mods" data-en="Mod loader">Mod loader</div>
+              <div class="mk-l" style="width:52%"></div>
+              <div class="mk-sec" data-fr="Glissez vos .jar ici" data-en="Drop your .jar files here">Drop your .jar files here</div>
+              <div class="mk-l" style="width:86%"></div><div class="mk-l" style="width:64%"></div>
+              <div class="mk-l" style="width:77%"></div>
+            </div>
+          </div>
+        </div>
+
         <div data-p="saves">
           <div class="mock">
             <div class="mk-nav">
               <div data-fr="Accueil" data-en="Home">Home</div><div data-fr="Téléchargements" data-en="Downloads">Downloads</div>
-              <div data-fr="Versions" data-en="Versions">Versions</div><div class="on" data-fr="Sauvegardes" data-en="Saves">Saves</div>
+              <div data-fr="Versions" data-en="Versions">Versions</div><div data-fr="Mods" data-en="Mods">Mods</div><div class="on" data-fr="Sauvegardes" data-en="Saves">Saves</div>
               <div data-fr="Fichiers" data-en="Files">Files</div><div data-fr="Serveurs" data-en="Servers">Servers</div>
               <div data-fr="Vidéos" data-en="Videos">Videos</div><div data-fr="Connexion" data-en="Login">Login</div>
               <div data-fr="Paramètres" data-en="Settings">Settings</div>
@@ -407,7 +437,7 @@ footer a:hover{color:var(--v1)}
           <div class="mock">
             <div class="mk-nav">
               <div data-fr="Accueil" data-en="Home">Home</div><div data-fr="Téléchargements" data-en="Downloads">Downloads</div>
-              <div data-fr="Versions" data-en="Versions">Versions</div><div data-fr="Sauvegardes" data-en="Saves">Saves</div>
+              <div data-fr="Versions" data-en="Versions">Versions</div><div data-fr="Mods" data-en="Mods">Mods</div><div data-fr="Sauvegardes" data-en="Saves">Saves</div>
               <div data-fr="Fichiers" data-en="Files">Files</div><div class="on" data-fr="Serveurs" data-en="Servers">Servers</div>
               <div data-fr="Vidéos" data-en="Videos">Videos</div><div data-fr="Connexion" data-en="Login">Login</div>
               <div data-fr="Paramètres" data-en="Settings">Settings</div>
@@ -430,7 +460,7 @@ footer a:hover{color:var(--v1)}
           <div class="mock">
             <div class="mk-nav">
               <div data-fr="Accueil" data-en="Home">Home</div><div data-fr="Téléchargements" data-en="Downloads">Downloads</div>
-              <div data-fr="Versions" data-en="Versions">Versions</div><div data-fr="Sauvegardes" data-en="Saves">Saves</div>
+              <div data-fr="Versions" data-en="Versions">Versions</div><div data-fr="Mods" data-en="Mods">Mods</div><div data-fr="Sauvegardes" data-en="Saves">Saves</div>
               <div data-fr="Fichiers" data-en="Files">Files</div><div data-fr="Serveurs" data-en="Servers">Servers</div>
               <div data-fr="Vidéos" data-en="Videos">Videos</div><div class="on" data-fr="Connexion" data-en="Login">Login</div>
               <div data-fr="Paramètres" data-en="Settings">Settings</div>
