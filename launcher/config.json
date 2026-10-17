@@ -1,0 +1,17 @@
+{
+  "microsoftClientId": "<identifiant de votre application Azure>",
+  "sessionMaxDays": 14,
+  "gameDir": "",
+  "javaPath": "",
+  "ramGB": 4,
+  "windowWidth": 1600,
+  "windowHeight": 920,
+  "fullscreen": false,
+  "gameWidth": 1280,
+  "gameHeight": 720,
+  "guiScale": 2,
+  "maxDownloads": 6,
+  "verifySha1": true,
+  "ambientSound": true,
+  "ambientVolume": 0.3
+}
