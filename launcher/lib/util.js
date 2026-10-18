@@ -62,7 +62,21 @@ function relative(ts) {
   return humanDate(ts);
 }
 
+/*  Mesurer un dossier demande un stat par fichier : sur "assets" et
+    "libraries" cela represente plusieurs milliers d'appels et plus d'une
+    seconde. Or ces dossiers sont mesures en boucle, a chaque changement
+    d'onglet. On garde donc le resultat quelques secondes.
+
+    Le cache est invalide a l'installation d'une version, et par
+    viderTailles() apres toute operation qui change le contenu.          */
+const cacheTailles = new Map();
+const DUREE_TAILLE = 20000;
+
 function dirSize(p) {
+  const maintenant = Date.now();
+  const hit = cacheTailles.get(p);
+  if (hit && maintenant - hit.t < DUREE_TAILLE) return hit.v;
+
   let total = 0, files = 0;
   (function walk(dir) {
     let entries;
@@ -75,8 +89,14 @@ function dirSize(p) {
       }
     }
   })(p);
-  return { size: total, files };
+  const resultat = { size: total, files };
+  cacheTailles.set(p, { t: maintenant, v: resultat });
+  return resultat;
 }
+
+/*  A appeler apres un telechargement, une suppression ou une importation :
+      les tailles affichees seraient sinon restees fausses.             */
+function viderTailles() { cacheTailles.clear(); }
 
 function rmrf(p) {
   try { fs.rmSync(p, { recursive: true, force: true }); return true; } catch (e) { return false; }
@@ -224,5 +244,5 @@ function copyDir(src, dst) {
 module.exports = {
   APP_NAME, appRoot, ensureDir, exists, readJSON, writeJSON,
   human, humanTime, humanDate, relative,
-  dirSize, rmrf, listDir, run, openExplorer, openUrl, copyDir, extractZip
+  dirSize, viderTailles, rmrf, listDir, run, openExplorer, openUrl, copyDir, extractZip
 };

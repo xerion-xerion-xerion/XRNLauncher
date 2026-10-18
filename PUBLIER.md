@@ -91,5 +91,5 @@ Le site est à jour en 30 secondes.
 | Release GitHub | le zip de 206 Mo |
 | Settings → Pages | active la publication |
 
-Le zip est déjà prêt sur ton Bureau :
-`<votre nom d utilisateur>\Desktop\XRNLauncher-v3.5.0-win-x64.zip`
+Le zip est déjà prêt dans le dossier de publication, sur le Bureau :
+`Launcher/XRNLauncher-v3.5.0-win-x64.zip`

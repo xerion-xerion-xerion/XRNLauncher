@@ -216,21 +216,44 @@ function browse(dir, depth) {
   };
 }
 
+/*  L'espace libre ne bouge que tres lentement, et PowerShell met une
+    bonne seconde a demarrer : on le demande a la couche native
+    (fs.statfsSync) et on garde la valeur une minute. Le lancement de
+    PowerShell n'est plus utilise que si statfs est indisponible.        */
+let cacheEspace = { t: 0, valeur: null };
+async function espaceLibre(cible) {
+  const maintenant = Date.now();
+  if (cacheEspace.cible === cible && maintenant - cacheEspace.t < 60000) return cacheEspace.valeur;
+
+  let valeur = null;
+  try {
+    if (typeof fs.statfsSync === 'function') {
+      const st = fs.statfsSync(cible);
+      valeur = Number(st.bavail) * Number(st.bsize);
+      if (!isFinite(valeur) || valeur <= 0) valeur = null;
+    }
+  } catch (e) { valeur = null; }
+
+  if (valeur === null) {
+    /*  Recours ancien Node : PowerShell. Rare, et le cache evite de le
+        relancer a chaque affichage.                                     */
+    try {
+      const r = await util.run('powershell', ['-NoProfile', '-NonInteractive', '-Command',
+        '(Get-PSDrive -Name ' + path.parse(cible).root.replace(':', '') + ').Free'], 15000);
+      const f = parseInt(String(r.stdout).trim(), 10);
+      valeur = isNaN(f) ? null : f;
+    } catch (e) { valeur = null; }
+  }
+
+  cacheEspace = { t: maintenant, valeur, cible };
+  return valeur;
+}
+
 function diskInfo() {
   const base = cfgm.load().gameDir;
   const top = browse(base, 0);
-  let free = null;
-  try {
-    // espace libre via PowerShell (rapide et fiable)
-    return util.run('powershell', ['-NoProfile', '-NonInteractive', '-Command',
-      '(Get-PSDrive -Name ' + path.parse(base).root.replace(':', '') + ').Free'], 15000)
-      .then(r => {
-        const f = parseInt(String(r.stdout).trim(), 10);
-        return { root: base, entries: top.entries, total: top.entries.reduce((a, e) => a + e.size, 0), free: isNaN(f) ? null : f };
-      });
-  } catch (e) {
-    return Promise.resolve({ root: base, entries: top.entries, total: 0, free: null });
-  }
+  const total = top.entries.reduce((a, e) => a + e.size, 0);
+  return espaceLibre(base).then(free => ({ root: base, entries: top.entries, total, free }));
 }
 
 function deleteEntry(p) {

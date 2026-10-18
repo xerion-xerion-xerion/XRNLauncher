@@ -432,6 +432,10 @@ async function install(versionEntry, opts) {
   // on ne l'ecrase pas avec la version fusionnee.
   if (!opts.skipMeta) util.writeJSON(path.join(plan.vdir, plan.id + '.json'), vjson);
 
+  /*  Les assets viennent d'etre telecharges : la taille memorisee pour
+      l'accueil est devenue fausse, on l'oublie.                         */
+  oublierTailleAssets();
+
   bus.emit('dl:done', {
     version: plan.id, failed: echecs,
     bytes: totals,
@@ -522,12 +526,31 @@ async function fetchVersionJson(entry) {
   return JSON.parse(fs.readFileSync(r.file, 'utf8'));
 }
 
+/*  Mesurer le dossier "assets" demande de parcourir plusieurs milliers de
+    fichiers : cela prenait plus d'une seconde. Or son contenu ne change
+    qu'apres une installation. On ne le mesure donc qu'une fois, et on
+    garde le resultat pendant une minute.                                */
+let cacheAssets = { t: 0, taille: 0, chemin: '' };
+function tailleAssets(jeuxDir) {
+  const dir = path.join(jeuxDir, 'assets');
+  const maintenant = Date.now();
+  if (cacheAssets.chemin === dir && maintenant - cacheAssets.t < 60000) return cacheAssets.taille;
+  if (!util.exists(path.join(dir, 'indexes'))) return 0;
+  const taille = util.dirSize(dir).size;
+  cacheAssets = { t: maintenant, taille, chemin: dir };
+  return taille;
+}
+function oublierTailleAssets() { cacheAssets = { t: 0, taille: 0, chemin: '' }; util.viderTailles(); }
+
 function installedVersions() {
   const cfg = cfgm.load();
   const root = path.join(cfg.gameDir, 'versions');
   const out = [];
   let dirs = [];
   try { dirs = fs.readdirSync(root, { withFileTypes: true }); } catch (e) { return out; }
+  /*  Un seul calcul pour toutes les versions : il ne depend pas de la
+      version affichee.                                                    */
+  const assets = tailleAssets(cfg.gameDir);
   for (const d of dirs) {
     if (!d.isDirectory()) continue;
     const jar = path.join(root, d.name, d.name + '.jar');
@@ -548,7 +571,7 @@ function installedVersions() {
       type: meta.type || 'release',
       releaseTime: meta.releaseTime || '',
       size: st.size,
-      assets: util.exists(path.join(cfg.gameDir, 'assets', 'indexes')) ? util.dirSize(path.join(cfg.gameDir, 'assets')).size : 0,
+      assets,
       natives: util.exists(path.join(root, d.name, 'natives'))
     });
   }

@@ -1,0 +1,55 @@
+# ==========================================================
+#  Ne jamais publier de donnees personnelles ni d'etat local
+# ==========================================================
+
+# Configuration propre a chaque machine
+config.local.json
+*.local.json
+
+# Ce que le launcher ecrit a l'execution : comptes, journaux,
+# jetons, sessions
+profiles.json
+accounts.json
+*.log
+logs/
+*.log.*
+
+# Dossier du jeu : monde, mods, reglages, captures, sauvegardes
+minecraft/
+saves/
+mods/
+resourcepacks/
+shaderpacks/
+screenshots/
+backups/
+crash-reports/
+options.txt
+servers.dat
+usercache.json
+launcher_profiles.json
+*.mca
+level.dat*
+knownkeys.json
+
+# Java installe par le launcher
+java/
+jdk*/
+
+# Secrets
+*.pem
+*.key
+.env
+.env.*
+token*.txt
+
+# Builds et archives
+build/
+dist/
+*.zip
+!launcher/lib/assets/*.jar
+
+# Systeme
+Thumbs.db
+desktop.ini
+.DS_Store
+node_modules/
