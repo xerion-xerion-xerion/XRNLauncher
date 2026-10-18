@@ -72,8 +72,8 @@
 
   <div class="sp-center">
     <svg class="sp-logo" viewBox="0 0 64 64">
-      <ellipse class="sp-orbit" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(-22 32 32)"/>
-      <ellipse class="sp-orbit o2" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(38 32 32)"/>
+      <ellipse class="sp-orbit" cx="32" cy="32" rx="27.5" ry="11"/>
+      <ellipse class="sp-orbit o2" cx="32" cy="32" rx="27.5" ry="11"/>
       <path class="sp-x" d="M19.5 16 L44.5 48 M44.5 16 L19.5 48"/>
       <path class="sp-star" d="M32 20.5l2.9 8.6 8.6 2.9-8.6 2.9-2.9 8.6-2.9-8.6-8.6-2.9 8.6-2.9z"/>
     </svg>
@@ -374,6 +374,12 @@
               <div><h2>Connexion Microsoft</h2><p id="msSub">Une fen&ecirc;tre va s'ouvrir dans ton navigateur.</p></div>
             </div>
 
+            <div class="mode-pick" id="msModes">
+              <button class="mode-btn" data-mode="minecraft">Compte Minecraft</button>
+              <button class="mode-btn on" data-mode="xbox">Compte Xbox</button>
+              <span class="mode-note" id="msModeNote">Ton vrai compte Minecraft : skin, pseudo et UUID réels</span>
+            </div>
+
             <div id="msCode" hidden>
               <div class="codebox">
                 <span class="code-label">Ton code de connexion</span>
@@ -381,6 +387,12 @@
                 <button class="btn sm" id="btnCopyCode">Copier le code</button>
               </div>
               <div class="waitbox"><span class="dot pulse"></span><span id="waitText">Valide la connexion dans la fen&ecirc;tre du navigateur…</span></div>
+              <p class="ms-help" id="msHelp">
+                <b>Microsoft demande une cl&eacute; de s&eacute;curit&eacute; ?</b>
+                Clique sur <b>Autres m&eacute;thodes de connexion</b> puis <b>Utiliser un mot de passe</b>.
+                Tu peux aussi retirer la cl&eacute; de s&eacute;curit&eacute; de ton compte sur
+                <span class="mono">myaccount.microsoft.com</span>.
+              </p>
               <button class="btn danger sm" id="btnCancelLogin">Annuler</button>
             </div>
           </div>

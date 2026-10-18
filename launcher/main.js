@@ -206,6 +206,14 @@ const XRN = {
     /* Verifie un identifiant sans lancer la connexion (bouton "Tester") */
     check(id) { return auth.checkClientId(String(id || '').trim()); },
 
+    /*  "minecraft" : la chaine complete, qui exige l'approbation de
+        Mojang. "xbox" : on s'arrete a Xbox Live, sans approbation.  */
+    setMode(mode) {
+      session.loginMode = (mode === 'xbox') ? 'xbox' : 'minecraft';
+      return session.loginMode;
+    },
+    mode() { return session.loginMode || 'minecraft'; },
+
     async begin() {
       if (!cfgm.hasClientId()) {
         const e = new Error("Identifiant Microsoft absent : colle-le dans le champ de l'onglet Connexion.");
@@ -214,6 +222,7 @@ const XRN = {
       }
       const info = await auth.startDeviceCode(cfgm.clientId());
       session.login = {
+        mode: session.loginMode || 'minecraft',
         clientId: info.clientId,
         deviceCode: info.deviceCode,
         userCode: info.userCode,
@@ -293,7 +302,17 @@ const XRN = {
         }))
       };
     },
-    installed() { return game.installedVersions(); },
+    installed() {
+      const list = game.installedVersions();
+      /*  On marque les profils de mod loaders : l'utilisateur doit
+          lancer le profil du chargeur, pas la version d'origine, sinon
+          ses mods sont ignores.                                        */
+      for (const v of list) {
+        const l = mods.loadersDe(v.id);
+        if (l.length) v.loader = { id: l[0].id, nom: l[0].nom };
+      }
+      return list;
+    },
     isInstalled(id) { return game.isInstalled(id); },
     install(versionEntry, tokenId) {
       const token = registry.token(tokenId);
@@ -457,7 +476,47 @@ function isAlive(pid) {
 /* ------------------------------------------------------------------ */
 /*  Finalisation de la connexion Microsoft                              */
 /* ------------------------------------------------------------------ */
+/*  Mode "xbox" : on s'arrete a l'authentification Xbox Live, qui ne
+    demande aucune approbation de Mojang. Le jeu sera lance en mode
+    hors-ligne, sous le vrai gamertag Xbox.                            */
+async function completeLoginXbox(tokens) {
+  XRN.report('AUTH', 'finalisation : echange Xbox (sans services Minecraft)');
+  let xb;
+  try {
+    xb = await auth.toXbox(tokens.access_token);
+  } catch (e) {
+    XRN.report('AUTH', 'ECHEC Xbox : ' + ((e && (e.code + ' / ' + e.message)) || String(e)).slice(0, 300));
+    throw e;
+  }
+  const crypto = require('crypto');
+  const graine = xb.xuid || xb.name;
+  const h = crypto.createHash('md5').update('XRN:Xbox:' + graine).digest('hex');
+  const uuid = [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20)].join('-');
+  const account = {
+    type: 'xbox',
+    name: xb.name,
+    id: uuid,
+    uuid: uuid,
+    skinUrl: '',
+    avatarUrl: xb.avatarUrl || '',
+    capeUrl: '',
+    userType: 'legacy',
+    ownsGame: false,
+    xuid: xb.xuid || '',
+    refreshToken: tokens.refresh_token || null,
+    savedAt: Date.now()
+  };
+  XRN.report('AUTH', 'profil Xbox = ' + account.name + ' / ' + uuid);
+  updateAccount(account);
+  session.account = account;
+  session.login = null;
+  cfgm.save({ lastProfile: account.name });
+  bus.emit('auth:connected', auth.publicAccount(account));
+  return { account: auth.publicAccount(account), ownsGame: false, mode: 'xbox' };
+}
+
 async function completeLogin(tokens) {
+  if (session.login && session.login.mode === 'xbox') return completeLoginXbox(tokens);
   XRN.report('AUTH', 'finalisation : echange Xbox Live');
   let mcToken;
   try {

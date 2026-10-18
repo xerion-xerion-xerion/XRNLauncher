@@ -151,15 +151,20 @@
           : 'rgba(255,255,255,' + a.toFixed(3) + ')';
         ctx.fillRect(x, y, s.s, s.s);
       }
-      raf = requestAnimationFrame(draw);
+      /*  Cette fonction ne reprogramme surtout pas elle-meme : c'est
+          la boucle "loop" qui cadence les images. draw() se replanifiait
+          aussi, si bien que le fond etoile se redessinait a 60 images
+          par seconde en permanence, en epuisant un core entier pour
+          rien : l'economie au repos ne servait a aucune fin.         */
     }
 
     function loop(t) {
-      // si la souris dort, on redessine 20x moins souvent
+      // si la souris dort, on redessine beaucoup moins souvent
       const idle = (t - lastMove) > 700;
       const frame = idle ? FRAME_IDLE : FRAME_MOVE;
       if (t - last < frame) { raf = requestAnimationFrame(loop); return; }
       last = t; draw(t);
+      raf = requestAnimationFrame(loop);
     }
 
     addEventListener('resize', resize);
@@ -314,12 +319,25 @@
         img.src = url;
       });
     },
-    async draw(canvas, url, letter) {
+    async draw(canvas, url, letter, avatarUrl) {
       if (!canvas || typeof canvas.getContext !== 'function') return;
       const px = canvas.width / 8;
       const g = canvas.getContext('2d');
       g.imageSmoothingEnabled = false;
       g.clearRect(0, 0, canvas.width, canvas.height);
+
+      /*  Un compte Xbox n'a pas de skin Minecraft, mais bien une
+          image de profil : on l'affiche en carre, en entier.        */
+      if (!url && avatarUrl) {
+        const av = await this.load(avatarUrl);
+        if (av) {
+          g.imageSmoothingEnabled = true;
+          const c = Math.min(canvas.width, canvas.height);
+          const r = Math.max(av.width, av.height);
+          g.drawImage(av, (av.width - r) / 2, (av.height - r) / 2, r, r, (canvas.width - c) / 2, (canvas.height - c) / 2, c, c);
+          return;
+        }
+      }
       const img = await this.load(url);
       if (!img) {
         const grad = g.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -379,7 +397,7 @@
     }
   };
 const Splash = {
-    shown: true,
+    shown: true, t0: 0, minuterie: null, tape: null,
     /* Sentence choisie au hasard a chaque lancement */
     lines: [
       { t: "Nous sommes une façon que l'atome a de se connaître.", a: 'Richard Feynman' },
@@ -401,6 +419,7 @@ const Splash = {
 
     boot() {
       const el = $('#splash');
+      this.t0 = Date.now();
       if (!el) { this.done(); return; }
       this.pick();
       this.particles();
@@ -427,11 +446,11 @@ const Splash = {
       const words = quote.split(' ');
       const sub = $('#spSubtitle');
       let wi = 0;
-      const tick = setInterval(() => {
+      this.tape = setInterval(() => {
         if (done || !this.shown) return;
         if (wi < words.length) {
           sub.classList.add('on');
-          sub.innerHTML = words.slice(0, wi + 1).join(' ') + '<span class="cur"></span>';
+          sub.innerHTML = esc(words.slice(0, wi + 1).join(' ')) + '<span class="cur"></span>';
           wi++;
         }
       }, 340);
@@ -442,7 +461,17 @@ const Splash = {
 
 
       // filet de securite
-      setTimeout(() => { if (!done) this.done(); }, 12000);
+      this.minuterie = setTimeout(() => { if (!done) this.done(); }, 12000);
+    },
+
+    /*  Appele quand l'interface est prete. Le splash disparait alors,
+        sans attendre le filet de securite de 12 secondes : on laisse
+        juste le temps de voir le X et l'etoile se dessiner.          */
+    ready() {
+      const minimum = 2300;
+      const restant = Math.max(0, minimum - (Date.now() - this.t0));
+      clearTimeout(this.minuterie);
+      this.minuterie = setTimeout(() => this.done(), restant);
     },
 
     particles() {
@@ -465,6 +494,8 @@ const Splash = {
     done() {
       if (!this.shown) return;
       this.shown = false;
+      clearInterval(this.tape);
+      clearTimeout(this.minuterie);
       const el = $('#splash');
       if (el) el.classList.add('done');
       setTimeout(() => { if (el) el.remove(); }, 900);
@@ -541,9 +572,13 @@ const Splash = {
       STATE.account = acc;
       const holder = $('#accAvatarMini'); // c'est un <span> : on y injecte un canvas
       if (holder && !holder.querySelector('canvas')) holder.innerHTML = '<canvas width="56" height="56"></canvas>';
-      SkinHead.draw(holder ? holder.querySelector('canvas') : null, acc ? acc.skinUrl : '', acc ? acc.name : '?');
+      SkinHead.draw(holder ? holder.querySelector('canvas') : null, acc ? acc.skinUrl : '', acc ? acc.name : '?', acc ? acc.avatarUrl : '');
       $('#accNameMini').textContent = acc ? acc.name : 'Non connecté';
-      $('#accSubMini').textContent = acc ? (acc.type === 'offline' ? 'Profil local' : (acc.ownsGame === false ? 'Sans jeu' : 'Microsoft · en ligne')) : 'Cliquer pour se connecter';
+      $('#accSubMini').textContent = acc
+        ? (acc.type === 'offline' ? 'Profil local'
+          : acc.type === 'xbox' ? 'Xbox · hors ligne'
+          : (acc.ownsGame === false ? 'Sans jeu' : 'Microsoft · en ligne'))
+        : 'Cliquer pour se connecter';
       this.renderRail();
       const badge = $('#badgeAccount');
       if (badge) {
@@ -570,7 +605,7 @@ const Splash = {
           </div>
           <button class="btn sm danger" style="width:100%" id="btnDisconnect">Se déconnecter</button>
         </div>`;
-      SkinHead.draw($('#railAvatar'), acc.skinUrl, acc.name);
+      SkinHead.draw($('#railAvatar'), acc.skinUrl, acc.name, acc.avatarUrl);
       $('#btnDisconnect').addEventListener('click', () => api(x => x.auth.disconnect()).then(() => {
         this.apply(null); Toast.show('Déconnecté', '', 'info', 2000); Login.refresh();
       }));
@@ -744,7 +779,9 @@ const Splash = {
       STATE.selected = id;
       const inst = STATE.installed.find(v => v.id === id);
       $('#vName').textContent = id || '—';
-      $('#vLoader').textContent = inst ? 'installée · ' + human(inst.size) : (id ? 'non installée' : 'aucune');
+      $('#vLoader').textContent = inst
+        ? (inst.loader ? inst.loader.nom + ' · ' : '') + 'installée · ' + human(inst.size)
+        : (id ? 'non installée' : 'aucune');
       $('#btnInstall').disabled = !id || !!inst || !!STATE.token;
       $$('.v-opt').forEach(o => o.classList.toggle('sel', o.dataset.id === id));
       Home.updateInstallBadge();
@@ -800,7 +837,15 @@ const Splash = {
     if (open) placeList();
   }
   addEventListener('resize', placeList);
-  addEventListener('scroll', () => { if ($('#vList').classList.contains('open')) toggleList(false); }, true);
+      /*  Un scroll fermait la liste, meme celui de la liste elle-meme :
+        or c'est justement en faisant defiler qu'on parcourt les
+        versions. On ne ferme donc que si le scroll vient d'ailleurs. */
+    addEventListener('scroll', e => {
+      if (!$('#vList').classList.contains('open')) return;
+      const t = e.target;
+      if (t && t.closest && t.closest('#vList')) return;
+      toggleList(false);
+    }, true);
   $('#btnVersion').addEventListener('click', () => { Version.loadCatalog(); Version.renderList(); toggleList(); });
   document.addEventListener('click', e => { if (!e.target.closest('.version-wrap') && !e.target.closest('#vList')) toggleList(false); });
 
@@ -810,7 +855,7 @@ const Splash = {
       STATE.installed = inst;
       const box = $('#installedList');
       box.innerHTML = inst.length ? inst.map(v => `
-        <div class="row"><span class="nm">${esc(v.id)} <span style="color:var(--dim)">· ${esc(v.type)} · ${human(v.size)}</span></span>
+        <div class="row"><span class="nm">${esc(v.id)} <span style="color:var(--dim)">· ${esc(v.type)} · ${human(v.size)}</span>${v.loader ? ` <span class="tag mod">${esc(v.loader.nom)}</span>` : ''}</span>
           <span class="tag inst">installée</span>
           <button class="btn sm" data-sel="${esc(v.id)}">Jouer</button>
           <button class="btn sm danger" data-del="${esc(v.id)}">Supprimer</button></div>`).join('')
@@ -1048,6 +1093,40 @@ const Splash = {
       Toast.show('Version non installée', id + ' doit être téléchargée avant de jouer.', 'warn');
       return startInstall(id);
     }
+
+    /*  Des mods sont deposes dans le dossier, mais la version choisie
+        n'est pas un profil de chargeur : le jeu demarrerait, mais les
+        mods seraient purement et simplement ignores. C'est le piege le
+        plus courant, on propose donc de le corriger sur-le-champ.   */
+    const modState = await api(x => x.mods.etat(), { soft: true });
+    if (modState && (modState.mods || []).length) {
+      const estChargeur = (modState.profils || []).some(p => p.version === id);
+      if (!estChargeur) {
+        const r = await Dialog.confirm({
+          kind: 'warn',
+          icon: 'i-alert',
+          title: 'Tes mods ne seront pas chargés',
+          html: 'Tu as <b>' + modState.mods.length + ' mod(s)</b> dans le dossier mods, mais <b>' + esc(id) + '</b> est une version vanilla.' +
+                '<br><br>Minecraft ignore complètement le dossier mods sans un chargeur : le jeu se lancera, mais sans tes mods.' +
+                '<br><br>Installer <b>Fabric</b> sur cette version et lancer le profil qui va avec ?',
+          ok: 'Installer Fabric',
+          cancel: 'Jouer quand même'
+        });
+        if (r) {
+          await Mods.install('fabric', id);
+          const etat2 = await api(x => x.mods.etat(), { soft: true });
+          const cree = ((etat2 && etat2.profils) || []).find(p => p.base === id);
+          if (cree) {
+            const liste = await api(x => x.game.installed(), { soft: true });
+            if (liste) STATE.installed = liste;
+            await Version.select(cree.version, true);
+            Toast.show('Profil créé', cree.version + ' est sélectionné. Relance le jeu.', 'ok', 6000);
+            return play(world);
+          }
+          return;
+        }
+      }
+    }
     const btn = $('#btnPlay');
     btn.classList.add('busy', 'ring');
     logGame('', '>>> Préparation du lancement (' + id + ')');
@@ -1115,6 +1194,21 @@ const Splash = {
 
       let html = '';
 
+      /*  Le cas le plus frequent : des mods sont deposes mais aucun
+          chargeur n'est installe. Sans chargeur, Minecraft ignore
+          completement le dossier mods : mieux vaut le dire.         */
+      const modsPresents = (etat.mods || []).length;
+      const baseCible = cible;
+      const aUnChargeur = profils.some(p => p.base === baseCible || p.version === baseCible);
+      if (modsPresents && baseCible && !aUnChargeur) {
+        html += '<div class="mod-warn">' + ic('i-alert', 18) +
+          '<div><b>Tes ' + modsPresents + ' mods ne seront pas chargés.</b>' +
+          '<p>Minecraft sans chargeur ignore complètement le dossier <code class="mono">mods</code>. ' +
+          'Il te faut un profil de chargeur pour ' + esc(baseCible) + '.</p>' +
+          '<button class="btn" id="btnWarnFabric">' + ic('i-chip', 16) + 'Installer Fabric pour ' + esc(baseCible) + '</button>' +
+          '</div></div>';
+      }
+
       /*  Chargeurs deja installes, tous profils confondus. */
       if (profils.length) {
         for (const pr of profils) {
@@ -1142,6 +1236,8 @@ const Splash = {
       if (bf) bf.addEventListener('click', () => this.install('fabric', cible));
       const bn = $('#btnNeoForge');
       if (bn) bn.addEventListener('click', () => this.install('neoforge', cible));
+      const bw = $('#btnWarnFabric');
+      if (bw) bw.addEventListener('click', () => this.install('fabric', baseCible));
     },
 
     async install(type, version) {
@@ -1369,11 +1465,31 @@ const Login = {
       const cd = document.getElementById('msCode'); if (cd) cd.hidden = true;
     },
 
+    /* --- Choix du mode de connexion --------------------------------
+        "minecraft" : chaine complete, exige l'approbation de Mojang.
+        "xbox"      : on s'arrete a Xbox Live, aucune approbation
+                       necessaire ; le jeu tourne en mode hors-ligne
+                       sous le vrai gamertag.                          */
+    mode: 'xbox',
+    setMode(mode) {
+      this.mode = (mode === 'xbox') ? 'xbox' : 'minecraft';
+      const note = document.getElementById('msModeNote');
+      if (note) {
+        note.textContent = this.mode === 'xbox'
+          ? "Connexion Xbox directe : aucune approbation de Mojang n\'est necessaire. Le jeu se lancera en mode hors-ligne, sous ton gamertag."
+          : "Ton vrai compte Minecraft : skin, pseudo et UUID r\u00e9els. Necessite l\'approbation de Mojang.";
+      }
+      Array.from(document.querySelectorAll('#msModes .mode-btn')).forEach(b => b.classList.toggle('on', b.dataset.mode === this.mode));
+    },
+
     /* --- Microsoft : code d'appareil -------------------------------- */
     async start() {
       document.getElementById('msCard').hidden = false;
       document.getElementById('msCode').hidden = false;
-      document.getElementById('msSub').textContent = "Une fen\u00eatre va s'ouvrir dans ton navigateur.";
+      document.getElementById('msSub').textContent = this.mode === 'xbox'
+        ? "Une fen\u00eatre va s'ouvrir dans ton navigateur. Connexion Xbox directe, sans approbation de Mojang."
+        : "Une fen\u00eatre va s'ouvrir dans ton navigateur.";
+      await api(x => x.auth.setMode(this.mode), { soft: true });
       const res = await api(x => x.auth.begin());
       if (!res) {
         document.getElementById('msCode').hidden = true;
@@ -1413,7 +1529,9 @@ const Login = {
           this.stopPolling();
           if (bar) bar.style.width = '100%';
           document.getElementById('waitText').textContent = 'R\u00e9cup\u00e9ration de ton profil\u2026';
-          const done = await api(x => x.auth.finish(r.tokens));
+          let done = null;
+          try { done = await X.auth.finish(r.tokens); }
+          catch (e) { await this.onAuthError(e); return; }
           if (done) { Account.apply(done.account); Toast.show('Connect\u00e9', done.account.name, 'ok'); this.refresh(); }
         } finally {
           enCours = false;
@@ -1424,6 +1542,34 @@ const Login = {
     stopPolling() {
       if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
       if (this.barTimer) { clearInterval(this.barTimer); this.barTimer = null; }
+    },
+
+    /*  Mojang refuse l'echange tant que l'application n'est pas
+        approuvee. Inutile de laisser l'utilisateur devant un mur :
+        on propose aussitot le mode Xbox, qui n'exige aucune
+        approbation et aboutit en quelques secondes.                      */
+    async onAuthError(e) {
+      const msg = String((e && (e.body || e.message)) || e || '');
+      const refusMojang = /Invalid app registration|AppRegInfo/i.test(msg);
+      if (this.mode === 'minecraft' && refusMojang) {
+        this.stopPolling();
+        const go = await Dialog.confirm({
+          kind: 'warn',
+          icon: 'i-alert',
+          title: 'Minecraft a refuse la connexion',
+          html: "L'application n'est pas encore approuvée par Mojang : c'est ce qui bloque la connexion au compte Minecraft." +
+                '<br><br>Tu peux <b>passer en mode Xbox</b> : aucune approbation n\'est nécessaire, et le jeu se lancera en mode hors-ligne sous ton vrai gamertag.' +
+                '<br><br>On relance la connexion tout de suite.',
+          ok: 'Passer en mode Xbox',
+          cancel: 'Annuler'
+        });
+        if (go) {
+          this.setMode('xbox');
+          await this.start();
+        }
+        return;
+      }
+      Toast.show('Connexion refusée', msg.slice(0, 220), 'err', 7000);
     },
 
     async refresh() {
@@ -1437,13 +1583,13 @@ const Login = {
         '<div class="acc-item">' +
         '<span class="av"><canvas data-acc-id="' + esc(a.id) + '" width="80" height="80"></canvas></span>' +
         '<span class="ai"><span class="an">' + esc(a.name) + '</span><span class="au">' + esc(a.id) + '</span></span>' +
-        '<span class="acc-type">' + (a.type === 'offline' ? 'solo' : 'Microsoft') + '</span>' +
+        '<span class="acc-type">' + (a.type === 'offline' ? 'solo' : a.type === 'xbox' ? 'Xbox' : 'Microsoft') + '</span>' +
         '<button class="btn sm" data-use-acc="' + esc(a.id) + '">Changer</button>' +
         '<button class="btn sm danger" data-rm-acc="' + esc(a.id) + '">Supprimer</button>' +
         '</div>').join('');
       $$('[data-acc-id]', list).forEach(cv => {
         const a = accounts.find(x => x.id === cv.dataset.accId);
-        SkinHead.draw(cv, a.skinUrl, a.name);
+        SkinHead.draw(cv, a.skinUrl, a.name, a.avatarUrl);
       });
       $$('[data-use-acc]', list).forEach(b => b.addEventListener('click', () => {
         const a = accounts.find(x => x.id === b.dataset.useAcc);
@@ -1470,20 +1616,22 @@ const Login = {
         '<div class="big-avatar"><canvas id="bigAvatar" width="220" height="220"></canvas></div>' +
         '<div><div class="cname">' + esc(acc.name) + '</div><div class="cuuid">' + esc(acc.id) + '</div></div>' +
         '<span class="acc-type">' + ic(acc.type === 'offline' ? 'i-shield' : 'i-check', 12) +
-        ' ' + (acc.type === 'offline' ? 'Mode solo' : 'Compte Microsoft') + '</span>' +
+        ' ' + (acc.type === 'offline' ? 'Mode solo' : acc.type === 'xbox' ? 'Compte Xbox' : 'Compte Microsoft') + '</span>' +
         '<div class="kvlist">' +
         '<div class="kv"><span>Identifiant</span><b class="mono" style="font-size:11px">' + esc(acc.id) + '</b></div>' +
-        '<div class="kv"><span>Session</span><b>' + (acc.type === 'offline' ? 'Hors ligne' : 'En ligne') + '</b></div>' +
+        '<div class="kv"><span>Session</span><b>' + (acc.type === 'offline' ? 'Hors ligne' : acc.type === 'xbox' ? 'Xbox · hors ligne' : 'En ligne') + '</b></div>' +
         '</div>' +
         '<button class="btn primary" id="btnPlayFromAcc">Jouer maintenant</button>' +
         '</div>';
-      SkinHead.draw(document.getElementById('bigAvatar'), acc.skinUrl, acc.name);
+      SkinHead.draw(document.getElementById('bigAvatar'), acc.skinUrl, acc.name, acc.avatarUrl);
       document.getElementById('btnPlayFromAcc').addEventListener('click', () => { Nav.go('home'); play(null); });
     },
 
   };
 
   const onClick = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+
+  $$('#msModes .mode-btn').forEach(b => b.addEventListener('click', () => Login.setMode(b.dataset.mode)));
 
   onClick('pickMicrosoft', () => {
     Login.stopPolling();
@@ -1812,6 +1960,7 @@ const Login = {
       if (!acc) { Nav.go('login'); Toast.show('Bienvenue', 'Connectez votre compte Microsoft pour commencer.', 'info', 5200); }
       else Nav.go((location.hash || '#/home').replace('#/', ''));
       Home.refresh();
+      Splash.ready();
     } else {
       $('#brandTag').textContent = 'aperçu navigateur';
       const view = $('#view-home');
@@ -1824,6 +1973,7 @@ const Login = {
       STATE.catalog = { latest: { release: '1.21.1' }, versions: [{ id: '1.21.1', type: 'release', releaseTime: Date.now() }, { id: '1.20.1', type: 'release', releaseTime: 0 }] };
       Version.renderList();
     }
+    Splash.ready();
     VIDEOS.render();
     Ambience.updateSoundBtn();
   })();

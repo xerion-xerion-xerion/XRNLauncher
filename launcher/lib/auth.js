@@ -58,6 +58,7 @@ const MC_LOGIN_URL = 'https://api.minecraftservices.com/authentication/login_wit
 const MC_ME_URL    = 'https://api.minecraftservices.com/minecraft/profile';
 const MC_ENT_URL   = 'https://api.minecraftservices.com/entitlements/mcstore';
 const MC_MSA_URL   = 'https://api.minecraftservices.com/minecraft/has_legacy_entitlement';
+const XBL_PROFILE_URL = 'https://profile.xboxlive.com/users/me';
 
 function store()  { return path.join(util.appRoot(), 'profiles.json'); }
 function load()   { return util.readJSON(store(), { accounts: [] }); }
@@ -294,8 +295,10 @@ async function refresh(refreshToken) {
   throw new AuthError(clair ? clair : 'Session expiree, reconnectez-vous. ' + String(dernier.msg).slice(0, 160), 'refresh');
 }
 
-/* 4. Xbox Live -> XSTS -> Minecraft */
-async function toMinecraft(msaAccessToken) {
+/*  Etape commune : l'authentification Xbox Live. Elle ne depend d'aucun
+    accord de Mojang, seulement de l'enregistrement de l'application
+    aupres de Microsoft.                                                 */
+async function xblTokenFor(msaAccessToken) {
   const trace = (m) => { try { cfg.trace(m); } catch (e) {} };
   const xbl = await http.postJSON(XBL_URL, {
     Properties: {
@@ -319,7 +322,57 @@ async function toMinecraft(msaAccessToken) {
     trace('XBL 401 XErr=' + reason);
     throw new AuthError(msg, 'xbl');
   }
-  const xblToken = xbl.json.Token;
+  return xbl.json.Token;
+}
+
+/*  Connexion Xbox seule, sans passer par les services Minecraft.
+
+    L'approbation de Mojang ne concerne que api.minecraftservices.com.
+    Tout ce qui est Xbox Live fonctionne avec n'importe quelle
+    application Azure enregistree : on obtient donc le vrai gamertag,
+    l'avatar et l'identifiant Xbox, et le jeu se lance en mode
+    hors-ligne sous ce nom. Ce que l'approbation seule apporte en
+    plus : le jeton Minecraft, donc les serveurs en ligne et Realms.  */
+async function toXbox(msaAccessToken) {
+  const trace = (m) => { try { cfg.trace(m); } catch (e) {} };
+  const xblToken = await xblTokenFor(msaAccessToken);
+
+  const xsts = await http.postJSON(XSTS_URL, {
+    Properties: { SandboxId: 'RETAIL', UserTokens: [xblToken] },
+    RelyingParty: 'http://auth.xboxlive.com',
+    TokenType: 'JWT'
+  }, { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' });
+
+  trace('XSTS(Xbox) HTTP ' + xsts.status + ' ' + JSON.stringify(xsts.json || {}).slice(0, 200));
+  if (xsts.status !== 200) {
+    const e = (xsts.json && xsts.json.XErr) || xsts.status;
+    throw new AuthError('Xbox a refuse la session (' + e + ').', 'xsts');
+  }
+  const uhs = xsts.json.DisplayClaims.xui[0].uhs;
+  const xid = xsts.json.DisplayClaims.xui[0].xid || '';
+
+  const prof = await http.postJSON(XBL_PROFILE_URL, null, {
+    'Authorization': 'XBL3.0 x=' + uhs + ';' + xsts.json.Token,
+    'Accept': 'application/json'
+  }, 'GET');
+
+  trace('profil Xbox HTTP ' + prof.status);
+  if (prof.status !== 200 || !prof.json || !prof.json.displayName) {
+    throw new AuthError('Impossible de lire le profil Xbox (' + prof.status + ') : ' + String(prof.text || '').slice(0, 160), 'xbox');
+  }
+
+  return {
+    name: prof.json.displayName,
+    xuid: String(prof.json.id || xid || ''),
+    avatarUrl: prof.json.gamerpic || '',
+    avatarSmall: prof.json.gamepic || ''
+  };
+}
+
+/* 4. Xbox Live -> XSTS -> Minecraft */
+async function toMinecraft(msaAccessToken) {
+  const trace = (m) => { try { cfg.trace(m); } catch (e) {} };
+  const xblToken = await xblTokenFor(msaAccessToken);
 
   const xsts = await http.postJSON(XSTS_URL, {
     Properties: { SandboxId: 'RETAIL', UserTokens: [xblToken] },
@@ -378,6 +431,7 @@ function publicAccount(acc) {
     name: acc.name,
     id: acc.id,
     skinUrl: acc.skinUrl || '',
+    avatarUrl: acc.avatarUrl || '',
     capeUrl: acc.capeUrl || '',
     userType: acc.userType || 'msla',
     isLegacy: !!acc.isLegacy
@@ -386,6 +440,6 @@ function publicAccount(acc) {
 
 module.exports = {
   explain, checkClientId,
-  startDeviceCode, pollDeviceCode, refresh, toMinecraft, profile, entitlements,
+  startDeviceCode, pollDeviceCode, refresh, toMinecraft, toXbox, xblTokenFor, profile, entitlements,
   load, persist, store, publicAccount, AuthError
 };

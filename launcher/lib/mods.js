@@ -82,11 +82,24 @@ function loadersDe(versionId) {
   if (!versionId) return [];
   const dir = path.join(cfgm.load().gameDir, 'versions', versionId);
   let names = [];
-  try { names = fs.readdirSync(dir); } catch (e) { return []; }
+  try { names = fs.readdirSync(dir); } catch (e) { names = []; }
   const trouve = [];
   for (const l of LOADERS) {
     const m = names.find(n => l.motif.test(n));
     if (m) trouve.push({ id: l.id, nom: l.nom, jar: m, version: versionId });
+  }
+  if (trouve.length) return trouve;
+
+  /*  Un profil construit par le launcher (Fabric, NeoForge) n'a pas
+      de jar a lui : il se deduit de son JSON, qui declare la version
+      de base dont il herite et la classe principale du chargeur.     */
+  const meta = util.readJSON(path.join(dir, versionId + '.json'), null);
+  if (meta && meta.inheritsFrom) {
+    const mc = String(meta.mainClass || '');
+    if (mc.indexOf('fabricmc') !== -1) trouve.push({ id: 'fabric', nom: 'Fabric', jar: null, version: versionId });
+    else if (mc.indexOf('neoforge') !== -1) trouve.push({ id: 'neoforge', nom: 'NeoForge', jar: null, version: versionId });
+    else if (mc.indexOf('quilt') !== -1) trouve.push({ id: 'quilt', nom: 'Quilt', jar: null, version: versionId });
+    else if (mc.indexOf('forge') !== -1) trouve.push({ id: 'forge', nom: 'Forge', jar: null, version: versionId });
   }
   return trouve;
 }
@@ -96,7 +109,13 @@ function profilsMod() {
   const out = [];
   for (const v of game.installedVersions()) {
     const l = loadersDe(v.id);
-    if (l.length) out.push({ version: v.id, loader: l[0] });
+    if (!l.length) continue;
+    const meta = util.readJSON(path.join(cfgm.load().gameDir, 'versions', v.id, v.id + '.json'), null);
+    out.push({
+      version: v.id,
+      loader: l[0],
+      base: (meta && meta.inheritsFrom) || v.id
+    });
   }
   return out;
 }
@@ -270,6 +289,6 @@ function etat() {
 
 module.exports = {
   modsDir, list, add, remove, openFolder, etat,
-  loadersDe, profilsMod, fabricInstallateur, fabricLoaderStable,
+  loadersDe, profilsMod, fabricProfil, fabricInstallateur, fabricLoaderStable,
   neoforgePour, installFabric, installNeoForge
 };
