@@ -214,6 +214,19 @@ const XRN = {
     },
     mode() { return session.loginMode || 'minecraft'; },
 
+    /*  Appele quand Microsoft a verifie l'identite mais refuse de livrer
+        le pseudo : on termine la session avec le nom choisi par
+        l'utilisateur.                                                  */
+    chooseName(name) {
+      const p = session.login && session.login.pendingXbox;
+      if (!p) {
+        const e = new Error('Session Xbox introuvable. Relance la connexion.');
+        e.code = 'no-pending';
+        throw e;
+      }
+      return enregistrerXbox(p.xb, p.tokens, name);
+    },
+
     async begin() {
       if (!cfgm.hasClientId()) {
         const e = new Error("Identifiant Microsoft absent : colle-le dans le champ de l'onglet Connexion.");
@@ -357,7 +370,10 @@ const XRN = {
       let username = acc ? acc.name : (opts.username || 'Joueur');
       let userType = acc ? (acc.userType || 'msla') : 'legacy';
 
-      if (acc && acc.refreshToken && !offline) {
+      /*  Un profil "xbox" n'a pas de jeton Minecraft par construction :
+          on ne tente surtout pas de rafraichir, l'echange echouerait
+          (approbation Mojang) et le jeu tournerait quand meme en '0'. */
+      if (acc && acc.refreshToken && !offline && acc.type !== 'xbox') {
         // on tente un rafraichissement si le jeton est vieux
         try {
           if (Date.now() - (acc.savedAt || 0) > 60 * 60 * 1000) {
@@ -488,13 +504,38 @@ async function completeLoginXbox(tokens) {
     XRN.report('AUTH', 'ECHEC Xbox : ' + ((e && (e.code + ' / ' + e.message)) || String(e)).slice(0, 300));
     throw e;
   }
+
+  /*  Microsoft ne distribue plus le pseudo aux applications ordinaires.
+      L'identite est pourtant bien verifiee (xuid obtenu) : c'est ce qui
+      compte pour dire a l'utilisateur que son compte est le sien. Il ne
+      reste qu'a lui demander sous quel nom jouer.                      */
+  if (!xb.name) {
+    session.login = session.login || {};
+    session.login.pendingXbox = { tokens, xb };
+    XRN.report('AUTH', 'identite Xbox verifiee (xuid=' + (xb.xuid || '?') + '), pseudo demande a l\'utilisateur');
+    return { needsName: true, xuid: xb.xuid || '' };
+  }
+  return enregistrerXbox(xb, tokens, xb.name);
+}
+
+/*  Construit le profil a partir du nom choisi. L'UUID est derive
+    exactement comme Minecraft le fait en mode hors-ligne
+    ("OfflinePlayer:" + nom) : c'est indispensable, car sinon le jeu
+    recalculerait un UUID different de celui du profil et les sauvegarde
+    seraient vues comme appartenant a un autre joueur.                 */
+function enregistrerXbox(xb, tokens, nom) {
   const crypto = require('crypto');
-  const graine = xb.xuid || xb.name;
-  const h = crypto.createHash('md5').update('XRN:Xbox:' + graine).digest('hex');
-  const uuid = [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20)].join('-');
+  const clean = String(nom || '').trim();
+  if (!/^[A-Za-z0-9_]{1,16}$/.test(clean)) {
+    const e = new Error('Le pseudo doit faire 1 a 16 caracteres, lettres, chiffres ou tiret bas.');
+    e.code = 'bad-name';
+    throw e;
+  }
+  const hash = crypto.createHash('md5').update('OfflinePlayer:' + clean).digest('hex');
+  const uuid = [hash.slice(0, 8), hash.slice(8, 12), hash.slice(12, 16), hash.slice(16, 20), hash.slice(20)].join('-');
   const account = {
     type: 'xbox',
-    name: xb.name,
+    name: clean,
     id: uuid,
     uuid: uuid,
     skinUrl: '',
@@ -506,7 +547,7 @@ async function completeLoginXbox(tokens) {
     refreshToken: tokens.refresh_token || null,
     savedAt: Date.now()
   };
-  XRN.report('AUTH', 'profil Xbox = ' + account.name + ' / ' + uuid);
+  XRN.report('AUTH', 'profil Xbox = ' + clean + ' / ' + uuid);
   updateAccount(account);
   session.account = account;
   session.login = null;

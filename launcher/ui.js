@@ -29,6 +29,7 @@
        bloque l'interface et sort du style de l'application.           */
    const Dialog = {
      _res: null,
+     _prompt: false,
      open(opts) {
        return new Promise(resolve => {
          Dialog._res = resolve;
@@ -48,6 +49,30 @@
          note.hidden = !opts.progress;
          if (opts.progress) { $('#modalBarFill').style.width = '0%'; note.textContent = ''; }
 
+         /*  Champ de saisie, pour les cas ou il faut vraiment demander
+             une valeur (pseudo, nom de monde...) et pas seulement un
+             oui ou non.                                                 */
+         const field = $('#modalField');
+         const input = $('#modalInput');
+         const err = $('#modalErr');
+         Dialog._prompt = !!opts.input;
+         field.hidden = !opts.input;
+         err.hidden = true;
+         if (opts.input) {
+           input.value = opts.input.value || '';
+           input.placeholder = opts.input.placeholder || '';
+           input.maxLength = opts.input.maxlength || 64;
+         }
+
+         /*  Valide la saisie ; un message d'erreur reste affiche tant que
+             la valeur n'est pas acceptable, la fenetre ne se ferme pas. */
+         const valider = () => {
+           if (!Dialog._prompt) return true;
+           const msg = opts.validate ? opts.validate(input.value.trim()) : null;
+           if (msg) { err.textContent = msg; err.hidden = false; input.focus(); return false; }
+           return true;
+         };
+
          const ok = $('#modalOk');
          const cancel = $('#modalCancel');
          ok.textContent = opts.ok || 'Confirmer';
@@ -57,21 +82,30 @@
          ok.className = 'btn ' + (opts.danger ? 'danger' : 'primary');
 
          wrap.hidden = false;
-         const onKey = e => { if (e.key === 'Escape' && !opts.hideCancel) Dialog.close(false); };
+         const onKey = e => {
+           if (e.key === 'Escape' && !opts.hideCancel) { Dialog.close(false); return; }
+           if (e.key === 'Enter' && Dialog._prompt) { e.preventDefault(); if (valider()) Dialog.close(true); }
+         };
          document.addEventListener('keydown', onKey);
          Dialog._onKey = onKey;
          bg.onclick = () => { if (!opts.hideCancel) Dialog.close(false); };
-         ok.onclick = () => Dialog.close(true);
+         ok.onclick = () => { if (valider()) Dialog.close(true); };
          cancel.onclick = () => Dialog.close(false);
-         setTimeout(() => ok.focus(), 60);
+         setTimeout(() => (Dialog._prompt ? input : ok).focus(), 60);
        });
      },
      close(v) {
        const wrap = $('#modalWrap');
        if (wrap) wrap.hidden = true;
        if (Dialog._onKey) { document.removeEventListener('keydown', Dialog._onKey); Dialog._onKey = null; }
+       /*  En mode saisie, la promesse resout la chaine saisiee, ou null
+           si l'utilisateur a annule ou laisse le champ vide.          */
+       const input = $('#modalInput');
+       const prompt = Dialog._prompt;
+       const valeur = (prompt && input) ? input.value.trim() : '';
+       Dialog._prompt = false;
        const r = Dialog._res; Dialog._res = null;
-       if (r) r(v);
+       if (r) r(prompt ? (v ? valeur : null) : v);
      },
      progress(pct, note) {
        const f = $('#modalBarFill');
@@ -84,6 +118,7 @@
        if (n) n.textContent = txt || '';
      },
      confirm(opts) { return Dialog.open(opts); },
+     prompt(opts) { return Dialog.open(Object.assign({}, opts, { input: opts.input || true })); },
      alert(opts) { return Dialog.open(Object.assign({}, opts, { hideCancel: true, ok: opts.ok || 'Fermer' })); }
    };
 
@@ -427,37 +462,49 @@ const Splash = {
       $('#spSkip').addEventListener('click', () => this.done());
       addEventListener('keydown', e => { if (e.key === 'Escape') this.done(); }, { once: true });
 
+      /*  Le splash se ferme 2300 ms apres le boot (voir ready()).
+          Ces delais sont donc volontairement courts : la derniere
+          etape doit avoir lieu avant la fermeture, sinon la barre
+          reste bloquee a mi-parcours — c'etait exactement le symptome
+          avant que la chronologie soit alignee sur celle du splash.  */
       const steps = [
-        [14, 'Initialisation du moteur…'],
-        [34, 'Chargement des sous-systèmes…'],
-        [56, 'Vérification de l\'intégrité…'],
-        [78, 'Connexion au launcher…'],
-        [100, 'Prêt.']
+        [ 12, 'Initialisation du moteur…',        180],
+        [ 32, 'Chargement des sous-systèmes…',    560],
+        [ 55, 'Vérification de l\'intégrité…',    960],
+        [ 78, 'Connexion au launcher…',          1400],
+        [100, 'Prêt.',                           1780]
       ];
       let done = false;
-      steps.forEach(([p, label]) => setTimeout(() => {
+      steps.forEach(([p, label, ms]) => setTimeout(() => {
         if (done) return;
         $('#spBar').style.width = p + '%';
         $('#spStatus').textContent = label;
-      }, 700 + p * 22));
+      }, ms));
 
       // sous-titre mot a mot
       const quote = this.line.t;
       const words = quote.split(' ');
       const sub = $('#spSubtitle');
       let wi = 0;
+      /*  Le pas est calcule sur la longueur de la citation pour qu'elle
+          soit entierement ecrite avant la fermeture du splash. Avec un
+          pas fixe de 340 ms, les citations longues etaient coupees en
+          plein mot.                                                      */
+      const pas = Math.max(70, Math.floor(1700 / Math.max(1, words.length)));
       this.tape = setInterval(() => {
         if (done || !this.shown) return;
         if (wi < words.length) {
           sub.classList.add('on');
           sub.innerHTML = esc(words.slice(0, wi + 1).join(' ')) + '<span class="cur"></span>';
           wi++;
+        } else {
+          /*  Derniere frappe : on retire le curseur et on affiche enfin
+              l'auteur. Avant, cet affichage etait programme separement
+              et tombait apres la fermeture du splash, donc jamais vu.  */
+          clearInterval(this.tape); this.tape = null;
+          sub.innerHTML = esc(quote) + '<br><span class="sp-author">' + esc(this.line.a) + '</span>';
         }
-      }, 340);
-
-      setTimeout(() => {
-        sub.innerHTML = esc(quote) + '<br><span class="sp-author">' + esc(this.line.a) + '</span>';
-      }, 700 + words.length * 340 + 200);
+      }, pas);
 
 
       // filet de securite
@@ -496,6 +543,12 @@ const Splash = {
       this.shown = false;
       clearInterval(this.tape);
       clearTimeout(this.minuterie);
+      /*  Si l'utilisateur coupe l'animation avant la fin (clic sur le
+          X ou Echap), on termine proprement : sans cela la barre peut
+          rester bloquee a mi-parcours pendant la fonte.                 */
+      const bar = $('#spBar'), st = $('#spStatus');
+      if (bar) bar.style.width = '100%';
+      if (st) st.textContent = 'Prêt.';
       const el = $('#splash');
       if (el) el.classList.add('done');
       setTimeout(() => { if (el) el.remove(); }, 900);
@@ -904,6 +957,33 @@ const Splash = {
       archive, cela ne demande ni installation systeme ni droit
       administrateur. Le dossier estRanges dans l'espace de
       l'application et le launcher s'en souvient.                        */
+   /*  Microsoft ne distribue plus le pseudo aux applications tierces :
+       profile.xboxlive.com repond 404 et SISU refuse le jeton. Le jeu se
+       lancera donc en mode hors-ligne sous le nom choisi ici. L'identite
+       Xbox, elle, a bien ete verifiee par XSTS.                     */
+   async function demanderPseudo(xuid) {
+     const precedent = STATE.account && STATE.account.type === 'xbox' && STATE.account.xuid === xuid
+       ? STATE.account.name : '';
+     return Dialog.prompt({
+      title: 'Choisis ton pseudo',
+      html: 'Ton compte Xbox est reconnu' +
+            (xuid ? ' (identifiant <b>' + esc(xuid) + '</b>)' : '') +
+            ', mais Microsoft ne communique plus ton pseudo aux applications tierces.' +
+            '<br><br>Choisis le nom sous lequel tu joueras. Le jeu fonctionnera en mode' +
+            ' hors-ligne : solo, mods et serveurs hors-ligne. Les serveurs en ligne et Realms' +
+            ' resteront inaccessibles tant que l\'application n\'est pas enregistree aupres de Mojang.',
+      input: { value: precedent, placeholder: 'Ton pseudo', maxlength: 16 },
+      validate: (v) => {
+        if (!v) return 'Le pseudo ne peut pas être vide.';
+        if (v.length > 16) return '16 caractères maximum.';
+        if (!/^[A-Za-z0-9_]+$/.test(v)) return 'Lettres, chiffres et tiret bas uniquement.';
+        return null;
+      },
+      ok: 'Jouer sous ce nom',
+      cancel: 'Annuler'
+    });
+   }
+
    async function verifierJava(besoin) {
     const need = Number(besoin) || 17;
     if (!DESKTOP) return 'ok';
@@ -1532,7 +1612,22 @@ const Login = {
           let done = null;
           try { done = await X.auth.finish(r.tokens); }
           catch (e) { await this.onAuthError(e); return; }
-          if (done) { Account.apply(done.account); Toast.show('Connect\u00e9', done.account.name, 'ok'); this.refresh(); }
+          if (!done) return;
+          /*  Microsoft verifie l'identite mais ne livre pas le pseudo :
+              on demande donc a l'utilisateur le nom sous lequel jouer.  */
+          if (done.needsName) {
+            document.getElementById('waitText').textContent = 'Choisis ton pseudo…';
+            const nom = await demanderPseudo(done.xuid);
+            if (!nom) {
+              Toast.show('Connexion annulée', 'Aucun pseudo choisi : session Xbox fermée.', 'warn', 6000);
+              return;
+            }
+            try { done = await X.auth.chooseName(nom); }
+            catch (e) { await this.onAuthError(e); return; }
+          }
+          Account.apply(done.account);
+          Toast.show('Connecté', done.account.name, 'ok');
+          this.refresh();
         } finally {
           enCours = false;
         }

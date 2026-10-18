@@ -329,65 +329,78 @@ async function xblTokenFor(msaAccessToken) {
 
     L'approbation de Mojang ne concerne que api.minecraftservices.com.
     Tout ce qui est Xbox Live fonctionne avec n'importe quelle
-    application Azure enregistree : on obtient donc le vrai gamertag,
-    l'avatar et l'identifiant Xbox, et le jeu se lance en mode
-    hors-ligne sous ce nom. Ce que l'approbation seule apporte en
-    plus : le jeton Minecraft, donc les serveurs en ligne et Realms.  */
+    application Azure enregistree : on obtient donc un identifiant Xbox
+    reellement verifie, et c'est ce qui permet de dire a l'utilisateur
+    que son compte est bien le sien.
+
+    En revanche Microsoft ne distribue plus le pseudo aux applications
+    ordinaires : profile.xboxlive.com repond 404 et le service SISU
+    refuse le jeton. On tente une fois, puis on continue sans — le nom
+    sous lequel jouer sera demande a l'utilisateur, et l'UUID hors
+    ligne sera derive de ce nom comme Minecraft le fait lui-meme.
+    L'approbation Mojang seule apporterait en plus le jeton Minecraft,
+    donc les serveurs en ligne et Realms.                              */
 async function toXbox(msaAccessToken) {
   const trace = (m) => { try { cfg.trace(m); } catch (e) {} };
   const xblToken = await xblTokenFor(msaAccessToken);
 
-  /*  Le service XSTS n'accepte qu'un nombre restreint de "RelyingParty".
-      Ceux de Minecraft passent toujours, mais leur jeton n'est pas
-      valable pour le profil Xbox. On essaie donc une liste, et on
-      garde la premiere combinaison qui aboutit vraiment : un jeton
-      obtenu ET un profil lisible. Les echecs sont journalises, ce qui
-      permet de voir d'un coup d'oeil lequel fonctionne.               */
+  /*  XSTS n'accepte qu'un petit nombre de "RelyingParty", et son code de
+      retour ne distingue pas "RP invalide" de "session refusee" : le
+      seul moyen de le savoir est d'essayer. Celui de reference est
+      "http://xboxlive.com" — a ne pas confondre avec celui de l'appel
+      XBL, qui est "http://auth.xboxlive.com". Les autres ne servent
+      que de filet de securite.                                           */
   const RP = [
-    'http://auth.xboxlive.com',
     'http://xboxlive.com',
     'rp://xboxlive.com/',
-    'https://api.xboxlive.com',
-    'rp://api.xboxlive.com/',
-    'rp://api.minecraftservices.com/'
+    'rp://api.minecraftservices.com/',
+    'http://auth.xboxlive.com'
   ];
 
-  let dernier = null;
+  let dernier = null, jeton = null, uhs = null, xid = '';
   for (const rp of RP) {
-    const xsts = await http.postJSON(XSTS_URL, {
+    const r = await http.postJSON(XSTS_URL, {
       Properties: { SandboxId: 'RETAIL', UserTokens: [xblToken] },
       RelyingParty: rp,
       TokenType: 'JWT'
     }, { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' });
 
-    trace('XSTS(Xbox) ' + rp + ' -> HTTP ' + xsts.status + ' ' + JSON.stringify(xsts.json || {}).slice(0, 120));
-    if (xsts.status !== 200) { dernier = (xsts.json && xsts.json.XErr) || xsts.status; continue; }
-
-    const uhs = xsts.json.DisplayClaims.xui[0].uhs;
-    const xid = xsts.json.DisplayClaims.xui[0].xid || '';
-
-    const prof = await http.postJSON(XBL_PROFILE_URL, null, {
-      'Authorization': 'XBL3.0 x=' + uhs + ';' + xsts.json.Token,
-      'Accept': 'application/json'
-    }, 'GET');
-    trace('profil Xbox via ' + rp + ' -> HTTP ' + prof.status);
-
-    if (prof.status === 200 && prof.json && prof.json.displayName) {
-      return {
-        name: prof.json.displayName,
-        xuid: String(prof.json.id || xid || ''),
-        avatarUrl: prof.json.gamerpic || '',
-        avatarSmall: prof.json.gamepic || '',
-        relyingParty: rp
-      };
-    }
-    dernier = prof.status;
+    trace('XSTS(Xbox) ' + rp + ' -> HTTP ' + r.status);
+    if (r.status !== 200) { dernier = (r.json && r.json.XErr) || r.status; continue; }
+    jeton = r.json.Token;
+    uhs = r.json.DisplayClaims.xui[0].uhs;
+    xid = r.json.DisplayClaims.xui[0].xid || '';
+    break;
   }
 
-  throw new AuthError(
-    'Xbox a refuse la session (' + dernier + '). Aucun point d\'entree Xbox n\'a abouti.',
-    'xsts'
-  );
+  if (!jeton) {
+    throw new AuthError(
+      'Xbox a refuse la session (' + dernier + '). Aucun point d\'entree Xbox n\'a abouti.',
+      'xsts'
+    );
+  }
+  trace('XSTS ok, xid=' + xid);
+
+  let nom = '', avatar = '';
+  try {
+    const prof = await http.postJSON(XBL_PROFILE_URL, null, {
+      'Authorization': 'XBL3.0 x=' + uhs + ';' + jeton,
+      'Accept': 'application/json'
+    }, 'GET');
+    trace('profil Xbox -> HTTP ' + prof.status);
+    if (prof.status === 200 && prof.json && prof.json.displayName) {
+      nom = prof.json.displayName;
+      avatar = prof.json.gamerpic || '';
+    }
+  } catch (e) { trace('profil Xbox indisponible'); }
+
+  return {
+    name: nom,
+    xuid: String(xid || ''),
+    uhs: String(uhs || ''),
+    avatarUrl: avatar,
+    relyingParty: RP[0]
+  };
 }
 
 /* 4. Xbox Live -> XSTS -> Minecraft */

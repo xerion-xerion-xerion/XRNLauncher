@@ -487,6 +487,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width .25s var(--ease)}
 .modal-note{font-size:11.5px;color:var(--dim);margin-top:7px;min-height:14px}
 .modal-note[hidden]{display:none}
+
+/* Champ de saisie des modales (pseudo, nom de monde...) */
+.modal-field{margin-top:14px}
+.modal-field[hidden]{display:none}
+.modal-input{width:100%;padding:11px 13px;border-radius:11px;font-size:14px;font-family:inherit;
+  color:#efeaff;background:rgba(10,6,22,.72);border:1px solid rgba(167,139,250,.28);
+  outline:none;transition:border-color .16s var(--ease),box-shadow .16s var(--ease)}
+.modal-input::placeholder{color:var(--dim)}
+.modal-input:hover{border-color:rgba(167,139,250,.42)}
+.modal-input:focus{border-color:var(--v2);box-shadow:0 0 0 3px rgba(167,139,250,.16)}
+.modal-err{font-size:11.5px;color:#fca5a5;margin-top:7px}
+.modal-err[hidden]{display:none}
 .modal-acts{display:flex;gap:9px;justify-content:center;margin-top:20px}
 .modal-acts .btn{min-width:118px}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
