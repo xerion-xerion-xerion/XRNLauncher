@@ -6,7 +6,7 @@ const fs    = require('fs');
 const os    = require('os');
 const path  = require('path');
 const zlib  = require('zlib');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 
 const util   = require('./util');
 const cfgm   = require('./config');
@@ -578,7 +578,9 @@ async function probeJava(exe) {
       absent. On passe donc par java.exe, sa cousine console.          */
   const variante = exe.replace(/javaw\.exe$/i, 'java.exe');
   const cible = (variante !== exe && util.exists(variante)) ? variante : exe;
-  const r = await util.run(cible, ['-version'], 15000);
+  let r;
+  try { r = await util.run(cible, ['-version'], 15000); }
+  catch (e) { r = { code: 1, stdout: '', stderr: '' }; }
   const txt = (r.stderr || '') + (r.stdout || '');
   const m = txt.match(/version "([^"]+)"/);
   const raw = m ? m[1] : '';
@@ -588,50 +590,177 @@ async function probeJava(exe) {
   return { version: raw || 'inconnue', major, ok: r.code === 0 && major > 0 };
 }
 
+/*  Ajoute les deux executables d'un dossier de JDK.                     */
+function ajouterBin(list, dossier) {
+  list.push(path.join(dossier, 'bin', 'javaw.exe'));
+  list.push(path.join(dossier, 'bin', 'java.exe'));
+}
+
+/*  Parcourt un repertoire de distributions : chaque sous-dossier peut
+    contenir un JDK (versioninjavaw.exe). Certains edsiteurs
+    imbriquent plus profond, on descend donc d'un cran supplementaire. */
+function ajouterRacine(list, racine) {
+  let entrees = [];
+  try { entrees = fs.readdirSync(racine, { withFileTypes: true }); } catch (e) { return; }
+  for (const e of entrees) {
+    if (!e.isDirectory()) continue;
+    const sous = path.join(racine, e.name);
+    ajouterBin(list, sous);
+    let internes = [];
+    try { internes = fs.readdirSync(sous, { withFileTypes: true }); } catch (err) { continue; }
+    for (const i2 of internes) {
+      if (!i2.isDirectory()) continue;
+      if (i2.name.toLowerCase() === 'bin') continue;   // deja couvert
+      ajouterBin(list, path.join(sous, i2.name));
+    }
+  }
+}
+
+/*  Java declare dans le registre Windows. C'est la source la plus
+    fiable : l'installateur y inscrit le chemin, quelle que soit sa
+    facon de s'ecrire sur le disque.                                     */
+let _cacheRegistre = null;
+let _cachePath = null;
+
+function javaDuRegistre() {
+  if (_cacheRegistre) return _cacheRegistre;
+  const trouve = [];
+  const cles = [
+    'HKLM\\SOFTWARE\\JavaSoft\\JDK',
+    'HKLM\\SOFTWARE\\JavaSoft\\JRE',
+    'HKLM\\SOFTWARE\\WOW6432Node\\JavaSoft\\JDK',
+    'HKLM\\SOFTWARE\\Eclipse Adoptium\\JDK',
+    'HKLM\\SOFTWARE\\Microsoft\\JDK',
+    'HKLM\\SOFTWARE\\Amazon Corretto',
+    'HKLM\\SOFTWARE\\Azul\\Zulu',
+    'HKLM\\SOFTWARE\\BellSoft',
+    'HKLM\\SOFTWARE\\IBM\\Semeru'
+  ];
+  for (const cle of cles) {
+    let sortie = '';
+    try {
+      sortie = String(execFileSync('reg.exe',
+        ['query', cle, '/s', '/v', 'JavaHome'],
+        { encoding: 'utf8', windowsHide: true, timeout: 8000, stdio: ['ignore', 'pipe', 'ignore'] }));
+    } catch (e) {
+      sortie = String((e && e.stdout) || '');
+    }
+    for (const l of sortie.split(/\r?\n/)) {
+      const m = /JavaHome\s+REG_SZ\s+(.+)$/i.exec(l);
+      if (m) ajouterBin(trouve, m[1].trim());
+    }
+  }
+  _cacheRegistre = trouve;
+  return trouve;
+}
+
+/*  Java present dans le PATH du systeme.                                */
+function javaDuPath() {
+  if (_cachePath) return _cachePath;
+  const trouve = [];
+  let sortie = '';
+  try {
+    sortie = String(execFileSync('where.exe', ['java.exe'],
+      { encoding: 'utf8', windowsHide: true, timeout: 8000, stdio: ['ignore', 'pipe', 'ignore'] }));
+  } catch (e) {
+    sortie = String((e && e.stdout) || '');
+  }
+  for (const l of sortie.split(/\r?\n/)) {
+    const p = l.trim();
+    if (!p || !/\.exe$/i.test(p)) continue;
+    trouve.push(p);
+    trouve.push(p.replace(/java\.exe$/i, 'javaw.exe'));
+  }
+  _cachePath = trouve;
+  return trouve;
+}
+
+/*  Toutes les manieres possibles de trouver un Java sur la machine.
+
+    Le fichier de configuration n'est qu'une source parmi d'autres :
+    s'il est perdu ou s'il pointe vers un dossier qui n'existe plus, le
+    launcher retrouve quand meme Java — en particulier celui qu'il a
+    lui-meme installe, qui reste dans son propre dossier.             */
 function javaCandidates() {
   const list = [];
   const add = p => { if (p && !list.includes(p)) list.push(p); };
 
+  /*  1. le chemin memorise dans la configuration                        */
   const cfgPath = (cfgm.load().javaPath || '').trim();
-  if (cfgPath) add(cfgPath);
-
-  if (process.env.JAVA_HOME) {
-    add(path.join(process.env.JAVA_HOME, 'bin', 'javaw.exe'));
-    add(path.join(process.env.JAVA_HOME, 'bin', 'java.exe'));
+  if (cfgPath) {
+    add(cfgPath);
+    ajouterBin(list, path.dirname(path.dirname(cfgPath)));
   }
 
+  /*  2. le Java installe par le launcher lui-meme                      */
+  ajouterRacine(list, javaDir());
+
+  /*  3. la variable d'environnement                                    */
+  if (process.env.JAVA_HOME) ajouterBin(list, process.env.JAVA_HOME);
+
+  /*  4. le PATH du systeme                                             */
+  for (const p of javaDuPath()) add(p);
+
+  /*  5. les emplacements habituels                                     */
   const roots = [
     'C:\\Program Files\\Java',
     'C:\\Program Files\\Eclipse Adoptium',
     'C:\\Program Files\\Microsoft',
     'C:\\Program Files\\Zulu',
     'C:\\Program Files\\Amazon Corretto',
+    'C:\\Program Files\\BellSoft',
+    'C:\\Program Files\\IBM\\Semeru',
+    'C:\\Program Files\\AdoptOpenJDK',
     'C:\\Program Files (x86)\\Java',
-    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Eclipse Adoptium')
+    'C:\\Program Files (x86)\\Eclipse Adoptium',
+    'C:\\Program Files\\JetBrains',
+    'C:\\Program Files\\Microsoft Visual Studio',
+    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Eclipse Adoptium'),
+    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Zulu'),
+    path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Microsoft', 'jdk')
   ];
-  for (const root of roots) {
-    let dirs = [];
-    try { dirs = fs.readdirSync(root, { withFileTypes: true }); } catch (e) { continue; }
-    for (const d of dirs) {
-      const p = path.join(root, d.name, 'bin');
-      add(path.join(p, 'javaw.exe'));
-      add(path.join(p, 'java.exe'));
-    }
-  }
+  for (const root of roots) ajouterRacine(list, root);
+
   return list;
+}
+
+/*  Le registre est la source la plus complete, mais l'interroger prend
+    quelques secondes. On ne le consulte donc qu'en dernier recours,
+    quand les sources rapides n'ont rien donne.                           */
+function javaDuRegistreSiBesoin() {
+  return javaDuRegistre();
 }
 
 async function findJava(needMajor) {
   const need = needMajor || 8;
   const tested = [];
-  for (const exe of javaCandidates()) {
-    if (!util.exists(exe)) continue;
-    const info = await probeJava(exe);
-    tested.push({ path: exe, ...info });
-    /*  Le chemin de l'executable fait partie du resultat : sans lui,
-        l'appelant ne sait pas ou se trouve le Java retenu.            */
-    if (info.ok && info.major >= need) return { found: true, need, path: exe, ...info, tested };
+  const dejaTestes = new Set();
+
+  async function tester(liste) {
+    for (const exe of liste) {
+      if (dejaTestes.has(exe)) continue;
+      dejaTestes.add(exe);
+      if (!util.exists(exe)) continue;
+      let info;
+      try { info = await probeJava(exe); }
+      catch (e) { info = { version: 'inconnue', major: 0, ok: false }; }
+      tested.push({ path: exe, ...info });
+      /*  Le chemin de l'executable fait partie du resultat : sans lui,
+          l'appelant ne sait pas ou se trouve le Java retenu.          */
+      if (info.ok && info.major >= need) return { found: true, need, path: exe, ...info, tested };
+    }
+    return null;
   }
+
+  /*  D'abord les sources rapides : configuration, dossier du launcher,
+      JAVA_HOME, PATH, emplacements habituels.                          */
+  const rapide = await tester(javaCandidates());
+  if (rapide) return rapide;
+
+  /*  Ensuite seulement le registre Windows.                              */
+  const registre = await tester(javaDuRegistreSiBesoin());
+  if (registre) return registre;
+
   return { found: false, need, path: '', version: '', major: 0, tested };
 }
 
@@ -920,6 +1049,7 @@ function clean(s) {
 module.exports = {
   getManifest, buildPlan, install, installedVersions, isInstalled, fetchVersionJson,
   versionComplete, versionParId, buildArgs, matchOs, mavenPath,
-  findJava, launch, killGame, downloadUrlAdoptium, downloadUrlAdoptiumZip,
+  findJava, javaCandidates, javaDuRegistre, javaDuPath,
+  launch, killGame, downloadUrlAdoptium, downloadUrlAdoptiumZip,
   installJava, javaDir, allowRules, OUR_ARCH, OUR_OS
 };

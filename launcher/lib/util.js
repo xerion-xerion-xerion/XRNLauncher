@@ -104,11 +104,33 @@ function listDir(dir, opts) {
 }
 
 /* Lance un processus court et renvoie { code, stdout, stderr } */
+/*  Lance un processus court et renvoie { code, stdout, stderr }.
+    Cette fonction ne rejette jamais : un binaire qui n'existe pas, un
+    fichier qui n'est pas un executable ou un echec de demarrage
+    doivent se traduire par un code d'erreur, jamais par une exception.
+    Une seule exception ici suffisait a faire echouer la detection de
+    Java dans son ensemble, et donc a afficher "Java manquant" alors
+    qu'un Java valide existait.                                         */
 function run(cmd, args, timeoutMs) {
   return new Promise(resolve => {
-    execFile(cmd, args, { windowsHide: true, timeout: timeoutMs || 20000, maxBuffer: 8 * 1024 * 1024 }, (err, stdout, stderr) => {
-      resolve({ code: err ? (err.code || 1) : 0, stdout: String(stdout || ''), stderr: String(stderr || ''), error: err ? err.message : null });
-    });
+    let reponse = { code: 1, stdout: '', stderr: '', error: null };
+    try {
+      execFile(cmd, args, { windowsHide: true, timeout: timeoutMs || 20000, maxBuffer: 8 * 1024 * 1024 }, (err, stdout, stderr) => {
+        if (err) {
+          reponse.code = (typeof err.code === 'number' && err.code !== 0) ? err.code : 1;
+          reponse.error = err.message;
+        } else {
+          reponse.code = 0;
+        }
+        reponse.stdout = String(stdout || '');
+        reponse.stderr = String(stderr || '');
+        resolve(reponse);
+      });
+    } catch (e) {
+      reponse.code = 1;
+      reponse.error = (e && e.message) || String(e);
+      resolve(reponse);
+    }
   });
 }
 

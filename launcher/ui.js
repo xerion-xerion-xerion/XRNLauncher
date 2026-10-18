@@ -514,8 +514,17 @@ const Splash = {
     catch (e) {
       const msg = (e && (e.body || e.message)) || String(e);
       if (e && e.code === 'nojava') {
-        Toast.show('Java manquant', 'Installez un JDK ' + (e.detail ? e.detail.need : 8) + '+ ou indiquez le chemin dans Paramètres.', 'err', 8000);
-        Settings.openJavaHelp(e.detail);
+        /*  Le message ne se contente plus de constater l'absence de
+            Java : il propose de l'installer, sur le meme principe que
+            la fenetre qui precede l'installation d'une version.      */
+        const besoin = (e.detail && e.detail.need) || 17;
+        const issue = await verifierJava(besoin);
+        if (issue === 'ok') {
+          Toast.show('Java prêt', 'Relance le jeu.', 'ok', 5000);
+        } else {
+          Toast.show('Java manquant', 'Installez un JDK ' + besoin + '+ ou indiquez le chemin dans Paramètres.', 'err', 8000);
+          Settings.openJavaHelp(e.detail);
+        }
       } else {
         Toast.show('Erreur', msg.slice(0, 220), 'err', 6500);
       }
@@ -850,55 +859,56 @@ const Splash = {
       archive, cela ne demande ni installation systeme ni droit
       administrateur. Le dossier estRanges dans l'espace de
       l'application et le launcher s'en souvient.                        */
-   async function verifierJava() {
-     if (!DESKTOP) return true;
-     let info = null;
-     try { info = await X.game.javaFor(17); } catch (e) { info = null; }
-     if (info && info.found) return true;
+   async function verifierJava(besoin) {
+    const need = Number(besoin) || 17;
+    if (!DESKTOP) return 'ok';
+    let info = null;
+    try { info = await X.game.javaFor(need); } catch (e) { info = null; }
+    if (info && info.found) return 'ok';
 
-     const r = await Dialog.confirm({
-       kind: 'warn',
-       icon: 'i-alert',
-       title: 'Java est requis pour jouer',
-       html: 'Pour lancer Minecraft, il faut <b>Java 17</b> (ou Java 21 pour les versions les plus récentes).' +
-             '<br><br>Aucun Java n\'a été détecté sur cette machine. Le launcher peut télécharger ' +
-             '<b>Temurin</b> (la version libre de Java) directement dans son dossier : ' +
-             'aucune installation système, aucun droit administrateur, environ 190 Mo.' +
-             '<br><br>Tu peux aussi l\'installer toi-même plus tard, ou l\'ignorer pour l\'instant.',
-       ok: 'Installer Java',
-       cancel: 'Plus tard'
-     });
-     if (!r) return true;   // l'utilisateur prefere continuer sans
+    const r = await Dialog.confirm({
+      kind: 'warn',
+      icon: 'i-alert',
+      title: 'Java est requis pour jouer',
+      html: 'Pour lancer Minecraft, il faut <b>Java 17</b> (ou Java 21 pour les versions les plus récentes).' +
+            '<br><br>Aucun Java n\'a été détecté sur cette machine. Le launcher peut télécharger ' +
+            '<b>Temurin</b> (la version libre de Java) directement dans son dossier : ' +
+            'aucune installation système, aucun droit administrateur, environ 190 Mo.' +
+            '<br><br>Tu peux aussi l\'installer toi-même plus tard, ou l\'ignorer pour l\'instant.',
+      ok: 'Installer Java',
+      cancel: 'Plus tard'
+    });
+    if (!r) return 'refuse';   // l'utilisateur prefere continuer sans
 
-     Dialog.open({
-       title: 'Installation de Java',
-       text: 'Téléchargement de Temurin…',
-       progress: true,
-       hideCancel: true,
-       hideOk: true
-     });
-     try {
-       const res = await X.game.installJava(21);
-       Dialog.close(true);
-       Toast.show('Java installé', 'Temurin ' + res.version + ' est prêt. Le launcher l\'utilisera automatiquement.', 'ok', 6000);
-       await Home.refresh();
-       return true;
-     } catch (e) {
-       Dialog.close(false);
-       Dialog.alert({
-         kind: 'warn',
-         title: 'Installation impossible',
-         text: String((e && e.message) || e).slice(0, 220),
-         ok: 'Fermer'
-       });
-       return true;   // on ne bloque pas l'installation de Minecraft
-     }
-   }
+    Dialog.open({
+      title: 'Installation de Java',
+      text: 'Téléchargement de Temurin…',
+      progress: true,
+      hideCancel: true,
+      hideOk: true
+    });
+    try {
+      const res = await X.game.installJava(21);
+      Dialog.close(true);
+      Toast.show('Java installé', 'Temurin ' + res.version + ' est prêt. Le launcher l\'utilisera automatiquement.', 'ok', 6000);
+      await Home.refresh();
+      return 'ok';
+    } catch (e) {
+      Dialog.close(false);
+      Dialog.alert({
+        kind: 'warn',
+        title: 'Installation impossible',
+        text: String((e && e.message) || e).slice(0, 220),
+        ok: 'Fermer'
+      });
+      return 'echec';   // on ne bloque pas l'installation de Minecraft
+    }
+  }
 
   async function startInstall(id) {
     if (!DESKTOP) return api(null);
     if (STATE.token) { Toast.show('Téléchargement en cours', 'Attendez la fin ou annulez.', 'warn'); return; }
-    await verifierJava();
+    await verifierJava(17);
     const cat = await Version.loadCatalog();
     const entry = cat && cat.versions.find(v => v.id === id);
     if (!entry) { Toast.show('Version inconnue', id, 'err'); return; }
