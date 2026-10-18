@@ -115,7 +115,14 @@ if (dejaOuvert) {
 } else {
   try { fs.writeFileSync(lockPath(), String(process.pid), 'utf8'); } catch (e) {}
   process.on('exit', function () {
-    try { fs.unlinkSync(lockPath()); } catch (e) {}
+    /*  On ne supprime le lock que s'il est encore le nôtre. Sinon une
+        ancienne instance qui se termine à cet instant effacerait le
+        verrou de la nouvelle, et deux instances pourraient tourner
+        en même temps.                                                  */
+    try {
+      const pid = parseInt(fs.readFileSync(lockPath(), 'utf8').trim(), 10);
+      if (pid === process.pid) fs.unlinkSync(lockPath());
+    } catch (e) {}
   });
 }
 
