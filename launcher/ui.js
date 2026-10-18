@@ -924,6 +924,11 @@ const Splash = {
     const res = await api(x => x.game.install(entry, STATE.token));
     STATE.token = null;
     $('#dlLive').hidden = true;
+    /*  La barre de progression sous le bouton JOUER doit disparaitre
+        une fois le telechargement termine : elle restait affichee en
+        permanence, avec son dernier pourcentage, meme des heures
+        apres la fin.                                                    */
+    $('#dlStrip').hidden = true;
     if (!res || res.cancelled) { Toast.show('Téléchargement annulé', '', 'warn'); $('#dlBadge').hidden = true; return; }
     STATE.installed = res.installed;
     $('#dlBadge').hidden = true;
@@ -983,8 +988,8 @@ const Splash = {
     }
     X.on('dl:progress', d => { STATE.lastProgress = d; queueDlRender(); updateStrip(d); });
     X.on('dl:file', d => pushFileRow(d));
-    X.on('dl:start', d => { STATE.lastProgress = { version: d.version, total: Number(d.total) || 0, doneBytes: 0, files: d.files || 0, filesDone: 0, speed: 0, current: '' }; $('#dlFiles').innerHTML = ''; Downloads.render(); });
-    X.on('dl:done', d => { Downloads.render(); logGame('ok', 'Installation ' + d.version + ' terminée.'); });
+    X.on('dl:start', d => { STATE.lastProgress = { version: d.version, total: Number(d.total) || 0, doneBytes: 0, files: d.files || 0, filesDone: 0, speed: 0, current: '' }; $('#dlFiles').innerHTML = ''; const t = $('#dlPanelTitle'); if (t) t.textContent = 'Fichier en cours'; Downloads.render(); });
+    X.on('dl:done', d => { const t = $('#dlPanelTitle'); if (t) t.textContent = 'Dernière installation'; Downloads.render(); logGame('ok', 'Installation ' + d.version + ' terminée.'); });
     X.on('dl:error', d => logGame('err', d.name + ' : ' + d.message));
     X.on('dl:stage', d => logGame('', d.text));
     /*  Progression de l'installation de Java, affichee dans la fenetre
