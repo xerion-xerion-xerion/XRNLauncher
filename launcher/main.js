@@ -19,6 +19,7 @@ const files  = require('./lib/files');
 const servers = require('./lib/servers');
 const alib   = require('./lib/authlib');
 const mods   = require('./lib/mods');
+const skins  = require('./lib/skins');
 
 util.ensureDir(util.appRoot());
 
@@ -483,6 +484,15 @@ const registry = {
   drop(id) { this.map.delete(id); }
 };
 XRN.game.newToken = () => registry.create();
+
+  /*  Skin reellement equipee d'un pseudo. Le profil du jeu ne la
+      contient qu'apres un echange passe par Mojang : sans cela, un
+      profil solo ou Xbox n'aurait qu'une image generique. On interroge
+      donc le profil public du joueur, ce qui marche dans tous les cas.  */
+  XRN.skin = {
+    parNom: (nom) => skins.parNom(nom),
+    vider: () => skins.vider()
+  };
 
 function isAlive(pid) {
   if (!pid) return false;

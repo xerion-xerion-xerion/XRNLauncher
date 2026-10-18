@@ -361,8 +361,8 @@
       g.imageSmoothingEnabled = false;
       g.clearRect(0, 0, canvas.width, canvas.height);
 
-      /*  Un compte Xbox n'a pas de skin Minecraft, mais bien une
-          image de profil : on l'affiche en carre, en entier.        */
+      /*  Un compte Xbox n'a pas d'image Minecraft, mais bien une image de
+          profil : on l'affiche en carre, en entier.                    */
       if (!url && avatarUrl) {
         const av = await this.load(avatarUrl);
         if (av) {
@@ -373,18 +373,31 @@
           return;
         }
       }
-      const img = await this.load(url);
+
+      /*  Ordre de preference pour la skin :
+            1. celle connue du profil (connexion Minecraft reussie) ;
+            2. celle que le joueur porte reellement, cherchee par son
+               pseudo chez Mojang — c'est ce qui rend l'avatar juste
+               pour un profil solo ou Xbox, qui n'a pas de skin ;
+            3. Steve ou Alex, en dernier recours.                       */
+      const nom = String(letter || '');
+      let img = await this.load(url);
+      if (!img && nom && DESKTOP && X && X.skin) {
+        try {
+          const trouve = await X.skin.parNom(nom);
+          if (trouve) img = await this.load(trouve);
+        } catch (e) { /* pas de reseau : on continue */ }
+      }
       if (img) {
+        /*  La region de la tete est identique dans une skin 64x64 et
+            dans une 64x32 : le rendu 3D marche dans les deux cas.    */
+        if (img.width >= 8 && img.height >= 16) { this.face3d(g, img, canvas.width, canvas.height); return; }
         g.drawImage(img, 8, 8, 8, 8, 0, 0, 8 * px, 8 * px);
-        try { if (img.width >= 64) g.drawImage(img, 40, 8, 8, 8, 0, 0, 8 * px, 8 * px); } catch (e) {}
         return;
       }
 
-      /*  Pas de skin telechargeable (compte solo ou Xbox) : on rend la
-          tete Steve ou Alex reellement utilisee par le jeu, extraite du
-          client lui-meme. Le choix est stable pour un pseudo donne,
-          comme le fait Minecraft pour un identifiant.                   */
-      const nom = String(letter || '');
+      /*  Aucune skin connue : on rend la tete Steve ou Alex, toujours
+          presente dans le launcher, choisie comme le fait le jeu.       */
       if (nom) {
         const tete = await this.load(this.textureTete(nom));
         if (tete) { this.face3d(g, tete, canvas.width, canvas.height); return; }
