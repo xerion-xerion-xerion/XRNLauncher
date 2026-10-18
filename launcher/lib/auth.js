@@ -337,36 +337,57 @@ async function toXbox(msaAccessToken) {
   const trace = (m) => { try { cfg.trace(m); } catch (e) {} };
   const xblToken = await xblTokenFor(msaAccessToken);
 
-  const xsts = await http.postJSON(XSTS_URL, {
-    Properties: { SandboxId: 'RETAIL', UserTokens: [xblToken] },
-    RelyingParty: 'http://auth.xboxlive.com',
-    TokenType: 'JWT'
-  }, { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' });
+  /*  Le service XSTS n'accepte qu'un nombre restreint de "RelyingParty".
+      Ceux de Minecraft passent toujours, mais leur jeton n'est pas
+      valable pour le profil Xbox. On essaie donc une liste, et on
+      garde la premiere combinaison qui aboutit vraiment : un jeton
+      obtenu ET un profil lisible. Les echecs sont journalises, ce qui
+      permet de voir d'un coup d'oeil lequel fonctionne.               */
+  const RP = [
+    'http://auth.xboxlive.com',
+    'http://xboxlive.com',
+    'rp://xboxlive.com/',
+    'https://api.xboxlive.com',
+    'rp://api.xboxlive.com/',
+    'rp://api.minecraftservices.com/'
+  ];
 
-  trace('XSTS(Xbox) HTTP ' + xsts.status + ' ' + JSON.stringify(xsts.json || {}).slice(0, 200));
-  if (xsts.status !== 200) {
-    const e = (xsts.json && xsts.json.XErr) || xsts.status;
-    throw new AuthError('Xbox a refuse la session (' + e + ').', 'xsts');
+  let dernier = null;
+  for (const rp of RP) {
+    const xsts = await http.postJSON(XSTS_URL, {
+      Properties: { SandboxId: 'RETAIL', UserTokens: [xblToken] },
+      RelyingParty: rp,
+      TokenType: 'JWT'
+    }, { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' });
+
+    trace('XSTS(Xbox) ' + rp + ' -> HTTP ' + xsts.status + ' ' + JSON.stringify(xsts.json || {}).slice(0, 120));
+    if (xsts.status !== 200) { dernier = (xsts.json && xsts.json.XErr) || xsts.status; continue; }
+
+    const uhs = xsts.json.DisplayClaims.xui[0].uhs;
+    const xid = xsts.json.DisplayClaims.xui[0].xid || '';
+
+    const prof = await http.postJSON(XBL_PROFILE_URL, null, {
+      'Authorization': 'XBL3.0 x=' + uhs + ';' + xsts.json.Token,
+      'Accept': 'application/json'
+    }, 'GET');
+    trace('profil Xbox via ' + rp + ' -> HTTP ' + prof.status);
+
+    if (prof.status === 200 && prof.json && prof.json.displayName) {
+      return {
+        name: prof.json.displayName,
+        xuid: String(prof.json.id || xid || ''),
+        avatarUrl: prof.json.gamerpic || '',
+        avatarSmall: prof.json.gamepic || '',
+        relyingParty: rp
+      };
+    }
+    dernier = prof.status;
   }
-  const uhs = xsts.json.DisplayClaims.xui[0].uhs;
-  const xid = xsts.json.DisplayClaims.xui[0].xid || '';
 
-  const prof = await http.postJSON(XBL_PROFILE_URL, null, {
-    'Authorization': 'XBL3.0 x=' + uhs + ';' + xsts.json.Token,
-    'Accept': 'application/json'
-  }, 'GET');
-
-  trace('profil Xbox HTTP ' + prof.status);
-  if (prof.status !== 200 || !prof.json || !prof.json.displayName) {
-    throw new AuthError('Impossible de lire le profil Xbox (' + prof.status + ') : ' + String(prof.text || '').slice(0, 160), 'xbox');
-  }
-
-  return {
-    name: prof.json.displayName,
-    xuid: String(prof.json.id || xid || ''),
-    avatarUrl: prof.json.gamerpic || '',
-    avatarSmall: prof.json.gamepic || ''
-  };
+  throw new AuthError(
+    'Xbox a refuse la session (' + dernier + '). Aucun point d\'entree Xbox n\'a abouti.',
+    'xsts'
+  );
 }
 
 /* 4. Xbox Live -> XSTS -> Minecraft */
