@@ -374,17 +374,72 @@
         }
       }
       const img = await this.load(url);
-      if (!img) {
-        const grad = g.createLinearGradient(0, 0, canvas.width, canvas.height);
-        grad.addColorStop(0, '#7c3aed'); grad.addColorStop(1, '#c026d3');
-        g.fillStyle = grad; g.fillRect(0, 0, canvas.width, canvas.height);
-        g.fillStyle = '#fff'; g.font = 'bold ' + (px * 3) + 'px Inter, sans-serif';
-        g.textAlign = 'center'; g.textBaseline = 'middle';
-        g.fillText((letter || '?').charAt(0).toUpperCase(), canvas.width / 2, canvas.height / 2 + px * 0.4);
+      if (img) {
+        g.drawImage(img, 8, 8, 8, 8, 0, 0, 8 * px, 8 * px);
+        try { if (img.width >= 64) g.drawImage(img, 40, 8, 8, 8, 0, 0, 8 * px, 8 * px); } catch (e) {}
         return;
       }
-      g.drawImage(img, 8, 8, 8, 8, 0, 0, 8 * px, 8 * px);
-      try { if (img.width >= 64) g.drawImage(img, 40, 8, 8, 8, 0, 0, 8 * px, 8 * px); } catch (e) {}
+
+      /*  Pas de skin telechargeable (compte solo ou Xbox) : on rend la
+          tete Steve ou Alex reellement utilisee par le jeu, extraite du
+          client lui-meme. Le choix est stable pour un pseudo donne,
+          comme le fait Minecraft pour un identifiant.                   */
+      const nom = String(letter || '');
+      if (nom) {
+        const tete = await this.load(this.textureTete(nom));
+        if (tete) { this.face3d(g, tete, canvas.width, canvas.height); return; }
+      }
+
+      const grad = g.createLinearGradient(0, 0, canvas.width, canvas.height);
+      grad.addColorStop(0, '#7c3aed'); grad.addColorStop(1, '#c026d3');
+      g.fillStyle = grad; g.fillRect(0, 0, canvas.width, canvas.height);
+      g.fillStyle = '#fff'; g.font = 'bold ' + (px * 3) + 'px Inter, sans-serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText((letter || '?').charAt(0).toUpperCase(), canvas.width / 2, canvas.height / 2 + px * 0.4);
+    },
+
+    /*  Steve ou Alex ? Le jeu tranche sur un bit du pseudo, d'ou la
+        meme regle ici : le meme nom donne toujours la meme tete.      */
+    textureTete(nom) {
+      let h = 0;
+      const s = String(nom);
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+      return 'lib/assets/head-' + ((h & 1) === 0 ? 'steve' : 'alex') + '.png';
+    },
+
+    /*  Cube en perspective : dessus, face avant, flanc. Chaque face est
+        un carre 8x8 de la texture, pose par une matrice qui le deforme
+        en parallélogramme.
+
+        Deux pieges corriges ici, tous deux invisibles a l'ecran :
+        - g.setTransform REMPLACE la matrice : il annulerait le translate
+          precedent et la tete partirait dans un coin. C'est g.transform
+          qui compose avec la matrice courante ;
+        - la hauteur utile du cube vaut 2*h + d. Il faut donc remonter le
+          centre de d/2, sinon la tete deborde par le bas.            */
+    face3d(g, img, largeur, hauteur) {
+      const S = Math.min(largeur, hauteur) * 0.82;
+      const u = S / 2, h = S / 4, d = S / 2;   // demi-largeur, hauteur, profondeur
+
+      g.save();
+      g.translate(largeur / 2, hauteur / 2 - d / 2);
+
+      const face = (sx, sy, m, ombre) => {
+        g.save();
+        g.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+        if (ombre) g.globalAlpha = 0.82;
+        g.drawImage(img, sx, sy, 8, 8, 0, 0, S, S);
+        g.restore();
+      };
+
+      /*  dessus : losange, de la pointe gauche vers la pointe haute */
+      face(8, 0, [u / S, -h / S, u / S, h / S, -u, 0], 0);
+      /*  face avant, vue de trois quarts                          */
+      face(8, 8, [u / S, h / S, 0, d / S, -u, 0], 0);
+      /*  flanc gauche                                               */
+      face(16, 8, [u / S, -h / S, 0, d / S, 0, h], 1);
+
+      g.restore();
     }
   };
 /* SFX - effet sonore court de demarrage (~1,1 s), genere localement */
