@@ -344,20 +344,18 @@ async function toXbox(msaAccessToken) {
   const trace = (m) => { try { cfg.trace(m); } catch (e) {} };
   const xblToken = await xblTokenFor(msaAccessToken);
 
-  /*  XSTS n'accepte qu'un petit nombre de "RelyingParty", et son code de
-      retour ne distingue pas "RP invalide" de "session refusee" : le
-      seul moyen de le savoir est d'essayer. Celui de reference est
-      "http://xboxlive.com" — a ne pas confondre avec celui de l'appel
-      XBL, qui est "http://auth.xboxlive.com". Les autres ne servent
-      que de filet de securite.                                           */
+  /*  Le RelyingParty决定 de ce que Microsoft met dans les
+      DisplayClaims. Avec "http://xboxlive.com", la reponse contient
+      bien plus qu'avec les autres : on y trouve gtg, le VRAI
+      gamertag du compte, avec l'identifiant Xbox et le niveau d'age.
+      C'etait la que se trouvait le nom, depuis le debut.         */
   const RP = [
     'http://xboxlive.com',
     'rp://xboxlive.com/',
-    'rp://api.minecraftservices.com/',
     'http://auth.xboxlive.com'
   ];
 
-  let dernier = null, jeton = null, uhs = null, xid = '';
+  let dernier = null, jeton = null, uhs = null, xid = '', gamertag = '', age = '';
   for (const rp of RP) {
     const r = await http.postJSON(XSTS_URL, {
       Properties: { SandboxId: 'RETAIL', UserTokens: [xblToken] },
@@ -365,41 +363,52 @@ async function toXbox(msaAccessToken) {
       TokenType: 'JWT'
     }, { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' });
 
-    trace('XSTS(Xbox) ' + rp + ' -> HTTP ' + r.status);
-    if (r.status !== 200) { dernier = (r.json && r.json.XErr) || r.status; continue; }
+    if (r.status !== 200) {
+      dernier = (r.json && r.json.XErr) || r.status;
+      trace('XSTS ' + rp + ' -> HTTP ' + r.status);
+      continue;
+    }
+    const xui = (r.json.DisplayClaims && r.json.DisplayClaims.xui && r.json.DisplayClaims.xui[0]) || {};
+    trace('XSTS ' + rp + ' -> 200, claims: ' + Object.keys(xui).join(','));
     jeton = r.json.Token;
-    uhs = r.json.DisplayClaims.xui[0].uhs;
-    xid = r.json.DisplayClaims.xui[0].xid || '';
+    uhs = xui.uhs;
+    xid = xui.xid || '';
+    gamertag = xui.gtg || '';
+    age = xui.agg || '';
     break;
   }
 
   if (!jeton) {
     throw new AuthError(
-      'Xbox a refuse la session (' + dernier + '). Aucun point d\'entree Xbox n\'a abouti.',
+      'Xbox a refuse la session (' + dernier + '). Aucun point d' + AP + 'entree Xbox n' + AP + 'a abouti.',
       'xsts'
     );
   }
-  trace('XSTS ok, xid=' + xid);
+  trace('XSTS ok, xid=' + xid + ', gamertag=' + gamertag);
 
-  let nom = '', avatar = '';
-  try {
-    const prof = await http.postJSON(XBL_PROFILE_URL, null, {
-      'Authorization': 'XBL3.0 x=' + uhs + ';' + jeton,
-      'Accept': 'application/json'
-    }, 'GET');
-    trace('profil Xbox -> HTTP ' + prof.status);
-    if (prof.status === 200 && prof.json && prof.json.displayName) {
-      nom = prof.json.displayName;
-      avatar = prof.json.gamerpic || '';
-    }
-  } catch (e) { trace('profil Xbox indisponible'); }
+  if (!gamertag) {
+    trace('Aucun gamertag dans les claims : le nom devra etre demande.');
+  }
+
+  /*  L'image de profil Xbox n'est plus servie par l'API publique
+      (404). La skin, elle, se recupere par le pseudo via le profil
+      public de Mojang, sans aucune authentification.             */
+  let avatar = '';
+  if (gamertag) {
+    try {
+      const skins = require('./skins');
+      avatar = await skins.parNom(gamertag);
+      trace('skin pour ' + gamertag + ' : ' + (avatar ? 'trouvee' : 'aucune'));
+    } catch (e) { trace('skin indisponible'); }
+  }
 
   return {
-    name: nom,
+    name: gamertag,
     xuid: String(xid || ''),
     uhs: String(uhs || ''),
+    age: String(age || ''),
     avatarUrl: avatar,
-    relyingParty: RP[0]
+    relyingParty: 'http://xboxlive.com'
   };
 }
 

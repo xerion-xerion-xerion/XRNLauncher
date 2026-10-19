@@ -2,6 +2,21 @@
 build/
 dist/
 
+# Reglages personnels : le config.json de la racine est un MODELE.
+# Il ne doit jamais contenir une configuration de joueur (dossier de
+# jeu, chemin de Java, profil memorise, identifiant Azure personnel).
+config.local.json
+
+# Donnees de l'utilisateur du launcher
+profiles.json
+launcher.lock
+*.log
+
+# Mods : le mod integre est versionne dans mods-integres/, mais les
+# mods que le joueur telecharge ne doivent jamais etre commits.
+mods/
+!mods-integres/
+
 # Systeme
 Thumbs.db
 desktop.ini

@@ -5,6 +5,11 @@
 # Configuration propre a chaque machine
 config.local.json
 *.local.json
+launcher/config.local.json
+launcher/*.local.json
+
+# Scripts de travail jetables (correctifs, audits, mesures)
+_*.*
 
 # Ce que le launcher ecrit a l'execution : comptes, journaux,
 # jetons, sessions
@@ -47,6 +52,10 @@ build/
 dist/
 *.zip
 !launcher/lib/assets/*.jar
+
+# Le site est a la racine du depot : la copie de travail qui se trouve
+# dans launcher/site/ n a rien a y etre.
+launcher/site/
 
 # Systeme
 Thumbs.db

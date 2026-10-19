@@ -142,16 +142,32 @@
   /* ================================================================== *
    *  FOND ÉTOILÉ
    * ================================================================== */
-  /* Champ d'etoiles leger : fillRect (pas d'arc), 30 fps, halos supprimes */
+  /* Champ d'etoiles : legere, et surtout ARRETEE quand elle ne
+     fait rien.
+
+     Le fond etait anime en permanence : meme a 1,4 image par seconde au
+     repos, la boucle redemandait une image a 60 Hz. Or demander une
+     image suffit a woke le compositeur, qui recomposait toute la fenetre
+     a chaque fois : le processus GPU tournait en continu pour rien.
+
+     On ne redemande donc une image que lorsqu'il y en a besoin :
+       - 30 images/s tant que la souris bouge ;
+       - une image toutes les 700 ms pour le scintillement, en pause ;
+       - rien du tout quand l'onglet est masque.                      */
   (function space() {
     const cv = $('#stars');
+    if (!cv || !cv.getContext) return;
     const ctx = cv.getContext('2d', { alpha: true });
-    let W = 0, H = 0, stars = [], raf = null, last = 0;
+    let W = 0, H = 0, stars = [];
+    let raf = null;         // image en cours (reste null au repos)
+    let repos = null;       // minuterie du scintillement au repos
+    let veille = null;      // minuterie de bascule vers le repos
+    let last = 0;           // horodatage du dernier dessin
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const FRAME_MOVE = 1000 / 30;   // souris en mouvement
-    const FRAME_IDLE = 700;          // scintillement au repos (~1,4 image/s)
-    let lastMove = 0;
+    const FRAME_MOVE = 1000 / 30;
+    const FRAME_IDLE = 700;
+    const ARRET = 700;      // sans mouvement depuis, on passe en repos
 
     function resize() {
       const dpr = 1;                       // pas de HiDPI : gain de perf net
@@ -186,41 +202,61 @@
           : 'rgba(255,255,255,' + a.toFixed(3) + ')';
         ctx.fillRect(x, y, s.s, s.s);
       }
-      /*  Cette fonction ne reprogramme surtout pas elle-meme : c'est
-          la boucle "loop" qui cadence les images. draw() se replanifiait
-          aussi, si bien que le fond etoile se redessinait a 60 images
-          par seconde en permanence, en epuisant un core entier pour
-          rien : l'economie au repos ne servait a aucune fin.         */
+      last = t;
     }
 
-    function loop(t) {
-      // si la souris dort, on redessine beaucoup moins souvent
-      const idle = (t - lastMove) > 700;
-      const frame = idle ? FRAME_IDLE : FRAME_MOVE;
-      if (t - last < frame) { raf = requestAnimationFrame(loop); return; }
-      last = t; draw(t);
-      raf = requestAnimationFrame(loop);
+    /*  Mouvement : une image toutes les FRAME_MOVE, sans arret.        */
+    function anime(t) {
+      raf = requestAnimationFrame(anime);
+      if (t - last < FRAME_MOVE) return;
+      draw(t);
     }
 
-    addEventListener('resize', resize);
+    /*  Repos : plus aucun rAF. Une seule image, puis on dort.         */
+    function auRepos() {
+      raf = null;
+      const t = performance.now();
+      const restant = FRAME_IDLE - (t - last);
+      if (restant > 0) { repos = setTimeout(auRepos, restant); return; }
+      draw(t);
+      repos = setTimeout(auRepos, FRAME_IDLE);
+    }
+
+    function dormir() {
+      if (raf !== null) { cancelAnimationFrame(raf); raf = null; }
+      if (repos !== null) { clearTimeout(repos); repos = null; }
+      if (veille !== null) { clearTimeout(veille); veille = null; }
+    }
+
+    function reveiller() {
+      if (document.hidden) return;
+      if (repos !== null) { clearTimeout(repos); repos = null; }
+      if (raf === null) { last = 0; raf = requestAnimationFrame(anime); }
+      if (veille !== null) { clearTimeout(veille); veille = null; }
+      veille = setTimeout(() => {
+        veille = null;
+        if (raf !== null) { cancelAnimationFrame(raf); raf = null; }
+        auRepos();
+      }, ARRET);
+    }
+
+    addEventListener('resize', () => { resize(); if (!reduced) reveiller(); });
     addEventListener('pointermove', e => {
       mouse.tx = (e.clientX / innerWidth - 0.5) * 2;
       mouse.ty = (e.clientY / innerHeight - 0.5) * 2;
-      lastMove = performance.now();
+      if (!reduced) reveiller();
     }, { passive: true });
+
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { cancelAnimationFrame(raf); }
-      else { last = 0; raf = requestAnimationFrame(loop); }
+      if (document.hidden) dormir();
+      else if (!reduced) reveiller();
     });
+
     resize();
-    // Pause complete pendant le splash (ecran plein opaque) : aucune image dessinee
-    const splashEl = document.getElementById('splash');
-    if (splashEl) {
-      cancelAnimationFrame(raf);
-      setTimeout(() => { if (!document.hidden) { last = 0; raf = requestAnimationFrame(loop); } }, 800);
-    } else if (!reduced) {
-      raf = requestAnimationFrame(loop);
-    }
+    /*  Pendant le splash l'ecran est opaque : aucune image n'est
+        dessinee, et surtout aucune boucle ne tourne.                  */
+    if (reduced) draw(0);
+    else if (!document.getElementById('splash')) auRepos();
   })();
     /* ================================================================== *
    *  AMBIANCE — nappe sonore douce, entierement generee (aucun fichier)
@@ -653,6 +689,42 @@ const Splash = {
     if (g) { e.preventDefault(); Nav.go(g.dataset.goto); }
   });
 
+  /*  « Acces rapides » de l'accueil : ces boutons ouvraient un dossier
+      du jeu via data-open. Aucun gestionnaire n'ecoutait cet
+      attribut — les quatre boutons Saves / Mods / Captures / Logs
+      ne faisaient donc rien du tout. La delegation manquante est ici.  */
+  /*  « Acces rapides » de l'accueil : ces boutons visaient un dossier du
+      jeu via data-open. Aucun gestionnaire n'ecoutait cet attribut,
+      les quatre boutons Saves / Mods / Captures / Logs ne faisaient donc
+      rien du tout.
+
+      Ils ouvraient surtout un explorateur Windows derriere la fenetre du
+      launcher, qui fait 1440x860 : le dossier s'ouvrait, mais on ne le
+      voyait pas. On navigue donc dans l'onglet Fichiers du launcher,
+      ce qui est plus simple et surtout visible.                      */
+  const ACCES_RAPIDES = {
+    saves: 'Sauvegardes', mods: 'Mods', screenshots: 'Captures',
+    logs: 'Journaux', config: 'Configuration', resourcepacks: 'Packs de ressources'
+  };
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-open]');
+    if (!b) return;
+    e.preventDefault();
+
+    const cle = String(b.dataset.open || '').toLowerCase();
+    if (!ACCES_RAPIDES[cle]) return;
+    if (DESKTOP) X.report('UI', 'acces rapide : ' + cle);
+
+    /*  Le dossier peut ne pas encore exister : on le cree d'abord,
+        sinon la navigation afficherait une page vide.                 */
+    api(x => x.env.dossierJeu(cle)).then(chemin => {
+      Nav.go('files');
+      setTimeout(() => Files.refresh(chemin), 80);
+      Toast.show(ACCES_RAPIDES[cle], 'Dossier ouvert dans Fichiers', 'ok', 2200);
+    });
+  });
+
   /* ================================================================== *
    *  ACCES API (avec messages lisibles en mode navigateur)
    * ================================================================== */
@@ -680,6 +752,10 @@ const Splash = {
       } else {
         Toast.show('Erreur', msg.slice(0, 220), 'err', 6500);
       }
+      /*  Les erreurs ne doivent pas disparaitre dans la console : c'est
+          le seul moyen de savoir ce qui a echoue sur la machine de
+          l'utilisateur, qui n'a pas de console a ouvrir.              */
+      if (DESKTOP) X.report('UI-ERREUR', (e && e.message ? e.message : String(e)) + ' | ' + msg.slice(0, 160));
       console.error(e);
       return null;
     }
@@ -697,8 +773,7 @@ const Splash = {
       $('#accNameMini').textContent = acc ? acc.name : 'Non connecté';
       $('#accSubMini').textContent = acc
         ? (acc.type === 'offline' ? 'Profil local'
-          : acc.type === 'xbox' ? 'Xbox · hors ligne'
-          : (acc.ownsGame === false ? 'Sans jeu' : 'Microsoft · en ligne'))
+          : 'Compte Microsoft' + (acc.gamertag ? ' · ' + acc.gamertag : ''))
         : 'Cliquer pour se connecter';
       this.renderRail();
       const badge = $('#badgeAccount');
@@ -1539,7 +1614,7 @@ const Splash = {
           const ico = e.dir ? 'i-folder' : e.icon === 'zip' ? 'i-save' : e.icon === 'jar' ? 'i-cube' : e.icon === 'json' ? 'i-list' : e.icon === 'image' ? 'i-palette' : 'i-list';
           return `<div class="fs-item ${e.dir ? 'dir' : ''}">
             <span class="fs-ico">${ic(ico, 17)}</span>
-            <span class="fs-info"><span class="fs-name">${esc(e.name)}</span>
+            <span class="fs-info"><span class="fs-name" title="${esc(e.name)}">${esc(e.name)}</span>
               <span class="fs-sub">${e.dir ? 'Dossier' : human(e.size)} · ${relative(e.mtime)}</span></span>
             <span class="fs-act">
               ${e.dir ? `<button class="iconbtn" data-open-dir="${esc(e.path)}">${ic('i-folder', 15)}</button>` : ''}
@@ -1618,25 +1693,19 @@ const Login = {
         "xbox"      : on s'arrete a Xbox Live, aucune approbation
                        necessaire ; le jeu tourne en mode hors-ligne
                        sous le vrai gamertag.                          */
-    mode: 'xbox',
-    setMode(mode) {
-      this.mode = (mode === 'xbox') ? 'xbox' : 'minecraft';
-      const note = document.getElementById('msModeNote');
-      if (note) {
-        note.textContent = this.mode === 'xbox'
-          ? "Connexion Xbox directe : aucune approbation de Mojang n\'est necessaire. Le jeu se lancera en mode hors-ligne, sous ton gamertag."
-          : "Ton vrai compte Minecraft : skin, pseudo et UUID r\u00e9els. Necessite l\'approbation de Mojang.";
-      }
-      Array.from(document.querySelectorAll('#msModes .mode-btn')).forEach(b => b.classList.toggle('on', b.dataset.mode === this.mode));
-    },
+    /*  Un seul mode : le vrai compte Minecraft. Le mode Xbox
+        avait ete ajoute quand Mojang refusait l\'application ;
+        il n\'a plus lieu d\'etre, l\'application declaree est la
+        bonne. Le launcher ne joue donc plus en hors-ligne avec un
+        pseudo choisi a la main : il utilise le compte reel.      */
+    mode: 'minecraft',
+    setMode(mode) { this.mode = (mode === 'xbox') ? 'xbox' : 'minecraft'; },
 
     /* --- Microsoft : code d'appareil -------------------------------- */
     async start() {
       document.getElementById('msCard').hidden = false;
       document.getElementById('msCode').hidden = false;
-      document.getElementById('msSub').textContent = this.mode === 'xbox'
-        ? "Une fen\u00eatre va s'ouvrir dans ton navigateur. Connexion Xbox directe, sans approbation de Mojang."
-        : "Une fen\u00eatre va s'ouvrir dans ton navigateur.";
+      document.getElementById('msSub').textContent = "Une fen\u00eatre va s'ouvrir dans ton navigateur.";
       await api(x => x.auth.setMode(this.mode), { soft: true });
       const res = await api(x => x.auth.begin());
       if (!res) {
@@ -1707,29 +1776,28 @@ const Login = {
       if (this.barTimer) { clearInterval(this.barTimer); this.barTimer = null; }
     },
 
-    /*  Mojang refuse l'echange tant que l'application n'est pas
-        approuvee. Inutile de laisser l'utilisateur devant un mur :
-        on propose aussitot le mode Xbox, qui n'exige aucune
-        approbation et aboutit en quelques secondes.                      */
-    async onAuthError(e) {
+        async onAuthError(e) {
       const msg = String((e && (e.body || e.message)) || e || '');
       const refusMojang = /Invalid app registration|AppRegInfo/i.test(msg);
       if (this.mode === 'minecraft' && refusMojang) {
         this.stopPolling();
-        const go = await Dialog.confirm({
+        /*  Le mode Xbox a disparu de l'interface : le launcher ne
+            joue plus en hors-ligne avec un pseudo choisi a la main.
+            On dit donc la verite plutot que de promettre un
+            contournement qui n'existe plus.                        */
+        await Dialog.alert({
           kind: 'warn',
           icon: 'i-alert',
-          title: 'Minecraft a refuse la connexion',
-          html: "L'application n'est pas encore approuvée par Mojang : c'est ce qui bloque la connexion au compte Minecraft." +
-                '<br><br>Tu peux <b>passer en mode Xbox</b> : aucune approbation n\'est nécessaire, et le jeu se lancera en mode hors-ligne sous ton vrai gamertag.' +
-                '<br><br>On relance la connexion tout de suite.',
-          ok: 'Passer en mode Xbox',
-          cancel: 'Annuler'
+          title: 'Connexion Minecraft refusée',
+          html: "Minecraft a reconnu ton compte, mais refuse l'application du launcher :" +
+                ' elle doit être déclarée et approuvée auprès de Mojang' +
+                ' (<span class="mono">aka.ms/AppRegInfo</span>).' +
+                '<br><br>Ce n\'est pas un problème de configuration, et rien dans le launcher ne peut y remédier.' +
+                ' En attendant, le <b>mode solo</b> fonctionne complètement :' +
+                ' toutes les versions, les mods et les sauvegardes.',
+          ok: 'Compris'
         });
-        if (go) {
-          this.setMode('xbox');
-          await this.start();
-        }
+        this.reset();
         return;
       }
       Toast.show('Connexion refusée', msg.slice(0, 220), 'err', 7000);
@@ -1746,7 +1814,7 @@ const Login = {
         '<div class="acc-item">' +
         '<span class="av"><canvas data-acc-id="' + esc(a.id) + '" width="80" height="80"></canvas></span>' +
         '<span class="ai"><span class="an">' + esc(a.name) + '</span><span class="au">' + esc(a.id) + '</span></span>' +
-        '<span class="acc-type">' + (a.type === 'offline' ? 'solo' : a.type === 'xbox' ? 'Xbox' : 'Microsoft') + '</span>' +
+        '<span class="acc-type">' + (a.type === 'offline' ? 'solo' : 'Microsoft') + '</span>' +
         '<button class="btn sm" data-use-acc="' + esc(a.id) + '">Changer</button>' +
         '<button class="btn sm danger" data-rm-acc="' + esc(a.id) + '">Supprimer</button>' +
         '</div>').join('');
@@ -1779,10 +1847,11 @@ const Login = {
         '<div class="big-avatar"><canvas id="bigAvatar" width="220" height="220"></canvas></div>' +
         '<div><div class="cname">' + esc(acc.name) + '</div><div class="cuuid">' + esc(acc.id) + '</div></div>' +
         '<span class="acc-type">' + ic(acc.type === 'offline' ? 'i-shield' : 'i-check', 12) +
-        ' ' + (acc.type === 'offline' ? 'Mode solo' : acc.type === 'xbox' ? 'Compte Xbox' : 'Compte Microsoft') + '</span>' +
+        ' ' + (acc.type === 'offline' ? 'Mode solo' : 'Compte Microsoft') + '</span>' +
         '<div class="kvlist">' +
         '<div class="kv"><span>Identifiant</span><b class="mono" style="font-size:11px">' + esc(acc.id) + '</b></div>' +
-        '<div class="kv"><span>Session</span><b>' + (acc.type === 'offline' ? 'Hors ligne' : acc.type === 'xbox' ? 'Xbox · hors ligne' : 'En ligne') + '</b></div>' +
+        '<div class="kv"><span>Session</span><b>' + (acc.type === 'offline' ? 'Session locale' : 'Compte Microsoft vérifié') + '</b></div>' +
+        (acc.gamertag ? '<div class="kv"><span>Gamertag Xbox</span><b>' + esc(acc.gamertag) + '</b></div>' : '') +
         '</div>' +
         '<button class="btn primary" id="btnPlayFromAcc">Jouer maintenant</button>' +
         '</div>';
@@ -1794,7 +1863,6 @@ const Login = {
 
   const onClick = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
 
-  $$('#msModes .mode-btn').forEach(b => b.addEventListener('click', () => Login.setMode(b.dataset.mode)));
 
   onClick('pickMicrosoft', () => {
     Login.stopPolling();
@@ -1892,6 +1960,20 @@ const Login = {
       $('#setGameDir').value = cfg.gameDir;
       $('#setUserDir').value = X.env.userDataPath;
       $('#setJava').value = cfg.javaPath || '';
+      /*  On montre l identifiant de l application en cours, masque.
+          Le champ reste modifiable : sur une distribution publique,
+          chacun declare sa propre application Azure.                  */
+      const clientId = await api(x => x.auth.clientIdUsed(), { soft: true });
+      const champ = $('#setClientId');
+      if (champ) champ.value = (cfg.workingClientId || '').trim();
+      const astuce = $('#clientIdHint');
+      if (astuce && clientId) {
+        astuce.innerHTML = clientId.configure
+          ? 'Application en cours : <b class="mono">' + clientId.masque + '</b>' +
+            (clientId.personnel ? ' (la tienne)' : ' (celle du launcher)') +
+            '. Vide pour revenir a celle du launcher.'
+          : 'Aucune application configuree : colle un identifiant Azure pour pouvoir te connecter.';
+      }
       $('#setJavaArgs').value = cfg.javaArgs || '';
       $('#setGw').value = cfg.gameWidth; $('#setGh').value = cfg.gameHeight;
       $('#setGui').value = String(cfg.guiScale || 3);
@@ -1973,6 +2055,30 @@ const Login = {
   $('#setGui').addEventListener('change', e => Settings.save({ guiScale: +e.target.value }));
   $('#setJavaArgs').addEventListener('change', e => Settings.save({ javaArgs: e.target.value }));
   $('#setJava').addEventListener('change', e => Settings.save({ javaPath: e.target.value.trim() }));
+
+  /*  Identifiant d application Azure : c est ce qui permet a une
+      distribution publique de fonctionner sans imposer l application
+      de l auteur. Un identifiant erronee est refuse par Microsoft, on
+      verifie donc avant d enregistrer.                                */
+  $('#btnSaveClientId').addEventListener('click', async () => {
+    const valeur = ($('#setClientId').value || '').trim();
+    if (valeur) {
+      const verdict = await api(x => x.auth.check(valeur), { soft: true });
+      if (verdict && verdict.ok === false) {
+        Toast.show('Identifiant refuse', verdict.message || 'Microsoft ne reconnait pas cet identifiant.', 'err', 7000);
+        return;
+      }
+    }
+    try {
+      await api(x => x.auth.setClientId(valeur), { soft: true });
+      Toast.show(valeur ? 'Identifiant enregistre' : 'Identifiant efface',
+        valeur ? 'Il sera utilise des la prochaine connexion.' : 'Le launcher reprendra son identifiant par defaut.',
+        'ok', 3200);
+      Settings.refresh();
+    } catch (e) {
+      Toast.show('Erreur', String((e && e.message) || e).slice(0, 200), 'err', 6000);
+    }
+  });
   $$('[data-switch]').forEach(s => s.addEventListener('click', () => {
     s.classList.toggle('on');
     const patch = {}; patch[s.dataset.switch] = s.classList.contains('on');
@@ -2036,9 +2142,8 @@ const Login = {
         </article>`).join('');
       $$('.vid-card', grid).forEach(card => {
         const play = () => {
-          const box = card.querySelector('.vid-thumb');
-          box.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + card.dataset.vid +
-            '?autoplay=1&rel=0" title="YouTube" allow="autoplay; encrypted-media" allowfullscreen></iframe>';
+          const url = 'https://www.youtube.com/watch?v=' + card.dataset.vid;
+          if (DESKTOP) X.env.openUrl(url); else window.open(url, '_blank');
         };
         card.querySelector('.vid-poster').addEventListener('click', play);
         card.querySelector('.vid-play').addEventListener('click', play);
@@ -2057,6 +2162,99 @@ const Login = {
   $('#btnChannel').addEventListener('click', () => {
     if (DESKTOP) X.env.openUrl(VIDEOS.handle); else window.open(VIDEOS.handle, '_blank');
   });
+
+  /* ---------- RECHERCHE DE L ENTETE ---------- */
+  /*  Ce champ etait present mais sans aucun gestionnaire : on pouvait
+      taper dedans sans qu il se passe quoi que ce soit. Il cherche
+      maintenant dans les sauvegardes, les versions installees et les
+      mods, et un clic sur un resultat ouvre le bon onglet.        */
+  const Recherche = {
+    minuteur: null,
+
+    async lance(q) {
+      const pop = $('#searchPop');
+      const t = String(q || '').trim().toLowerCase();
+      if (t.length < 2) { pop.hidden = true; pop.innerHTML = ''; return; }
+
+      const groupes = [];
+      const contient = (v) => String(v || '').toLowerCase().indexOf(t) !== -1;
+
+      const saves = STATE.saves || [];
+      const dansSaves = saves.filter(s => contient(s.folder) || contient(s.name));
+      if (dansSaves.length) {
+        groupes.push({ vue: 'saves', titre: 'Sauvegardes', items: dansSaves.slice(0, 6)
+          .map(s => ({ texte: s.folder || s.name, meta: s.lastPlayed ? relative(s.lastPlayed) : '' })) });
+      }
+
+      const versions = STATE.installed || [];
+      const dansVersions = versions.filter(v => contient(v.id));
+      if (dansVersions.length) {
+        groupes.push({ vue: 'versions', titre: 'Versions', items: dansVersions.slice(0, 6)
+          .map(v => ({ texte: v.id, meta: v.type === 'snapshot' ? 'snapshot' : 'release' })) });
+      }
+
+      const etat = await api(x => x.mods.etat(), { soft: true });
+      const mods = (etat && etat.mods) || [];
+      const dansMods = mods.filter(m => contient(m.name) || contient(m.fichier));
+      if (dansMods.length) {
+        groupes.push({ vue: 'mods', titre: 'Mods', items: dansMods.slice(0, 6)
+          .map(m => ({ texte: m.name || m.fichier, meta: '.jar' })) });
+      }
+
+      if (!groupes.length) {
+        pop.innerHTML = '<div class="sr-empty">Aucun resultat pour « ' + esc(t) + '»</div>';
+        pop.hidden = false;
+        return;
+      }
+
+      let html = '';
+      for (const g of groupes) {
+        html += '<div class="sr-grp"><div class="sr-t">' + esc(g.titre) + '</div>';
+        for (const i of g.items) {
+          html += '<button class="sr-i" data-sr-vue="' + esc(g.vue) + '">' +
+                  '<span class="sr-n">' + esc(i.texte) + '</span>' +
+                  (i.meta ? '<span class="sr-m">' + esc(i.meta) + '</span>' : '') +
+                '</button>';
+        }
+        html += '</div>';
+      }
+      pop.innerHTML = html;
+      pop.hidden = false;
+    },
+
+    fermer() { const pop = $('#searchPop'); if (pop) pop.hidden = true; }
+  };
+
+  (function () {
+    const champ = $('#searchInput');
+    const pop = $('#searchPop');
+    if (!champ || !pop) return;
+
+    champ.addEventListener('input', () => {
+      clearTimeout(Recherche.minuteur);
+      Recherche.minuteur = setTimeout(() => Recherche.lance(champ.value), 180);
+    });
+
+    champ.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { champ.value = ''; Recherche.fermer(); champ.blur(); return; }
+      if (e.key === 'Enter') {
+        const premier = pop.querySelector('.sr-i');
+        if (premier) premier.click();
+      }
+    });
+
+    pop.addEventListener('click', e => {
+      const b = e.target.closest('[data-sr-vue]');
+      if (!b) return;
+      Recherche.fermer();
+      champ.value = '';
+      Nav.go(b.dataset.srVue);
+    });
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.title-search') && !e.target.closest('#searchPop')) Recherche.fermer();
+    });
+  })();
 
   /* ---------- fenetre (via window.nw, contexte DOM) ---------- */
   function nwWin() { try { return (window.nw && window.nw.Window) ? window.nw.Window.get() : null; } catch (e) { return null; } }
@@ -2078,7 +2276,12 @@ const Login = {
   addEventListener('unhandledrejection', e => { if (DESKTOP) X.report('UI-REJET', e.reason); });
   addEventListener('beforeunload', () => { if (DESKTOP) X.report('FENETRE', 'document unload'); });
   addEventListener('visibilitychange', () => { if (DESKTOP) X.report('FENETRE', 'visibilite=' + document.visibilityState); });
-  if (DESKTOP) { X.report('UI', 'interface chargee'); setInterval(() => X.report('PING', 'actif'), 15000); }
+  if (DESKTOP) {
+      X.report('UI', 'interface chargee');
+      /*  Une trace toutes les cinq minutes : assez pour savoir que
+          l application vit, sans remplir le disque de lignes. */
+      setInterval(() => X.report('PING', 'actif'), 300000);
+    }
   $('#soundBtn').addEventListener('click', () => Ambience.toggle());
 
   /* ================================================================== *
@@ -2087,7 +2290,14 @@ const Login = {
   (function clock() {
     const el = $('#clock');
     const t = () => { const d = new Date(); el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
-    t(); setInterval(t, 10000);
+    t();
+    /*  Une horloge n a rien a faire dans une fenetre masquee : elle est
+        mise en pause pour de bon, et remise a l heure juste en sortant. */
+    let minuteur = setInterval(t, 10000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { clearInterval(minuteur); minuteur = null; }
+      else if (!minuteur) { t(); minuteur = setInterval(t, 10000); }
+    });
   })();
 
   function relative(ts) {

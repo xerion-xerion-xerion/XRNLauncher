@@ -107,6 +107,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-search"/></svg>
         <input type="text" id="searchInput" placeholder="Rechercher une sauvegarde, une version, un fichier…" autocomplete="off" />
       </label>
+      <div class="search-pop" id="searchPop" hidden></div>
     </div>
 
     <div class="title-right">
@@ -371,13 +372,7 @@
           <div class="login-card" id="msCard" hidden>
             <div class="login-head">
               <div class="login-logo"><svg viewBox="0 0 64 64"><ellipse class="lg-orbit" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(-22 32 32)"/><path class="lg-x" d="M19.5 16 L44.5 48 M44.5 16 L19.5 48"/><path class="lg-star" d="M32 20.5l2.9 8.6 8.6 2.9-8.6 2.9-2.9 8.6-2.9-8.6-8.6-2.9 8.6-2.9z"/></svg></div>
-              <div><h2>Connexion Microsoft</h2><p id="msSub">Une fen&ecirc;tre va s'ouvrir dans ton navigateur.</p></div>
-            </div>
-
-            <div class="mode-pick" id="msModes">
-              <button class="mode-btn" data-mode="minecraft">Compte Minecraft</button>
-              <button class="mode-btn on" data-mode="xbox">Compte Xbox</button>
-              <span class="mode-note" id="msModeNote">Ton vrai compte Minecraft : skin, pseudo et UUID réels</span>
+              <div><h2>Connexion Microsoft</h2><p id="msSub">Ton vrai compte Minecraft : pseudo, skin et UUID r&eacute;els.</p></div>
             </div>
 
             <div id="msCode" hidden>
@@ -396,56 +391,6 @@
               <button class="btn danger sm" id="btnCancelLogin">Annuler</button>
             </div>
           </div>
-
-          <!-- Connexion par token (Authlib-Injector) -->
-          <details class="token-box" id="tokenBox">
-            <summary>
-              <span class="tk-ico">&#128273;</span>
-              J'ai un token Minecraft
-              <span class="tk-sub">connexion par Authlib-Injector</span>
-            </summary>
-            <div class="tk-body">
-              <p class="tk-lead">Le protocole Microsoft exige une application approuv&eacute;e par Mojang, ce qui est impossible avec un compte personnel.
-                Authlib-Injector passe &agrave; c&ocirc;t&eacute; : tu colles un jeton Minecraft, le jeu tourne sur ton vrai compte.</p>
-
-              <div class="tk-tabs">
-                <button class="tk-tab on" data-tk="tok">Par jeton</button>
-                <button class="tk-tab" data-tk="usr">Par identifiants</button>
-              </div>
-
-              <div class="tk-pane" data-pane="tok">
-                <label class="tk-lbl">1. Jeton Minecraft</label>
-                <input class="input mono" id="mcToken" type="password" autocomplete="off"
-                       placeholder="colle le jeton" />
-
-                <label class="tk-lbl" style="margin-top:10px">2. UUID du compte</label>
-                <input class="input mono" id="mcUuid" autocomplete="off"
-                       placeholder="32 ou 36 caract&egrave;res" />
-
-                <label class="tk-lbl" style="margin-top:10px">3. Pseudo (optionnel)</label>
-                <input class="input" id="mcName" autocomplete="off" placeholder="ton pseudo" />
-
-                <p class="tk-hint">Les trois se trouvent sur <b>minecraft.net</b> &rarr; ton profil
-                  (bouton <i>Java Edition</i> &rarr; JSON), ou dans un autre launcher.
-                  Sans UUID valide, le skin ne peut pas &ecirc;tre charg&eacute;.</p>
-                <button class="btn primary" id="btnUseToken">Se connecter</button>
-              </div>
-
-              <div class="tk-pane" data-pane="usr" hidden>
-                <label class="tk-lbl">Serveur</label>
-                <input class="input mono" id="tkApi" value="https://sessionserver.mojang.com/session/minecraft" />
-                <div class="tk-row">
-                  <input class="input" id="tkUser" placeholder="Identifiant" autocomplete="off" />
-                  <input class="input" id="tkPass" type="password" placeholder="Mot de passe" autocomplete="off" />
-                </div>
-                <p class="tk-hint">Utilise un serveur authlib-injector si tu as un nom de compte la&ccedil;.
-                  Le serveur g&egrave;re le rafraichissement : la session reste valable.</p>
-                <button class="btn primary" id="btnUseCreds">Se connecter</button>
-              </div>
-
-              <div id="tkVerdict" class="verdict" hidden></div>
-            </div>
-          </details>
 
           <!-- Profil hors-ligne : action principale -->
           <!-- Mode solo -->
@@ -530,7 +475,18 @@
           </div>
 
           <div class="panel">
-            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-volume"/></svg><h4>Audio</h4></div>
+            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"/></svg><h4>Connexion Microsoft</h4></div>
+  <div class="panel-b">
+  <div class="field">
+  <label for="setClientId">Identifiant d'application Azure</label>
+  <div class="inline"><input class="input mono" id="setClientId" placeholder="00000000-0000-0000-0000-000000000000" /><button class="btn" id="btnSaveClientId">Enregistrer</button></div>
+  <p class="hint" id="clientIdHint">Cree une application dans le portail Azure, autorise la connexion publique, puis colle son identifiant ici. Vide : utilise celle fournie avec le launcher.</p>
+  </div>
+  </div>
+  </div>
+
+  <div class="panel">
+  <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-volume"/></svg><h4>Audio</h4></div>
             <div class="panel-b">
               <div class="switch-row"><div><b style="font-size:13px">Nappe d'ambiance</b><p>Générée en direct, aucun fichier audio</p></div><div class="switch on" data-switch="ambientSound"></div></div>
               <div class="field" style="margin-top:14px"><label for="setVol">Volume : <b id="setVolVal" style="color:var(--v2)">30 %</b></label><input type="range" id="setVol" min="0" max="100" step="1" value="30" /></div>

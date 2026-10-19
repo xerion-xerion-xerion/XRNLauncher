@@ -43,7 +43,20 @@ param(
     [ValidateSet('normal','sdk')][string]$Flavor = 'normal',
     [switch]$SkipZip,
     [switch]$Run,
-    [switch]$Clean
+    [switch]$Clean,
+    # Identifiant technique de l'application. NW.js en deduit le dossier
+    # de profil : deux versions qui partagent le meme identifiant
+    # partagent le meme profil, et la seconde se ferme en annonçant
+    # "ouverture dans une session de navigateur existante". Il faut
+    # donc qu'il soit unique par version, meme si le dossier de
+    # donnees (sauvegardes, logs) reste partage.
+    [string]$AppId       = '',
+    # Identifiant d application Azure livre avec la distribution.
+    # Vide : le launcher part sans identifiant et l utilisateur declare
+    # le sien dans Parametres > Connexion Microsoft. C est le mode
+    # recommande pour une distribution publique : l application de
+    # l auteur ne doit pas etre imposee a tout le monde.
+    [string]$ClientId    = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -59,6 +72,14 @@ $RuntimeIn = Join-Path $CacheDir '_runtime_raw'
 $DistDir   = Join-Path $Root 'dist'
 $StageDir  = Join-Path $DistDir $AppName
 $PayloadIn = Join-Path $Root 'index.html'
+
+# Version de l'application : sert a rendre unique le nom technique
+# (donc le profil NW.js) de chaque installation.
+$Version = '0.0.0'
+try {
+    $manifestCourant = Get-Content -LiteralPath (Join-Path $Root 'package.json') -Raw | ConvertFrom-Json
+    if ($manifestCourant.version) { $Version = [string]$manifestCourant.version }
+} catch { }
 
 # ---------------------------------------------------------------------------
 # Helpers d'affichage
@@ -145,76 +166,18 @@ function Get-LatestNwjsVersion {
 # ---------------------------------------------------------------------------
 # Generation de l'icone (System.Drawing, aucune dependance)
 # ---------------------------------------------------------------------------
+#  L icone est dessinee par tools/new-icon.ps1, qui reprend exactement le
+#  logo de la barre de titre (SVG et couleurs de style.css). Une seule
+#  source de verite : le fichier assets/icon.png, s il existe, prime
+#  sur tout le reste.
 function New-AppIcon {
-    param([string]$OutFile, [int]$Size = 256)
-
-    Add-Type -AssemblyName System.Drawing
-
-    $bmp = New-Object System.Drawing.Bitmap($Size, $Size)
-    $g   = [System.Drawing.Graphics]::FromImage($bmp)
-    $g.SmoothingMode     = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-    $g.Clear([System.Drawing.Color]::Transparent)
-
-    # --- Fond arrondi en degrade ---
-    $corner  = [int]($Size * 0.22)
-    $d       = $corner * 2
-    $gShape  = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $gShape.AddArc(0, 0, $d, $d, 180, 90)
-    $gShape.AddArc($Size - $d, 0, $d, $d, 270, 90)
-    $gShape.AddArc($Size - $d, $Size - $d, $d, $d, 0, 90)
-    $gShape.AddArc(0, $Size - $d, $d, $d, 90, 90)
-    $gShape.CloseFigure()
-
-    $bgBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-        (New-Object System.Drawing.Point(0, 0)),
-        (New-Object System.Drawing.Point($Size, $Size)),
-        [System.Drawing.Color]::FromArgb(255, 10, 8, 30),
-        [System.Drawing.Color]::FromArgb(255, 26, 19, 68))
-    $g.FillPath($bgBrush, $gShape)
-
-    # --- Halo nebuleuse ---
-    $haloBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-        (New-Object System.Drawing.Point(0, 0)),
-        (New-Object System.Drawing.Point($Size, $Size)),
-        [System.Drawing.Color]::FromArgb(185, 34, 211, 238),
-        [System.Drawing.Color]::FromArgb(185, 139, 92, 246))
-    $g.FillEllipse($haloBrush, [int]($Size*0.17), [int]($Size*0.17), [int]($Size*0.66), [int]($Size*0.66))
-
-    # --- Anneau orbital ---
-    $ringPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(175, 126, 240, 255), [float]($Size * 0.022))
-    $g.DrawEllipse($ringPen, [int]($Size*0.06), [int]($Size*0.31), [int]($Size*0.88), [int]($Size*0.38))
-
-    # --- Monogramme X + etoile (identique au logo de l'interface) ---
-    $cx = $Size / 2.0
-    $cy = $Size / 2.0
-    $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(255, 214, 201, 255), [float]($Size * 0.052))
-    $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-    $pen.EndCap   = [System.Drawing.Drawing2D.LineCap]::Round
-    $k = $Size * 0.39
-    $g.DrawLine($pen, [float]($cx - $k), [float]($cy - $k), [float]($cx + $k), [float]($cy + $k))
-    $g.DrawLine($pen, [float]($cx + $k), [float]($cy - $k), [float]($cx - $k), [float]($cy + $k))
-
-    $pts = New-Object 'System.Drawing.PointF[]' 8
-    $outer = $Size * 0.135
-    $inner = $Size * 0.042
-    for ($n = 0; $n -lt 8; $n++) {
-        $ang = [Math]::PI / 4 * $n - [Math]::PI / 2
-        $rad = if ($n % 2 -eq 0) { $outer } else { $inner }
-        $pts[$n] = New-Object System.Drawing.PointF(
-            [float]($cx + [Math]::Cos($ang) * $rad),
-            [float]($cy + [Math]::Sin($ang) * $rad))
+    param([string]$OutFile, [int]$Size = 1024)
+    $generateur = Join-Path $Root 'tools\new-icon.ps1'
+    if (Test-Path -LiteralPath $generateur) {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $generateur -OutFile $OutFile -Size $Size | Out-Null
+        return
     }
-    $starShape = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $starShape.AddPolygon($pts)
-    $starBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 246, 240, 255))
-    $g.FillPath($starBrush, $starShape)
-    $g.Dispose()
-
-    $dir = Split-Path -Parent $OutFile
-    if ($dir -and -not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    $bmp.Save($OutFile, [System.Drawing.Imaging.ImageFormat]::Png)
-    $bmp.Dispose()
+    Warn 'tools\new-icon.ps1 introuvable : l icone generee n aura pas le bon design.'
 }
 
 # ---------------------------------------------------------------------------
@@ -322,7 +285,7 @@ function Build-App {
     }
 
     # Fichiers de l'application
-    $payload = @('index.html','style.css','ui.js','main.js','config.json')
+    $payload = @('index.html','style.css','ui.js','main.js')
     foreach ($f in $payload) {
         $src = Join-Path $Root $f
         if (Test-Path -LiteralPath $src) {
@@ -341,6 +304,70 @@ function Build-App {
         Ok "lib\ copie ($n modules)."
     }
 
+    # Sous-dossier tools/ : le renommage de la fenetre du jeu s'appuie
+    # sur un script PowerShell qui doit etre livre avec l'application.
+    # Sans lui, le jeu se lance mais garde le titre "Minecraft 1.21.11".
+    $toolsSrc = Join-Path $Root 'tools'
+    if (Test-Path -LiteralPath $toolsSrc) {
+        $toolsDst = Join-Path $StageDir 'tools'
+        New-Item -ItemType Directory -Path $toolsDst -Force | Out-Null
+        Copy-Item -Path (Join-Path $toolsSrc '*') -Destination $toolsDst -Recurse -Force
+        $k = @(Get-ChildItem -LiteralPath $toolsDst -File -Filter '*.ps1').Count
+        Ok "tools\ copie ($k scripts)."
+        if (-not (Test-Path -LiteralPath (Join-Path $toolsDst 'rename-window.ps1'))) {
+            Warn "rename-window.ps1 absent : le titre de la fenetre du jeu ne sera pas change."
+        }
+    }
+
+    # Mods integres : XRN HUD est livre avec le launcher et recopie
+    # dans le dossier mods du jeu au moment du lancement.
+    $modsSrc = Join-Path $Root 'mods-integres'
+    if (Test-Path -LiteralPath $modsSrc) {
+        $modsDst = Join-Path $StageDir 'mods-integres'
+        New-Item -ItemType Directory -Path $modsDst -Force | Out-Null
+        Copy-Item -Path (Join-Path $modsSrc '*') -Destination $modsDst -Recurse -Force
+        $j = @(Get-ChildItem -LiteralPath $modsDst -File -Filter '*.jar')
+        if ($j.Count -gt 0) {
+            Ok ("mods-integres\ copie (" + $j.Count + " mod(s) : " + (($j.Name) -join ', ') + ").")
+        } else {
+            Warn "mods-integres\ est vide : le menu du jeu sera indisponible."
+        }
+    }
+
+    # L identifiant d application Azure n est pas un secret : c est un
+    # identifiant public, present dans toute copie installee. On le
+    # prend donc dans un fichier local, ignore par git, pour que le
+    # depot public reste vierge de toute donnee personnelle.
+    if (-not $ClientId) {
+        $cfgLocale = Join-Path $Root 'config.local.json'
+        if (Test-Path -LiteralPath $cfgLocale) {
+            try {
+                $local = Get-Content -LiteralPath $cfgLocale -Raw | ConvertFrom-Json
+                if ($local.microsoftClientId) { $ClientId = [string]$local.microsoftClientId }
+            } catch { }
+        }
+    }
+
+    # Config livree : modele vierge, sans reglage personnel, et avec
+    # l identifiant d application choisi pour cette distribution.
+    $cfgSrc = Join-Path $Root 'config.json'
+    if (Test-Path -LiteralPath $cfgSrc) {
+        $cfg = Get-Content -LiteralPath $cfgSrc -Raw | ConvertFrom-Json
+        #  Aucune trace de la machine de l auteur : ni dossier de jeu,
+        #  ni chemin de Java, ni profil memorise.
+        $cfg.gameDir = ''
+        $cfg.javaPath = ''
+        $cfg.javaArgs = ''
+        $cfg | Add-Member -NotePropertyName 'lastVersion' -NotePropertyValue $null -Force
+        $cfg | Add-Member -NotePropertyName 'lastProfile' -NotePropertyValue $null -Force
+        $cfg | Add-Member -NotePropertyName 'offlineProfiles' -NotePropertyValue @() -Force
+        if ($ClientId) { $cfg | Add-Member -NotePropertyName 'microsoftClientId' -NotePropertyValue $ClientId -Force }
+        else { $cfg | Add-Member -NotePropertyName 'microsoftClientId' -NotePropertyValue '' -Force }
+        $jsonCfg = $cfg | ConvertTo-Json -Depth 8
+        [System.IO.File]::WriteAllText((Join-Path $StageDir 'config.json'), $jsonCfg, (New-Object System.Text.UTF8Encoding($false)))
+        Ok ('Config livree generee' + $(if ($ClientId) { ' (application Azure incluse).' } else { ' (aucune application incluse).' }))
+    }
+
     # Doc dans la distribution
     $readme = Join-Path $Root 'README.md'
     if (Test-Path -LiteralPath $readme) { Copy-Item -LiteralPath $readme -Destination $StageDir -Force }
@@ -349,7 +376,12 @@ function Build-App {
     $srcManifest = Join-Path $Root 'package.json'
     if (Test-Path -LiteralPath $srcManifest) {
         $m = Get-Content -LiteralPath $srcManifest -Raw | ConvertFrom-Json
-        $m.name     = ($AppName -replace '[^A-Za-z0-9_.-]', '-').ToLower()
+        #  Le "name" n est pas cosmétique : NW.js en déduit le dossier de
+        #  profil. Deux versions qui le partagent se ferment mutuellement
+        #  ("ouverture dans une session de navigateur existante"). On y
+        #  ajoute donc la version, qui est unique par installation.
+        $appId = if ($AppId) { $AppId } else { $AppName }
+        $m.name     = (($appId -replace '[^A-Za-z0-9_.-]', '-').ToLower() + '-v' + $m.version)
         $m.main     = 'index.html'       # la fenetre charge index.html (main.js est inclus via <script>)
         $m | Add-Member -NotePropertyName 'chromium-args' -NotePropertyValue '--autoplay-policy=no-user-gesture-required --disable-features=CalculateNativeWinOcclusion' -Force
         if ($m.window) {
@@ -366,7 +398,8 @@ function Build-App {
         Ok 'Manifeste package.json genere.'
     } else {
         Warn 'package.json introuvable a la racine : manifeste minimal genere.'
-        $fallback = @{ name = $AppName.ToLower(); main = 'main.js'; window = @{ icon = 'assets/icon.png'; title = $Title; frame = $false; width = 1600; height = 920 } }
+        $appId = if ($AppId) { $AppId } else { $AppName }
+        $fallback = @{ name = (($appId -replace '[^A-Za-z0-9_.-]', '-').ToLower() + '-v' + $Version); main = 'main.js'; window = @{ icon = 'assets/icon.png'; title = $Title; frame = $false; width = 1600; height = 920 } }
         [System.IO.File]::WriteAllText((Join-Path $StageDir 'package.json'), ($fallback | ConvertTo-Json -Depth 6), (New-Object System.Text.UTF8Encoding($false)))
     }
 
@@ -402,9 +435,11 @@ Aucun installation de Node.js / Electron n'est necessaire.
 Le dossier est 100 % portable : copiez-le ou deplacez-le librement.
 
 IMPORTANT - premiere utilisation
-  1. Editez config.json et renseignez microsoftClientId
-     (portail Azure > Microsoft Entra ID > Enregistrements d'applications
-      > Public client > "Autoriser les flux de client public" = Yes).
+  1. Pour te connecter, il faut un identifiant d application Azure :
+     portail Azure > Microsoft Entra ID > Enregistrements d'applications
+      > Public client > "Autoriser les flux de client public" = Yes.
+     Colle-le dans Parametres > Connexion Microsoft, ou dans le
+     config.json du dossier, cle microsoftClientId.
   2. L'application cree %APPDATA%\XRNLauncher\ (config, comptes, jetons).
   3. Le dossier du jeu par defaut est %APPDATA%\XRNLauncher\minecraft
      (modifiable dans config.json, cle gameDir).
@@ -423,10 +458,31 @@ Genere le : $(Get-Date -Format 'dd/MM/yyyy HH:mm')
     Set-Content -LiteralPath (Join-Path $StageDir 'LISEZ-MOI.txt') -Value $txt -Encoding UTF8
 }
 
+# ---------------------------------------------------------------------------
+# Version
+# ---------------------------------------------------------------------------
+# Le numero de version vit dans package.json, et nulle part ailleurs.
+# Il etait ecrit en dur ici, ce qui faisait qu'un build pouvait s'appeler
+# "3.5.0" alors que le code etait deja passe a autre chose : deux versions
+# Different alors portaient le meme nom de fichier.
+$script:VersionCache = $null
+function Get-Version {
+    if ($script:VersionCache) { return $script:VersionCache }
+    $p = Join-Path $Root 'package.json'
+    if (Test-Path -LiteralPath $p) {
+        try {
+            $j = Get-Content -LiteralPath $p -Raw | ConvertFrom-Json
+            if ($j.version) { $script:VersionCache = [string]$j.version; return $script:VersionCache }
+        } catch { /* fichier illisible : on garde la valeur par defaut */ }
+    }
+    $script:VersionCache = '0.0.0'
+    return $script:VersionCache
+}
+
 function Compress-Dist {
     Step 'Compression en .zip'
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $v = '3.5.0'
+    $v = Get-Version
     $zip = Join-Path $DistDir "$AppName-v$v-win-$Arch.zip"
     if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
@@ -455,7 +511,7 @@ try {
     Step 'Termine'
     Write-Host "       Dossier  : $StageDir" -ForegroundColor Gray
     Write-Host "       Executable : $(Join-Path $StageDir "$AppName.exe")" -ForegroundColor Gray
-    Write-Host "       Zip      : $(Join-Path $DistDir "$AppName-v3.5.0-win-$Arch.zip")" -ForegroundColor Gray
+    Write-Host "       Zip      : $(Join-Path $DistDir "$AppName-v$(Get-Version)-win-$Arch.zip")" -ForegroundColor Gray
 
     if ($Run) {
         Step 'Lancement'

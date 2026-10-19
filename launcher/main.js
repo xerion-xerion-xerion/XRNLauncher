@@ -56,21 +56,22 @@ function me() { return session.account; }
  * ------------------------------------------------------------------ */
 function lockPath() { return path.join(util.appRoot(), 'launcher.lock'); }
 
-/*  Nom de l'image d'un processus, ou null s'il n'existe plus.
-    tasklist est livre avec Windows et demarre en quelques dizaines de
-    millisecondes, contrairement a wmic qui est plus lourd.           */
+/*  Chemin complet de l'image d'un processus, ou null s'il n'existe plus.
+
+    tasklist ne donne que le NOM de l image. Or les deux versions du
+    launcher portent le meme nom (XRNLauncher.exe) : c est le chemin
+    complet qui permet de les distinguer. On l obtient via PowerShell
+    et CIM, demarre une seule fois au lancement, le cout est negate. */
 function imageDuProcess(pid) {
   try {
-    const r = spawnSync('tasklist',
-      ['/FI', 'PID eq ' + pid, '/NH', '/FO', 'CSV', '/V'],
-      { encoding: 'utf8', windowsHide: true, timeout: 8000 });
+    const r = spawnSync('powershell',
+      ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command',
+       '(Get-CimInstance Win32_Process -Filter "ProcessId=' + pid + '").ExecutablePath'],
+      { encoding: 'utf8', windowsHide: true, timeout: 12000 });
     if (!r || r.status !== 0 || !r.stdout) return null;
-    const ligne = r.stdout.split(/\r?\n/).find(function (l) {
-      return new RegExp('"' + pid + '"').test(l);
-    });
-    if (!ligne) return null;
-    const m = /^"([^"]*)","(\d+)"/.exec(ligne.trim());
-    return m ? m[1] : null;
+    const chemin = r.stdout.split(/\r?\n/).map(function (l) { return l.trim(); })
+      .find(function (l) { return l && l.toLowerCase().endsWith('.exe'); });
+    return chemin || null;
   } catch (e) { return null; }
 }
 
@@ -87,15 +88,31 @@ function instanceVivante() {
     try { process.kill(pid, 0); } catch (e) { return null; }
     const img = imageDuProcess(pid);
     if (!img) return null;
-    const attendu = path.basename(process.execPath).toLowerCase();
-    const trouve  = img.toLowerCase();
-    if (trouve !== attendu && trouve !== sansExt(attendu)) return null;
+    /*  Le chemin doit designer le meme executable, dossier compris :
+        sinon c est une autre installation, pas une autre instance. */
+    if (!memeExecutable(img)) return null;
     return pid;
   } catch (e) { return null; }
 }
 
 function sansExt(nom) {
   return nom.replace(/\.exe$/, '');
+}
+
+/*  Meme executable ? On compare le chemin complet : les deux versions
+    du launcher portent le meme nom de fichier, seul le dossier les
+    distingue.                                                        */
+function memeExecutable(image) {
+  try {
+    const ici = path.resolve(process.execPath).toLowerCase();
+    const la  = path.resolve(image).toLowerCase();
+    if (ici === la) return true;
+    /*  Chemin different : on tolere seulement une difference
+        d extension (l exe peut s appeler .exe ou pas).                */
+    return sansExt(ici) === sansExt(la);
+  } catch (e) {
+    return false;
+  }
 }
 
 /*  WScript.Shell.AppActivate accepte un identifiant de processus :
@@ -156,11 +173,41 @@ const XRN = {
       };
     },
     config() { return cfgm.load(); },
+    shippedClientId() { return cfgm.shipped().microsoftClientId || ''; },
     saveConfig(patch) { return cfgm.save(patch); },
     openFolder(p) { return util.openExplorer(p); },
     selectInExplorer(p) { return util.openExplorer(p, true); },
     openUrl(url) { return util.openUrl(url); },
     revealGameDir() { return util.openExplorer(cfgm.load().gameDir); },
+
+    /*  Resout un sous-dossier connu du dossier du jeu ("saves", "mods",
+        "screenshots", "logs"...) et renvoie son chemin.
+
+        Le nom est verifie contre une liste blanche et le resultat est
+        confine au dossier du jeu : ce bouton ne peut pas servir a ouvrir
+        un emplacement arbitraire. Le dossier est cree s'il manque encore,
+        sinon l'explorateur interne afficherait une page vide.
+
+        On ne lance plus l'Explorateur Windows : la fenetre du launcher
+        recouvre l'ecran, le dossier s'ouvrait derriere et seemed n'avoir
+        produit aucun effet. L'onglet Fichiers du launcher le montre.   */
+    dossierJeu(nom) {
+      const autorises = {
+        saves: 'saves', mods: 'mods', screenshots: 'screenshots',
+        logs: 'logs', resourcepacks: 'resourcepacks', shaderpacks: 'shaderpacks',
+        config: 'config', backups: 'backups', versions: 'versions',
+        assets: 'assets', libraries: 'libraries'
+      };
+      const sous = autorises[String(nom || '').toLowerCase()];
+      if (!sous) throw new Error('Dossier inconnu : ' + nom);
+      const base = path.resolve(cfgm.load().gameDir);
+      const cible = path.resolve(base, sous);
+      if (!cible.toLowerCase().startsWith(base.toLowerCase() + path.sep)) {
+        throw new Error('Chemin refuse');
+      }
+      util.ensureDir(cible);
+      return cible;
+    },
     human: util.human,
     userDataPath: util.appRoot()
   },
@@ -206,6 +253,37 @@ const XRN = {
 
     /* Verifie un identifiant sans lancer la connexion (bouton "Tester") */
     check(id) { return auth.checkClientId(String(id || '').trim()); },
+
+    /*  Enregistre l identifiant d application Azure de l utilisateur.
+        Vide : on oublie celui qu il avait choisi et on revient a celui
+        livre avec le launcher. C est ce qui permet a une distribution
+        publique de ne pas imposer l application de l auteur.        */
+    setClientId(id) {
+      const propre = String(id || '').trim();
+      if (!propre) return cfgm.save({ workingClientId: '' });
+      if (!/^[0-9a-fA-F-]{32,36}$/.test(propre)) {
+        const e = new Error("Cet identifiant n ressemble pas a un identifiant Azure.");
+        e.code = 'bad-client-id';
+        throw e;
+      }
+      return cfgm.save({ workingClientId: propre });
+    },
+
+    /*  Identifiant reellement utilise, masque : l affichage doit
+        montrer que l application est configuree, pas divulguer la
+        cle.                                                            */
+    clientIdUsed() {
+      const c = cfgm.load();
+      const w = String(c.workingClientId || '').trim();
+      const s = String((cfgm.shipped && cfgm.shipped().microsoftClientId) || '').trim();
+      const u = String(c.microsoftClientId || '').trim();
+      const choisi = w || (s && s !== 'YOUR_CLIENT_ID' ? s : u);
+      return {
+        configure: !!choisi,
+        masque: choisi ? choisi.slice(0, 6) + '...' : '',
+        personnel: !!w
+      };
+    },
 
     /*  "minecraft" : la chaine complete, qui exige l'approbation de
         Mojang. "xbox" : on s'arrete a Xbox Live, sans approbation.  */
@@ -402,6 +480,22 @@ const XRN = {
         }
       }
 
+      /*  XRN HUD est livre avec le launcher : on le met en place juste
+          avant de lancer, pour qu'il soit deja la des la premiere
+          partie, et qu'une amelioration du mod ne demande rien au
+          joueur. Un mod optionnel ne doit jamais bloquer le jeu. */
+      try {
+        const pose = mods.installerIntegres();
+        if (pose && pose.poses && pose.poses.length) {
+          X.report('MODS', 'poses : ' + pose.poses.join(', '));
+        }
+        /*  Un echec ici n'est pas anodin : une ancienne version restee
+            dans mods/ ferait refuser le demarrage a Fabric.           */
+        for (const e of (pose && pose.echecs) || []) {
+          X.report('MODS-ERREUR', e.nom + ' : ' + e.raison);
+        }
+      } catch (e) { }
+
       const res = await game.launch({
         version: entry.id,
         versionUrl: entry.url,
@@ -507,6 +601,7 @@ function isAlive(pid) {
     hors-ligne, sous le vrai gamertag Xbox.                            */
 async function completeLoginXbox(tokens) {
   XRN.report('AUTH', 'finalisation : echange Xbox (sans services Minecraft)');
+
   let xb;
   try {
     xb = await auth.toXbox(tokens.access_token);
@@ -515,17 +610,81 @@ async function completeLoginXbox(tokens) {
     throw e;
   }
 
-  /*  Microsoft ne distribue plus le pseudo aux applications ordinaires.
-      L'identite est pourtant bien verifiee (xuid obtenu) : c'est ce qui
-      compte pour dire a l'utilisateur que son compte est le sien. Il ne
-      reste qu'a lui demander sous quel nom jouer.                      */
-  if (!xb.name) {
-    session.login = session.login || {};
-    session.login.pendingXbox = { tokens, xb };
-    XRN.report('AUTH', 'identite Xbox verifiee (xuid=' + (xb.xuid || '?') + '), pseudo demande a l\'utilisateur');
-    return { needsName: true, xuid: xb.xuid || '' };
+  XRN.report('AUTH', 'identite Xbox : gamertag=' + (xb.name || '?') + ' xid=' + (xb.xuid || '?'));
+
+  /*  Le gamertag Xbox et le pseudo Java sont deux noms differents pour
+      un meme compte. On essaie donc les noms plausibles, en commen
+      cant par le gamertag : quand les deux coincident, comme c'est
+      souvent le cas, rien n est demande du tout. Pour les autres, on
+      passe par le nom deja connu de la machine, puis celui memorise.
+      Seul echoue, on demande — et une seule fois.                    */
+  const cfg = cfgm.load();
+  const comptes = auth.load().accounts;
+  const connus = comptes.map(a => a && a.name);
+
+  /*  Nom Java deja verifie pour ce xuid : la seule piste sure.     */
+  const verifie = comptes.find(a => a && a.type === 'xbox' &&
+      a.xuid && xb.xuid && String(a.xuid) === String(xb.xuid) && a.javaName);
+
+  const candidats = [];
+  if (verifie) candidats.push(verifie.javaName);
+  candidats.push(xb.name);
+  for (const n of connus) candidats.push(n);
+  candidats.push(cfg.gameTitle);
+  candidats.push(cfg.lastProfile);
+
+  let profil = null;
+  try { profil = await skins.resoudre(candidats); } catch (e) {}
+
+  if (profil && verifie && profil.nom !== verifie.javaName) {
+    /*  Un nom verifie existe deja pour ce compte : on ne le remplace
+        pas par un nom trouve au hasard parmi les profils publics. */
+    XRN.report('AUTH', 'nom Java conserve : ' + verifie.javaName +
+      ' (le profil ' + profil.nom + ' ne correspond pas a ce compte)');
+    return enregistrerProfil(xb, tokens,
+      { nom: verifie.javaName, uuid: profil.uuid, skin: profil.skin });
   }
-  return enregistrerXbox(xb, tokens, xb.name);
+
+  if (profil) {
+    XRN.report('AUTH', 'profil Java trouve : ' + profil.nom + ' (uuid ' + profil.uuid + ')');
+    return enregistrerProfil(xb, tokens, profil);
+  }
+
+  XRN.report('AUTH', 'aucun profil Java pour ' + candidats.filter(Boolean).join(' / '));
+  session.login = session.login || {};
+  session.login.pendingXbox = { tokens, xb };
+  return { needsName: true, xuid: xb.xuid || '', gamertag: xb.name || '' };
+}
+
+/*  Le profil est connu : on enregistre le vrai nom, le vrai UUID et la
+    vraie skin. L'UUID transmis au jeu sera recalcule par lui en mode
+    hors-ligne (toujours derive du nom), mais il sert a l'affichage et
+    a la reconnaissance du profil.                                      */
+function enregistrerProfil(xb, tokens, profil) {
+  const account = {
+    type: 'xbox',
+    name: profil.nom,
+    id: profil.uuid,
+    uuid: profil.uuid,
+    skinUrl: profil.skin || '',
+    avatarUrl: profil.skin || '',
+    capeUrl: '',
+    userType: 'legacy',
+    ownsGame: false,
+    xuid: xb.xuid || '',
+    gamertag: xb.name || '',
+    /*  Nom Java confirme par Mojang pour ce xuid : c est la seule
+        valeur qui designe avec certitude le joueur.              */
+    javaName: profil.nom,
+    refreshToken: tokens.refresh_token || null,
+    savedAt: Date.now()
+  };
+  updateAccount(account);
+  session.account = account;
+  session.login = null;
+  cfgm.save({ lastProfile: account.name });
+  bus.emit('auth:connected', auth.publicAccount(account));
+  return { account: auth.publicAccount(account), ownsGame: false, mode: 'xbox' };
 }
 
 /*  Construit le profil a partir du nom choisi. L'UUID est derive
@@ -573,6 +732,17 @@ async function completeLogin(tokens) {
   try {
     mcToken = await auth.toMinecraft(tokens.access_token);
   } catch (e) {
+    /*  Mojang refuse tant que l'application n'est pas declaree. Ce n'est
+        pas un echec de l'utilisateur : on bascule donc tout seul sur la
+        voie Xbox, qui verifie l'identite du compte et retrouve le vrai
+        profil Java ainsi que la vraie skin. Le jour ou Mojang acceptera
+        l'application, ce meme bouton donnera le jeton Minecraft complet
+        et les serveurs en ligne, sans rien changer dans l'interface.   */
+    const msg = String((e && (e.body || e.message)) || e || '');
+    if (/Invalid app registration|AppRegInfo/i.test(msg)) {
+      XRN.report('AUTH', 'Mojang refuse l application : repli sur la voie Xbox, sans rien demander');
+      return completeLoginXbox(tokens);
+    }
     XRN.report('AUTH', 'ECHEC XBL/XSTS : ' + ((e && (e.code + ' / ' + e.message)) || String(e)).slice(0, 300));
     throw e;
   }
@@ -742,6 +912,62 @@ async function resumeSession() {
       return pub;
     } finally {
       session.resuming = false;
+    }
+  }
+
+  /*  Compte connecte par Microsoft mais sans jeton Minecraft : il n'y a
+      rien a rafraichir du cote Mojang, puisque c'est justement ce qui
+      manque. Le code general appelait pourtant toMinecraft, qui echoue
+      toujours — le compte etait donc deconnecte a chaque redemarrage,
+      alors que son identite est parfaitement connue.
+
+      On restaure donc le compte tout de suite, puis on reverifie en
+      arriere-plan : gamertag, pseudo et skin restent disponibles sans
+      authentification Mojang. Si le reseau manque, on garde la session
+      telle quelle : une identite deja obtenue ne disparait pas parce
+      qu'un serveur a repondu a cote.                               */
+  if (acc.type === 'xbox') {
+    session.resuming = true;
+    bus.emit('auth:resuming', { name: acc.name });
+    try {
+      const t = await auth.refresh(acc.refreshToken);
+      const xb = await auth.toXbox(t.access_token);
+
+      /*  Le nom deja verifie passe avant le gamertag : c est la seule
+          piste qui designe avec certitude ce joueur.                */
+      const candidats = [];
+      if (acc.javaName) candidats.push(acc.javaName);
+      candidats.push(xb.name, acc.name);
+      const profil = await skins.resoudre(candidats);
+
+      /*  Un nom verifie ne se remplace pas par un nom trouve au hasard
+          parmi les profils publics de Mojang.                       */
+      const nom = acc.javaName || (profil ? profil.nom : acc.name);
+      const uuid = acc.javaName ? acc.uuid : (profil ? profil.uuid : acc.id);
+      const skin = acc.javaName ? acc.skinUrl : (profil && profil.skin ? profil.skin : acc.skinUrl);
+
+      const fresh = Object.assign({}, acc, {
+        gamertag: xb.name || acc.gamertag || '',
+        xuid: xb.xuid || acc.xuid || '',
+        name: nom,
+        id: uuid,
+        uuid: uuid,
+        skinUrl: skin,
+        avatarUrl: skin,
+        refreshToken: t.refresh_token || acc.refreshToken,
+        savedAt: Date.now()
+      });
+      updateAccount(fresh);
+      session.account = fresh;
+      session.resuming = false;
+      const pub = auth.publicAccount(fresh);
+      bus.emit('auth:connected', pub);
+      return pub;
+    } catch (e) {
+      session.resuming = false;
+      const pub = auth.publicAccount(acc);
+      bus.emit('auth:connected', pub);
+      return pub;
     }
   }
 

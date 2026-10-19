@@ -6,6 +6,7 @@
     de mods installe, Minecraft ignore completement son contenu. D'ou la
     partie installateur, qui rend la zone de depot reellement utile.     */
 
+const crypto = require('crypto');
 const fs   = require('fs');
 const os   = require('os');
 const path = require('path');
@@ -275,6 +276,102 @@ async function installNeoForge(mcVersion, bus) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Mods integres au client                                            */
+/* ------------------------------------------------------------------ */
+/*  XRN HUD est livre avec le lanceur, pas telecharge par le joueur.
+    On le recopie dans le dossier mods quand il en est absent ou que
+    sa version a change. Le joueur n'a donc rien a installer : des que
+    une version de Minecraft est presente, le menu est la.
+
+    Le dossier d'origine est en lecture seule pour le joueur : il ne
+    peut pas le modifier par accident, et supprimer le mod depuis
+    l'onglet Mods reste possible si quelqu'un le souhaite vraiment.  */
+function dossierIntegres() {
+  return path.join(__dirname, '..', 'mods-integres');
+}
+
+function nomsIntegres() {
+  const dir = dossierIntegres();
+  if (!util.exists(dir)) return [];
+  try {
+    return util.listDir(dir, { withSize: true })
+      .filter(e => !e.dir && /\.jar$/i.test(e.name))
+      .map(e => e.name);
+  } catch (e) {
+    return [];
+  }
+}
+
+/*  On compare le contenu, pas la taille : deux versions d'un mod
+    peuvent peser exactement le meme nombre d'octets, et le joueur
+    resterait bloque sur une vieille version sans jamais le savoir.
+    Le jar fait quelques dizaines de kilo-octets, le lire est gratuit.  */
+function empreinte(chemin) {
+  try {
+    return crypto.createHash('sha1').update(fs.readFileSync(chemin)).digest('hex');
+  } catch (e) {
+    return null;
+  }
+}
+
+/*  Renvoie ce qui a ete pose et ce qui n'a pas pu l'etre.
+    Les echecs ne sont jamais silencieux : deux versions du meme mod dans
+    le dossier, et Fabric refuse de demarrer. Si une ancienne version est
+    verrouillee par un jeu encore lance, il faut le dire.              */
+function installerIntegres() {
+  const dir = modsDir();
+  const source = dossierIntegres();
+  util.ensureDir(dir);
+  const poses = [];
+  const echecs = [];
+
+  for (const nom of nomsIntegres()) {
+    const de = path.join(source, nom);
+    const vers = path.join(dir, nom);
+    try {
+      if (util.exists(vers) && empreinte(vers) === empreinte(de)) continue;
+      fs.copyFileSync(de, vers);
+      poses.push(nom);
+    } catch (e) {
+      echecs.push({ nom: nom, raison: e.message });
+    }
+  }
+
+  /*  Si une ancienne version du meme mod traine encore dans le dossier,
+      Fabric la chargerait elle aussi et refuserait de demarrer : deux
+      mods du meme identifiant, c'est un plantage immediat. On retire
+      donc ce que le launcher ne livre plus. Les mods du joueur, eux,
+      ne sont jamais touches.                                        */
+  const livrees = new Set(nomsIntegres());
+  for (const nom of nomsJars(dir)) {
+    if (livrees.has(nom)) continue;
+    if (!/^xrn-hud-.*\.jar$/i.test(nom)) continue;
+    try {
+      fs.unlinkSync(path.join(dir, nom));
+      poses.push('~ ' + nom);
+    } catch (e) {
+      echecs.push({
+        nom: '~ ' + nom,
+        raison: 'ancienne version impossible a supprimer (' + e.code +
+                ') : ferme le jeu en cours avant de relancer, sinon ' +
+                'Fabric refusera de demarrer avec deux fois le meme mod.'
+      });
+    }
+  }
+  return { poses: poses, echecs: echecs };
+}
+
+function nomsJars(dir) {
+  try {
+    return util.listDir(dir, { withSize: true })
+      .filter(e => !e.dir && /\.jar$/i.test(e.name))
+      .map(e => e.name);
+  } catch (e) {
+    return [];
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Etat pour l'interface                                                */
 /* ------------------------------------------------------------------ */
 function etat() {
@@ -290,5 +387,6 @@ function etat() {
 module.exports = {
   modsDir, list, add, remove, openFolder, etat,
   loadersDe, profilsMod, fabricProfil, fabricInstallateur, fabricLoaderStable,
-  neoforgePour, installFabric, installNeoForge
+  neoforgePour, installFabric, installNeoForge,
+  dossierIntegres, nomsIntegres, installerIntegres
 };

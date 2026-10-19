@@ -1,8 +1,9 @@
 {
-  "microsoftClientId": "<identifiant de votre application Azure>",
+  "microsoftClientId": "",
   "sessionMaxDays": 14,
   "gameDir": "",
   "javaPath": "",
+  "javaArgs": "",
   "ramGB": 4,
   "windowWidth": 1600,
   "windowHeight": 920,

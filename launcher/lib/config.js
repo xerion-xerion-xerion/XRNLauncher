@@ -67,10 +67,25 @@ function save(patch) {
   return cfg;
 }
 
-/*  L'identifiant reellement utilise : celui de la config, sinon le repli. */
+/*  L'identifiant d'application est l'IDENTITE de l'application, pas une
+    preference de l'utilisateur : il doit venir du fichier livre, qui est
+    mis a jour a chaque version.
+
+    Avant, la config utilisateur passait en dernier et l'ecrasait. Une
+    mise a jour de l'identifiant n'atteignait donc jamais les
+    installations existantes, qui continuaient d'envoyer l'ancien
+    identifiant a Microsoft — souvent un identifiant supprime. D'ou des
+    echecs de connexion sans raison apparente apres une mise a jour.
+
+    Seul workingClientId prime : il est enregistre apres une connexion
+    reussie, c'est donc un choix explicite de l'utilisateur.           */
 function clientId() {
-  const id = (load().workingClientId || load().microsoftClientId || '').trim();
-  return (id && id !== 'YOUR_CLIENT_ID') ? id : '';
+  const w = String(load().workingClientId || '').trim();
+  if (w) return w;
+  const s = String((shipped().microsoftClientId) || '').trim();
+  if (s && s !== 'YOUR_CLIENT_ID') return s;
+  const u = String(load().microsoftClientId || '').trim();
+  return (u && u !== 'YOUR_CLIENT_ID') ? u : '';
 }
 
 function sessionMaxDays() {
@@ -93,4 +108,4 @@ function trace(msg) {
 }
 
 module.exports = {
-  trace, load, save, clientId, hasClientId, sessionMaxDays, defaults, userFile };
+  trace, load, save, clientId, hasClientId, sessionMaxDays, defaults, userFile, shipped };

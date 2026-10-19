@@ -1016,11 +1016,79 @@ function buildArgs(plan, opts) {
     jeu.push('--session', opts.session || sessionLegacy(opts));
   }
 
+  /*  Mojang impose le titre de la fenetre dans les arguments de chaque
+      version ("--title", "Minecraft 1.21.11"). On le remplace par le
+      nom du launcher : c'est ce qu'on voit dans la barre des taches,
+      dans le gestionnaire de fenetres et sur le menu Alt+Tab.
+
+      Toutes les occurrences sont remplacees, pas seulement la premiere :
+      certaines versions en declarent deux, et comme le jeu garde la
+      derniere, une seule corrigee laisserait "Minecraft" a l'ecran.
+      Les versions anciennes, qui ne declarent aucun argument, n'en
+      reçoivent aucun non plus : on l'ajoute dans ce cas.             */
+  const titre = cfg.gameTitle || 'XRNLauncher';
+  /*  Aucun argument ne permet de changer le titre de la fenetre : sur
+      Minecraft 1.13 et plus recent, "--title" n'existe meme pas dans
+      les arguments de la version. Le jeu construit son titre lui-meme
+      a partir de son numero de version. Le renommage se fait donc au
+      niveau Windows, juste apres le lancement (voir renommerFenetre).
+
+      On ne laisse pas trainer un "--title" inutile dans la commande :
+      le jeu l'ignorerait, et un analyseur strict pourrait s'en formaliser. */
+
   /*  La classe principale se place entre les options de la JVM et les
       arguments du jeu. Les versions modernes la fournissent dans leur
       JSON : c'est ce qui permet a un profil Fabric de lancer Knot
       plutot que le client vanilla.                                      */
-  return { jvm: jvm, mainClass: mainClass, jeu: jeu };
+  return { jvm: jvm, mainClass: mainClass, jeu: jeu, titre: cfg.gameTitle || 'XRNLauncher' };
+}
+
+/*  Minecraft cree sa fenetre quelques secondes apres le lancement : on
+    attend de la trouver, puis on la renomme. Le titre est reapplique
+    pendant quelques instants, car le jeu peut le redefinir ensuite.
+
+    Le chemin du script est cherche plusieurs fois : dans NW.js,
+    __dirname ne designe pas toujours le dossier du module, et un chemin
+    faux ne produirait aucun message. La sortie du PowerShell est
+    capturee dans un fichier, sans quoi un echec resterait muet.      */
+function renommerFenetre(pid, titre, bus) {
+  const dire = (m) => { try { if (bus) bus.emit('game:log', { stream: 'out', line: m }); } catch (e) {} };
+
+  const noms = [
+    path.join(__dirname, '..', 'tools', 'rename-window.ps1'),
+    path.join(__dirname, 'tools', 'rename-window.ps1'),
+    path.join(process.cwd(), 'tools', 'rename-window.ps1'),
+    path.join(process.execPath, '..', 'tools', 'rename-window.ps1')
+  ];
+  let script = '';
+  for (const n of noms) {
+    try { if (util.exists(n)) { script = n; break; } } catch (e) {}
+  }
+  if (!script) {
+    dire('[titre] script de renommage introuvable (' + noms.length + ' chemins testes)');
+    return;
+  }
+
+  let fd = null;
+  const journal = path.join(util.appRoot(), 'logs', 'game-title.log');
+  try {
+    fs.mkdirSync(path.dirname(journal), { recursive: true });
+    fd = fs.openSync(journal, 'a');
+  } catch (e) { fd = null; }
+
+  try {
+    const p = spawn('powershell', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+      '-File', script, '-Cible', String(pid), '-Title', titre, '-Seconds', '45'], {
+      windowsHide: true, detached: true,
+      stdio: fd === null ? 'ignore' : ['ignore', fd, fd]
+    });
+    p.unref();
+    dire('[titre] renommage demande (pid ' + pid + ')');
+  } catch (e) {
+    dire('[titre] renommage impossible : ' + String(e.message || e).slice(0, 120));
+  } finally {
+    if (fd !== null) { try { fs.closeSync(fd); } catch (e) {} }
+  }
 }
 
 async function launch(opts, bus) {
@@ -1061,6 +1129,8 @@ async function launch(opts, bus) {
   child.stderr.on('data', d => bus.emit('game:log', { stream: 'err', line: clean(String(d)) }));
   child.on('error', e => bus.emit('game:exit', { code: -1, error: e.message }));
   child.on('exit', code => bus.emit('game:exit', { code }));
+
+  renommerFenetre(child.pid, built.titre, bus);
 
   return { pid: child.pid, exe, version: plan.id, javaMajor: java.major };
 }

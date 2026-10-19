@@ -68,4 +68,48 @@ async function parNom(nom) {
     de skin cote joueur.                                                 */
 function vider() { cache.clear(); }
 
-module.exports = { parNom, vider };
+/*  Un profil Java complet : pseudo, UUID et skin. Le gamertag Xbox et
+    le pseudo Java sont deux noms differents pour un meme compte (celui
+    d'un est souvent la version Bedrock de l'autre) : il faut donc
+    tester les noms possibles plutot que d'en supposer un.           */
+async function profilJava(nom) {
+  const cle = String(nom || '').trim();
+  if (!cle) return null;
+
+  try {
+    const p = await http.getJSON(URL_NOM + encodeURIComponent(cle));
+    if (!p || !p.id) return null;
+
+    let url = '';
+    const s = await http.getJSON(URL_PROFIL + String(p.id).replace(/-/g, ''));
+    const tex = (s && s.properties || []).find(x => x.name === 'textures');
+    if (tex && tex.value) {
+      const d = JSON.parse(Buffer.from(tex.value, 'base64').toString('utf8'));
+      const t = d && d.textures && d.textures.SKIN && d.textures.SKIN.url;
+      if (t) {
+        url = String(t);
+        if (url.slice(0, 7) === 'http://') url = url.replace(/^http:\/\//, 'https://');
+      }
+    }
+    return { nom: p.name || cle, uuid: String(p.id), skin: url };
+  } catch (e) {
+    return null;
+  }
+}
+
+/*  Premier nom, parmi ceux proposes, qui correspond a un vrai profil
+    Java. On commence par le gamertag : pour beaucoup de comptes les
+    deux noms coincident, et rien n est alors demande a l'utilisateur. */
+async function resoudre(noms) {
+  const vus = [];
+  for (const n of (noms || [])) {
+    const cle = String(n || '').trim();
+    if (!cle || vus.some(v => v.toLowerCase() === cle.toLowerCase())) continue;
+    vus.push(cle);
+    const p = await profilJava(cle);
+    if (p) return p;
+  }
+  return null;
+}
+
+module.exports = { parNom, profilJava, resoudre, vider };
