@@ -36,8 +36,8 @@ const TENANTS = ['consumers', 'common', 'organizations'];
     publique de Microsoft : l'utilisateur n'a alors rien a configurer.  */
 const cfgmod = require('./config');
 
-async function deviceCodeFor(id, tenant) {
-  const { status, json, text } = await postDeviceCode(tenant, id);
+async function deviceCodeFor(id, tenant, portee) {
+  const { status, json, text } = await postDeviceCode(tenant, id, portee);
   if (status === 200 && json && json.device_code) return json;
   return { __ko: true, status, msg: (json && (json.error_description || json.error)) || text || '' };
 }
@@ -51,7 +51,16 @@ function base(tenant) { return 'https://login.microsoftonline.com/' + tenant + '
     via l'endpoint /consumers. Sur un tenant precis, Microsoft refuse
     le scope (AADSTS650053). Donc : /consumers en premier, toujours.  */
 function tenantsList() { return TENANTS; }
+/*  La portee de service de Minecraft est ce qui permet l'echange
+    Xbox -> Minecraft, et donc de jouer avec son VRAI compte. Elle
+    exige que Microsoft ait enregistre l'application pour ce service,
+    ce qui peut prendre des heures apres une approbation.
+
+    On tente donc la portee complete, et on revient a la portee simple
+    si elle n'est pas encore enregistree : la connexion doit toujours
+    fonctionner, meme si l'echange Minecraft attendra.                */
 const OAUTH_SCOPE  = 'XboxLive.signin offline_access service::user.auth.xboxlive.com::MBI_SSL';
+const OAUTH_SIMPLE = 'XboxLive.signin offline_access';
 const XBL_URL      = 'https://user.auth.xboxlive.com/user/authenticate';
 const XSTS_URL     = 'https://xsts.auth.xboxlive.com/xsts/authorize';
 const MC_LOGIN_URL = 'https://api.minecraftservices.com/authentication/login_with_xbox';
@@ -150,10 +159,10 @@ class AuthError extends Error {
  * 1. Device Code : l'utilisateur va sur microsoft.com/link et saisit
  *    un code. Aucun secret client requis (flow "public client").
  * ------------------------------------------------------------- */
-async function postDeviceCode(tenant, id) {
+async function postDeviceCode(tenant, id, portee) {
   return http.postForm(base(tenant) + '/devicecode', {
     client_id: id,
-    scope: OAUTH_SCOPE
+    scope: (portee || OAUTH_SCOPE)
   });
 }
 
@@ -166,7 +175,7 @@ async function checkClientId(clientId) {
 
   const essais = [];
   for (const tenant of tenantsList()) {
-    const { status, json, text } = await postDeviceCode(tenant, id);
+    const { status, json, text } = await postDeviceCode(tenant, id, portee);
     if (status === 200 && json && json.device_code)
       return { ok: true, level: 'ok', label: 'Identifiant valide',
                detail: "Microsoft accepte cet identifiant. Utilise « Se connecter » pour obtenir ton code.",
@@ -193,6 +202,23 @@ async function checkClientId(clientId) {
 }
 
 async function startDeviceCode(clientId) {
+    /*  On tente la portee de service de Minecraft. Si l'application
+        n'est pas encore enregistree pour ce service, on revient a la
+        portee simple : mieux vaut se connecter sans jeton Minecraft
+        que pas se connecter du tout.                                   */
+    try {
+      return await demarrerDeviceCode(clientId, OAUTH_SCOPE);
+    } catch (e) {
+      const msg = String((e && e.message) || '');
+      if (/9002346|pas encore enregistre|not.*registered/i.test(msg)) {
+        try { cfg.trace('portee de service pas encore enregistree, repli sur la portee simple'); } catch (x) { }
+        return await demarrerDeviceCode(clientId, OAUTH_SIMPLE);
+      }
+      throw e;
+    }
+  }
+
+  async function demarrerDeviceCode(clientId, portee) {
   // Garde-fou : sans identifiant valide, Microsoft renvoie AADSTS900144
   const id = String(clientId || '').trim();
   if (id.length < 20) {
@@ -207,7 +233,7 @@ async function startDeviceCode(clientId) {
   /*  Microsoft met parfois plusieurs minutes a enregistrer une nouvelle
       application, et davantage apres un changement de type de comptes.
       Plutot que d'echouer, on retente quelques fois sur une minute.    */
-  const ATTENTES = [0, 8000, 15000, 25000];
+  const ATTENTES = [0, 8000, 15000, 25000, 45000, 90000, 180000];
 
 
   for (let essai = 0; essai < ATTENTES.length; essai++) {
@@ -216,7 +242,7 @@ async function startDeviceCode(clientId) {
     messages.length = 0;
 
     for (const tenant of tenantsList()) {
-      const json = await deviceCodeFor(id, tenant);
+      const json = await deviceCodeFor(id, tenant, portee);
       if (json.__ko) {
         dernier = { status: json.status, msg: json.msg };
         messages.push(String(json.msg));
@@ -286,7 +312,10 @@ async function refresh(refreshToken) {
       client_id: clientId,
       refresh_token: refreshToken,
       grant_type: 'refresh_token',
-      scope: OAUTH_SCOPE
+      /*  Un jeton rafraichi ne change pas de portees : en demander
+          une nouvelle ferait echouer le rafraichissement sur une
+          application pas encore enregistree pour le service.        */
+      scope: OAUTH_SIMPLE
     });
     if (status === 200 && json && json.access_token) return json;
     dernier = { status, msg: (json && (json.error_description || json.error)) || text || '' };

@@ -213,7 +213,7 @@ const XRN = {
       try {
         if (!url) return { ok: false, detail: 'aucune adresse' };
         const zip = path.join(require('os').tmpdir(), 'xrn-update-' + Date.now() + '.zip');
-        X.report('MAJ', 'telechargement de ' + url);
+        XRN.report('MAJ', 'telechargement de ' + url);
         await http.download(url, zip);
         const dossierApp = path.dirname(process.execPath);
         const script = path.join(dossierApp, 'tools', 'appliquer-maj.ps1');
@@ -226,11 +226,11 @@ const XRN = {
           '-Exe', path.join(dossierApp, 'XRNLauncher.exe')];
         const child = spawn('powershell', args, { detached: true, stdio: 'ignore', windowsHide: true });
         child.unref();
-        X.report('MAJ', 'mise a jour programmee, pid=' + child.pid);
+        XRN.report('MAJ', 'mise a jour programmee, pid=' + child.pid);
         setTimeout(() => { try { process.exit(0); } catch (e) { } }, 900);
         return { ok: true };
       } catch (e) {
-        X.report('MAJ-ERREUR', String(e && e.message ? e.message : e));
+        XRN.report('MAJ-ERREUR', String(e && e.message ? e.message : e));
         return { ok: false, detail: String(e && e.message ? e.message : e) };
       }
     },
@@ -573,7 +573,7 @@ const XRN = {
             userType = 'msla';
           }
         } catch (e) {
-          X.report('AUTH', 'jeton Minecraft indisponible : ' + (e && e.message ? e.message : e));
+          XRN.report('AUTH', 'jeton Minecraft indisponible : ' + (e && e.message ? e.message : e));
           accessToken = acc.mcToken || '0';
         }
       }
@@ -596,12 +596,12 @@ const XRN = {
       try {
         const pose = mods.installerIntegres();
         if (pose && pose.poses && pose.poses.length) {
-          X.report('MODS', 'poses : ' + pose.poses.join(', '));
+          XRN.report('MODS', 'poses : ' + pose.poses.join(', '));
         }
         /*  Un echec ici n'est pas anodin : une ancienne version restee
             dans mods/ ferait refuser le demarrage a Fabric.           */
         for (const e of (pose && pose.echecs) || []) {
-          X.report('MODS-ERREUR', e.nom + ' : ' + e.raison);
+          XRN.report('MODS-ERREUR', e.nom + ' : ' + e.raison);
         }
       } catch (e) { }
 
