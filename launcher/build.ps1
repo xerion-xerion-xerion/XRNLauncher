@@ -386,7 +386,10 @@ function Build-App {
         else { $cfg | Add-Member -NotePropertyName 'microsoftClientId' -NotePropertyValue '' -Force }
         $jsonCfg = $cfg | ConvertTo-Json -Depth 8
         [System.IO.File]::WriteAllText((Join-Path $StageDir 'config.json'), $jsonCfg, (New-Object System.Text.UTF8Encoding($false)))
-        Ok ('Config livree generee' + $(if ($ClientId) { ' (application Azure incluse).' } else { ' (aucune application incluse).' }))
+        if (-not $ClientId) {
+        Warn 'AUCUNE APPLICATION AZURE DANS LA CONFIG LIVREE : les joueurs ne pourront pas se connecter a Microsoft. Renseigne microsoftClientId dans config.local.json, ou passe -ClientId au build.'
+    }
+    Ok ('Config livree generee' + $(if ($ClientId) { ' (application Azure incluse).' } else { ' (aucune application incluse).' }))
     }
 
     # Doc dans la distribution
