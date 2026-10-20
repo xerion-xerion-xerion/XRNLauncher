@@ -568,6 +568,22 @@
 </div>
 
 <!-- ==================== TOASTS ==================== -->
+<!--  Grand voile de mise a jour : il reste tant que la mise a jour
+      n est pas finie, et montre la progression et le temps ecoule. -->
+<div class="maj-voile" id="majVoile" hidden>
+  <div class="maj-boite">
+    <span class="maj-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M7 13l5 5 5-5"/><path d="M4 21h16"/></svg></span>
+    <h2 id="majTitre">Mise a jour</h2>
+    <p id="majTexte">Telechargement de la nouvelle version...</p>
+    <div class="maj-barre"><i id="majBarre"></i></div>
+    <div class="maj-infos">
+      <span id="majDetail">0 Mo sur 0 Mo</span>
+      <span id="majTemps">0 s</span>
+    </div>
+    <button class="btn danger" id="majAnnuler">Annuler</button>
+  </div>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <!-- ==================== FENETRE MODALE ==================== -->

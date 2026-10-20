@@ -189,6 +189,7 @@
         bouton.onclick = async () => {
           bouton.disabled = true;
           bouton.textContent = 'Telechargement...';
+          maj.ouvrir(r.version);
           try {
             const r2 = await api(x => x.env.appliquerMiseAJour(r.telecharger || r.url));
             if (r2 && r2.ok) {
@@ -219,7 +220,8 @@
               ne decompresse rien. Un autre lien s ouvre simplement.   */
           const archive = r.telecharger || (/\.zip(\?|$)/i.test(r.lien || '') ? r.lien : '');
           if (archive) {
-            api(x => x.env.appliquerMiseAJour(archive))
+            maj.ouvrir(r.version);
+            api(x => x.env.appliquerMiseAJour(archive, r.taille))
               .then(rr => { if (rr && rr.ok) Toast.show('Mise a jour', 'Le launcher redemarre tout seul.', 'ok', 6000); });
           } else {
             X.env.openUrl(r.lien || r.url);
@@ -1965,6 +1967,60 @@ const Login = {
     Toast.show('Code copi\u00e9', c, 'ok', 1800);
   });
   onClick('btnCancelLogin', () => { Login.stopPolling(); api(x => x.auth.cancel(), { soft: true }); Login.reset(); });
+
+  /* ---------- Mise a jour : le grand voile ---------- */
+  /*  Il reste a l ecran tant que la mise a jour n est pas finie, et
+      il montre ce qui a ete telecharge, le total et le temps passe.  */
+  const maj = {
+    debut: 0,
+    timer: null,
+    ouvrir(version) {
+      const v = $('#majVoile');
+      if (!v) return;
+      this.debut = Date.now();
+      v.hidden = false;
+      const t = $('#majTitre');
+      if (t) t.textContent = 'Mise a jour vers la v' + version;
+      const x = $('#majTexte');
+      if (x) x.textContent = 'Telechargement de la nouvelle version...';
+      this.temps();
+      if (this.timer) clearInterval(this.timer);
+      this.timer = setInterval(() => this.temps(), 500);
+    },
+    temps() {
+      const e = $('#majTemps');
+      if (e) e.textContent = Math.floor((Date.now() - this.debut) / 1000) + ' s';
+    },
+    progr(d) {
+      const recues = d.recues || 0;
+      const total = d.total || 0;
+      const pct = total ? Math.min(100, Math.round(recues / total * 100)) : 25;
+      const b = $('#majBarre');
+      if (b) b.style.width = pct + '%';
+      const det = $('#majDetail');
+      if (det) {
+        det.textContent = (recues / 1048576).toFixed(1) + ' Mo'
+          + (total ? ' sur ' + (total / 1048576).toFixed(1) + ' Mo' : '');
+      }
+      if (d.fini) {
+        const t = $('#majTexte');
+        if (t) t.textContent = 'Installation... le launcher va se relancer.';
+        const b2 = $('#majBarre');
+        if (b2) b2.style.width = '100%';
+      }
+    },
+    fermer() {
+      const v = $('#majVoile');
+      if (v) v.hidden = true;
+      if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    }
+  };
+  X.on('maj:progression', d => maj.progr(d));
+  onClick('majAnnuler', () => {
+    api(x => x.env.annulerMaj(), { soft: true });
+    maj.fermer();
+    Toast.show('Mise a jour annulee', '', 'warn', 3000);
+  });
 
   /* ---------- Connexion par token (Authlib-Injector) ---------- */
   const tkVerdict = () => document.getElementById('tkVerdict');

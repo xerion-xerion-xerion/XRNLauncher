@@ -209,30 +209,57 @@ const XRN = {
     /*  Mise a jour automatique : on telecharge l archive, puis un
         script applique les fichiers une fois le launcher ferme, et le
         relance. Le joueur n a rien a decompresser.                   */
-    async appliquerMiseAJour(url) {
+    async appliquerMiseAJour(url, total) {
       try {
         if (!url) return { ok: false, detail: 'aucune adresse' };
         const zip = path.join(require('os').tmpdir(), 'xrn-update-' + Date.now() + '.zip');
         XRN.report('MAJ', 'telechargement de ' + url);
-        await http.download(url, zip);
+
+        /*  On suit la taille du fichier qui se remplit : c est la seule
+            mesure honnete, le serveur ne dit pas combien il a deja
+            envoye.                                                     */
+        let taille = 0;
+        const suivi = setInterval(() => {
+          try { taille = fs.statSync(zip).size; } catch (e) { taille = 0; }
+          bus.emit('maj:progression', { recues: taille, total: total || 0 });
+        }, 400);
+
+        jetonMaj = require('./lib/http').makeToken();
+        try {
+          await http.download(url, zip, { token: jetonMaj });
+        } finally {
+          clearInterval(suivi);
+        }
+        bus.emit('maj:progression', { recues: total || 0, total: total || 0, fini: true });
+
         const dossierApp = path.dirname(process.execPath);
         const script = path.join(dossierApp, 'tools', 'appliquer-maj.ps1');
         if (!util.exists(script)) return { ok: false, detail: 'script de mise a jour introuvable' };
         const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
           '-File', script,
-          '-PidLauncher', String(process.pid),
+          '-IdLauncher', String(process.pid),
           '-Zip', zip,
           '-Dossier', dossierApp,
           '-Exe', path.join(dossierApp, 'XRNLauncher.exe')];
         const child = spawn('powershell', args, { detached: true, stdio: 'ignore', windowsHide: true });
         child.unref();
         XRN.report('MAJ', 'mise a jour programmee, pid=' + child.pid);
-        setTimeout(() => { try { process.exit(0); } catch (e) { } }, 900);
+
+        /*  Le script arrete le launcher si besoin : l application se
+            cache dans le tray et ses fichiers resteraient bloques. */
+        try { XRN.close(); } catch (e) { }
+        setTimeout(() => { try { process.exit(0); } catch (e) { } }, 1200);
         return { ok: true };
       } catch (e) {
         XRN.report('MAJ-ERREUR', String(e && e.message ? e.message : e));
         return { ok: false, detail: String(e && e.message ? e.message : e) };
       }
+    },
+
+    /*  Annule le telechargement en cours. */
+    annulerMaj() {
+      try { if (jetonMaj) jetonMaj.cancelled = true; } catch (e) { }
+      return { ok: true };
     },
 
     async notification() {
@@ -265,13 +292,15 @@ const XRN = {
             bouton de la notification telecharge alors directement.  */
         const assets = (r && r.assets) || [];
         let telecharger = '';
+        let taille = 0;
         for (const a of assets) {
           if (a && a.name && /\.zip$/i.test(a.name) && a.browser_download_url) {
             telecharger = String(a.browser_download_url);
+          taille = Number(a.size) || 0;
             break;
           }
         }
-        return { ok: true, version, courant, telecharger,
+        return { ok: true, version, courant, telecharger, taille,
                  url: String((r && r.html_url) || '') };
       } catch (e) {
         return { ok: false, courant };
