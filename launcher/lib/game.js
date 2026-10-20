@@ -947,7 +947,17 @@ function depiler(liste, subst, features) {
     const vals = Array.isArray(a.value) ? a.value : [a.value];
     for (const v of vals) {
       if (v === undefined || v === null) continue;
-      out.push(appliquerPlaceholders(v, subst));
+      const t = appliquerPlaceholders(v, subst);
+      /*  Une valeur vide laisse son option sans valeur. Le jeu decale
+          alors tous les arguments qui suivent, et finit par prendre
+          un chemin de dossier pour un fichier : il echoue alors
+          trente fois de suite au demarrage. On retire donc l option
+          avec sa valeur vide.                                          */
+      if (t === '' && out.length && String(out[out.length - 1]).startsWith('--')) {
+        out.pop();
+        continue;
+      }
+      out.push(t);
     }
   }
   return out;
