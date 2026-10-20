@@ -51,7 +51,7 @@ function base(tenant) { return 'https://login.microsoftonline.com/' + tenant + '
     via l'endpoint /consumers. Sur un tenant precis, Microsoft refuse
     le scope (AADSTS650053). Donc : /consumers en premier, toujours.  */
 function tenantsList() { return TENANTS; }
-const OAUTH_SCOPE  = 'XboxLive.signin offline_access';
+const OAUTH_SCOPE  = 'XboxLive.signin offline_access service::user.auth.xboxlive.com::MBI_SSL';
 const XBL_URL      = 'https://user.auth.xboxlive.com/user/authenticate';
 const XSTS_URL     = 'https://xsts.auth.xboxlive.com/xsts/authorize';
 const MC_LOGIN_URL = 'https://api.minecraftservices.com/authentication/login_with_xbox';

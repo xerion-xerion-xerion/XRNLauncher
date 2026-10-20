@@ -163,6 +163,18 @@
 
       <!-- ========== ACCUEIL ========== -->
       <section class="view active" id="view-home">
+
+  <!--  Barre de mise a jour : elle reste la tant qu on ne l a pas
+      fermee, et le bouton met a jour sans rien decompresser a la main. -->
+  <div class="barre-maj" id="barreMaj" hidden>
+    <span class="bm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M7 13l5 5 5-5"/><path d="M4 21h16"/></svg></span>
+    <div class="bm-txt">
+      <b id="barreMajTitre">Nouvelle version</b>
+      <span id="barreMajTexte">Une version plus recente est disponible.</span>
+    </div>
+    <button class="btn btn-p" id="barreMajBtn">Mettre a jour</button>
+    <button class="bm-fermer" id="barreMajFermer" type="button" title="Fermer">&times;</button>
+  </div>
         <div class="hero">
           <div class="hero-top">
             <div>

@@ -927,6 +927,21 @@ body{background:#0a0b0f}
 .eyebrow::before{background:var(--v2);opacity:.55}
 
 /*  Hero : aplat, plus de degrade violet, plus de titre en degrade. */
+/*  Barre de mise a jour. */
+.barre-maj{display:flex;align-items:center;gap:13px;margin-bottom:14px;padding:11px 13px 11px 15px;
+  background:#12141a;border:1px solid var(--accent-line);border-radius:12px}
+.barre-maj[hidden]{display:none}
+.barre-maj .bm-ico{width:34px;height:34px;flex:0 0 auto;border-radius:9px;display:grid;place-items:center;
+  background:#241d3d;color:var(--v2)}
+.barre-maj .bm-ico svg{width:17px;height:17px}
+.barre-maj .bm-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.barre-maj .bm-txt b{color:var(--ink);font-size:13.5px}
+.barre-maj .bm-txt span{color:var(--muted);font-size:12.5px}
+.barre-maj .btn{height:34px;padding:0 15px;font-size:12px}
+.barre-maj .bm-fermer{width:26px;height:26px;flex:0 0 auto;border:1px solid var(--stroke);border-radius:7px;
+  background:#15171e;color:var(--muted);font-size:13px;line-height:1;cursor:pointer;transition:.18s}
+.barre-maj .bm-fermer:hover{color:var(--ink);border-color:#3d4351}
+
 .hero{background:#12141a;border:1px solid var(--stroke);box-shadow:none}
 .hero::before{background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.035) 45%,transparent 60%)}
 .hero h1{background:none;color:var(--ink);-webkit-text-fill-color:currentColor;filter:none}

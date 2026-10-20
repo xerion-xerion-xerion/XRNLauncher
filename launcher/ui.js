@@ -174,10 +174,45 @@
     let r = null;
     try { r = await X.env.chercherMiseAJour(); } catch (e) { return; }
     if (!r || !r.ok || !r.url) return;
+    /*  La notification devient une BARRE, visible en permanence sur
+        l accueil : on ne peut pas la manquer comme un message qui
+        disparait.                                                       */
+    const barre = $('#barreMaj');
+    if (barre) {
+      const titre = $('#barreMajTitre');
+      const texte = $('#barreMajTexte');
+      const bouton = $('#barreMajBtn');
+      if (titre) titre.textContent = 'XRNLauncher v' + r.version + ' est disponible';
+      if (texte) texte.textContent = 'Vous utilisez la v' + r.courant + ' - la mise a jour se fait toute seule.';
+      if (bouton) {
+        bouton.textContent = 'Mettre a jour';
+        bouton.onclick = async () => {
+          bouton.disabled = true;
+          bouton.textContent = 'Telechargement...';
+          try {
+            const r2 = await api(x => x.env.appliquerMiseAJour(r.telecharger || r.url));
+            if (r2 && r2.ok) {
+              bouton.textContent = 'Redemarrage...';
+              Toast.show('Mise a jour', 'Le launcher va se redemarrer tout seul.', 'ok', 6000);
+            } else {
+              bouton.disabled = false;
+              bouton.textContent = 'Mettre a jour';
+            }
+          } catch (err) {
+            bouton.disabled = false;
+            bouton.textContent = 'Mettre a jour';
+          }
+        };
+      }
+      barre.hidden = false;
+      const fermer = $('#barreMajFermer');
+      if (fermer) fermer.onclick = () => { barre.hidden = true; };
+    }
+    /*  Le message reste, pour ceux qui ferment la barre. */
     Toast.show('Nouvelle mise a jour',
-      'XRNLauncher v' + r.version + ' est disponible. Vous avez la v' + r.courant + '.',
+      'XRNLauncher v' + r.version + ' est en ligne. Vous avez la v' + r.courant + '.',
       'info', 24000,
-      { label: r.telecharger ? 'Telecharger' : 'Ouvrir la release',
+      { label: r.telecharger ? 'Ouvrir' : 'Voir',
         run: () => { X.env.openUrl(r.telecharger || r.url); } });
   }
 

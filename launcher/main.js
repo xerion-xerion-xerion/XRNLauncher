@@ -206,6 +206,35 @@ const XRN = {
         liste des installations. C est ce qui lui permet d envoyer
         n importe quelle notification, et pas seulement une mise a
         jour. Si le point d entree est hors ligne, on ne dit rien.  */
+    /*  Mise a jour automatique : on telecharge l archive, puis un
+        script applique les fichiers une fois le launcher ferme, et le
+        relance. Le joueur n a rien a decompresser.                   */
+    async appliquerMiseAJour(url) {
+      try {
+        if (!url) return { ok: false, detail: 'aucune adresse' };
+        const zip = path.join(require('os').tmpdir(), 'xrn-update-' + Date.now() + '.zip');
+        X.report('MAJ', 'telechargement de ' + url);
+        await http.download(url, zip);
+        const dossierApp = path.dirname(process.execPath);
+        const script = path.join(dossierApp, 'tools', 'appliquer-maj.ps1');
+        if (!util.exists(script)) return { ok: false, detail: 'script de mise a jour introuvable' };
+        const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+          '-File', script,
+          '-PidLauncher', String(process.pid),
+          '-Zip', zip,
+          '-Dossier', dossierApp,
+          '-Exe', path.join(dossierApp, 'XRNLauncher.exe')];
+        const child = spawn('powershell', args, { detached: true, stdio: 'ignore', windowsHide: true });
+        child.unref();
+        X.report('MAJ', 'mise a jour programmee, pid=' + child.pid);
+        setTimeout(() => { try { process.exit(0); } catch (e) { } }, 900);
+        return { ok: true };
+      } catch (e) {
+        X.report('MAJ-ERREUR', String(e && e.message ? e.message : e));
+        return { ok: false, detail: String(e && e.message ? e.message : e) };
+      }
+    },
+
     async notification() {
       try {
         const r = await notif.verifier();
@@ -516,25 +545,35 @@ const XRN = {
       }
       let accessToken = '0';
       let uuid = acc ? acc.id : (opts.uuid || '00000000000000000000000000000000');
-      let username = acc ? acc.name : (opts.username || 'Joueur');
+      let username = acc ? (acc.javaName || acc.name) : (opts.username || 'Joueur');
       let userType = acc ? (acc.userType || 'msla') : 'legacy';
 
-      /*  Un profil "xbox" n'a pas de jeton Minecraft par construction :
-          on ne tente surtout pas de rafraichir, l'echange echouerait
-          (approbation Mojang) et le jeu tournerait quand meme en '0'. */
-      if (acc && acc.refreshToken && !offline && acc.type !== 'xbox') {
+      /*  Un vrai jeton Minecraft, c'est ce qui fait que le jeu tourne
+          avec le VRAI compte : skin, session en ligne, et le bon
+          identifiant cote serveur. Un jeton a '0' fait tourner le jeu
+          hors ligne, avec un faux profil.
+
+          L'echange Xbox -> Minecraft a besoin de la portee de service
+          de Minecraft (voir OAUTH_SCOPE). Si elle manque, Mojang
+          refuse avec un 403 "Invalid app registration" : on ne casse
+          donc pas le lancement, on retombe sur le jeton deja connu. */
+      if (acc && acc.refreshToken && !offline) {
         // on tente un rafraichissement si le jeton est vieux
         try {
-          if (Date.now() - (acc.savedAt || 0) > 60 * 60 * 1000) {
+          if (acc.mcToken && Date.now() - (acc.savedAt || 0) <= 60 * 60 * 1000) {
+            accessToken = acc.mcToken;
+          } else {
             const t = await auth.refresh(acc.refreshToken);
             const mcTok = await auth.toMinecraft(t.access_token);
             const prof = await auth.profile(mcTok);
-            updateAccount({ ...acc, refreshToken: t.refresh_token, mcToken: mcTok, name: prof.name, id: prof.id, skinUrl: prof.skinUrl, savedAt: Date.now() });
+            updateAccount({ ...acc, refreshToken: t.refresh_token, mcToken: mcTok, name: prof.name, id: prof.id, uuid: prof.id, skinUrl: prof.skinUrl, savedAt: Date.now() });
             accessToken = mcTok;
-          } else {
-            accessToken = acc.mcToken;
+            uuid = prof.id;
+            username = prof.name;
+            userType = 'msla';
           }
         } catch (e) {
+          X.report('AUTH', 'jeton Minecraft indisponible : ' + (e && e.message ? e.message : e));
           accessToken = acc.mcToken || '0';
         }
       }
