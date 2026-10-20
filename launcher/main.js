@@ -241,7 +241,11 @@ const XRN = {
           '-Zip', zip,
           '-Dossier', dossierApp,
           '-Exe', path.join(dossierApp, 'XRNLauncher.exe')];
-        const child = spawn('powershell', args, { detached: true, stdio: 'ignore', windowsHide: true });
+        /*  Pas de "detached" : sur cette version de node, un enfant
+            detache ne demarre jamais, et le script ne s'execute donc
+            pas. Sans cette option, l enfant herite de la console du
+            launcher et survit a sa fermeture.                         */
+        const child = spawn('powershell', args, { stdio: 'ignore', windowsHide: true });
         child.unref();
         XRN.report('MAJ', 'mise a jour programmee, pid=' + child.pid);
 
