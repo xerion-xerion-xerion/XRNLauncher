@@ -1,4 +1,4 @@
-param(
+﻿param(
   [int]$IdLauncher = 0,
   [string]$Zip = '',
   [string]$Dossier = '',
@@ -7,12 +7,30 @@ param(
 
 #  Applique une mise a jour du launcher.
 #
-#  Le launcher se cache dans le tray quand on ferme sa fenetre : ses
-#  fichiers restent alors verrouilles, et le remplacement echoue en
-#  silence. On attend donc sa fermeture, et s il est toujours vivant
-#  on l arrete : les fichiers se liberent, et on peut ecrire.
+#  Deux pieges ecrits ici apres les echecs rencontres :
+#
+#  1. Le launcher se cache dans le tray quand on ferme sa fenetre : ses
+#     fichiers restent alors verrouilles et le remplacement echoue en
+#     silence. On attend sa fermeture, et si le processus de rendu (un
+#     fils) tient encore le dossier, on arrete tout l arbre : c'est lui
+#     qui bloque l ecriture.
+#
+#  2. Chaque etape est notee dans un journal : une mise a jour qui ne
+#     marche pas doit pouvoir se diagnostiquer sans console a ouvrir.
 
 $ErrorActionPreference = 'Stop'
+
+$journal = Join-Path $env:APPDATA 'XRNLauncher\logs\maj.log'
+try {
+  New-Item -ItemType Directory -Path (Split-Path -Parent $journal) -Force | Out-Null
+} catch { }
+function Ecrire($msg) {
+  try {
+    Add-Content -LiteralPath $journal -Value ((Get-Date).ToString('HH:mm:ss') + ' ' + $msg)
+  } catch { }
+}
+
+Ecrire ('demarrage, zip=' + $Zip)
 
 if ($IdLauncher -gt 0) {
   $limite = (Get-Date).AddSeconds(20)
@@ -21,16 +39,20 @@ if ($IdLauncher -gt 0) {
     Start-Sleep -Milliseconds 300
   }
   if (Get-Process -Id $IdLauncher -ErrorAction SilentlyContinue) {
-    Stop-Process -Id $IdLauncher -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 900
+    Ecrire 'le launcher est toujours vivant, arret de tout son arbre'
+    & taskkill.exe /PID $IdLauncher /T /F 2>&1 | Out-Null
+    Start-Sleep -Milliseconds 1200
+  } else {
+    Ecrire 'le launcher a quitte, on continue'
   }
 }
 
-if (-not $Zip -or -not (Test-Path -LiteralPath $Zip)) { exit 1 }
-if (-not $Dossier) { exit 1 }
+if (-not $Zip -or -not (Test-Path -LiteralPath $Zip)) { Ecrire 'archive introuvable, abandon'; exit 1 }
+if (-not $Dossier) { Ecrire 'dossier cible absent, abandon'; exit 1 }
 
 $t = Join-Path $env:TEMP ('xrn-maj-' + [guid]::NewGuid().ToString('N'))
 try {
+  Ecrire 'decompression'
   Expand-Archive -LiteralPath $Zip -DestinationPath $t -Force
 
   $racine = Get-ChildItem -LiteralPath $t -Directory | Select-Object -First 1
@@ -46,16 +68,24 @@ try {
       Move-Item -LiteralPath $item.FullName -Destination $cible -Force -ErrorAction Stop
     } catch {
       $echecs += $item.Name
+      Ecrire ('remplacement impossible : ' + $item.Name)
     }
   }
+  Ecrire ('remplacements termines, echecs=' + $echecs.Count)
 
   if ($Exe -and (Test-Path -LiteralPath $Exe)) {
+    Ecrire ('relancement de ' + $Exe)
     Start-Process -FilePath $Exe
+  } else {
+    Ecrire 'executable introuvable, pas de relancement'
   }
   if ($echecs.Count) {
     Set-Content -LiteralPath (Join-Path $env:TEMP 'xrn-maj-echecs.log') -Value ($echecs -join ', ')
   }
+} catch {
+  Ecrire ('erreur : ' + $_.Exception.Message)
 } finally {
   Remove-Item -LiteralPath $t -Recurse -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath $Zip -Force -ErrorAction SilentlyContinue
+  Ecrire 'fin'
 }
