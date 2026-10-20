@@ -506,10 +506,32 @@ function Compress-Dist {
     $v = Get-Version
     $zip = Join-Path $DistDir "$AppName-v$v-win-$Arch.zip"
     if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
-    [System.IO.Compression.ZipFile]::CreateFromDirectory(
-        $StageDir, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+
+    #  L archive contient un DOSSIER RACINE, nomme comme l archive.
+    #  Sans cela, l extraction depose les 78 fichiers a plat dans le
+    #  dossier choisi : l application se melange a ce qui s y trouve
+    #  deja, et l extraction "ici" ne cree aucun dossier.
+    $racine = "$AppName-v$v-win-$Arch"
+    $fs = [System.IO.File]::Open($zip, [System.IO.FileMode]::Create)
+    try {
+        $archive = New-Object System.IO.Compression.ZipArchive($fs, [System.IO.Compression.ZipArchiveMode]::Create)
+        try {
+            $fichiers = Get-ChildItem -LiteralPath $StageDir -Recurse -File
+            foreach ($f in $fichiers) {
+                $rel = $f.FullName.Substring($StageDir.Length).TrimStart('\', '/')
+                $entree = $archive.CreateEntry(("$racine/" + $rel.Replace('\', '/')), [System.IO.Compression.CompressionLevel]::Optimal)
+                $es = $entree.Open()
+                try {
+                    $src = [System.IO.File]::OpenRead($f.FullName)
+                    try { $src.CopyTo($es) } finally { $src.Dispose() }
+                } finally { $es.Dispose() }
+            }
+        } finally { $archive.Dispose() }
+    } finally { $fs.Dispose() }
+
     $size = [math]::Round((Get-Item -LiteralPath $zip).Length / 1MB, 1)
     Ok ("Archive : dist\{0}  ({1} Mo)" -f (Split-Path -Leaf $zip), $size)
+    Ok "Dossier racine dans l archive : $racine"
 }
 
 # ---------------------------------------------------------------------------
