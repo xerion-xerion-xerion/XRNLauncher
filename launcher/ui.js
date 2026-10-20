@@ -1903,7 +1903,12 @@ const Login = {
       list.innerHTML = accounts.map(a =>
         '<div class="acc-item">' +
         '<span class="av"><canvas data-acc-id="' + esc(a.id) + '" width="80" height="80"></canvas></span>' +
-        '<span class="ai"><span class="an">' + esc(a.name) + '</span><span class="au">' + esc(a.id) + '</span></span>' +
+        /*  On montre le pseudo MINECRAFT en grand, et le gamertag
+            Xbox a cote : deux noms pour un seul compte, c est
+            precisement ce qui aide l'utilisateur.                        */
+        '<span class="ai"><span class="an">' + esc(a.name) +
+        (a.gamertag && a.gamertag !== a.name ? ' <span class="ag">' + esc(a.gamertag) + '</span>' : '') +
+        '</span><span class="au">' + esc(a.id) + '</span></span>' +
         '<span class="acc-type">' + (a.type === 'offline' ? 'solo' : 'Microsoft') + '</span>' +
         '<button class="btn sm" data-use-acc="' + esc(a.id) + '">Changer</button>' +
         '<button class="btn sm danger" data-rm-acc="' + esc(a.id) + '">Supprimer</button>' +
