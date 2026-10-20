@@ -235,24 +235,55 @@ const XRN = {
         const dossierApp = path.dirname(process.execPath);
         const script = path.join(dossierApp, 'tools', 'appliquer-maj.ps1');
         if (!util.exists(script)) return { ok: false, detail: 'script de mise a jour introuvable' };
-        const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
-          '-File', script,
-          '-IdLauncher', String(process.pid),
-          '-Zip', zip,
-          '-Dossier', dossierApp,
-          '-Exe', path.join(dossierApp, 'XRNLauncher.exe')];
-        /*  Pas de "detached" : sur cette version de node, un enfant
-            detache ne demarre jamais, et le script ne s'execute donc
-            pas. Sans cette option, l enfant herite de la console du
-            launcher et survit a sa fermeture.                         */
-        const child = spawn('powershell', args, { stdio: 'ignore', windowsHide: true });
-        child.unref();
-        XRN.report('MAJ', 'mise a jour programmee, pid=' + child.pid);
+        const exe = path.join(dossierApp, 'XRNLauncher.exe');
 
-        /*  Le script arrete le launcher si besoin : l application se
-            cache dans le tray et ses fichiers resteraient bloques. */
-        try { XRN.close(); } catch (e) { }
-        setTimeout(() => { try { process.exit(0); } catch (e) { } }, 1200);
+        /*  Le script doit survivre a la fermeture de l application :
+            tout enfant du launcher est arrete avec lui (job object),
+            et le script mourait donc avant d appliquer quoi que ce
+            soit. On passe par l explorateur : il demarre le script
+            depuis le shell, hors de notre arbre de processus.
+
+            On ecrit donc un petit .vbs, et c est l explorateur qui
+            le lance : le script demarre ainsi hors de notre arbre de
+            processus, et survit a la fermeture de l application.    */
+        const fichierVbs = path.join(require('os').tmpdir(), 'xrn-maj-' + Date.now() + '.vbs');
+        const cheminPs = path.join(process.env.SystemRoot || 'C:\\Windows',
+          'System32\\WindowsPowerShell\\v1.0\\powershell.exe');
+        const commande = '& "' + cheminPs + '"'
+          + ' -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass'
+          + ' -File "' + script + '"'
+          + ' -IdLauncher ' + process.pid
+          + ' -Zip "' + zip + '"'
+          + ' -Dossier "' + dossierApp + '"'
+          + ' -Exe "' + exe + '"';
+        /*  La commande est passee en base64 : un .vbs est lu dans
+            l encodage systeme, et un chemin accentue y serait abime.
+            Le .vbs evite aussi toute fenetre console a l ecran.   */
+        const encode = Buffer.from(commande, 'utf16le').toString('base64');
+        fs.writeFileSync(fichierVbs,
+          'CreateObject("WScript.Shell").Run "powershell -NoProfile -EncodedCommand '
+          + encode + '", 0, False\r\n', 'ascii');
+
+        const child = spawn('explorer.exe', [fichierVbs], { stdio: 'ignore', windowsHide: true });
+        child.unref();
+        XRN.report('MAJ', 'mise a jour programmee, fichier=' + fichierVbs);
+
+        /*  On ne ferme que si le script a reellement demarre : sinon
+            on resterait sans launcher et sans mise a jour.         */
+        const journal = path.join(util.appRoot(), 'logs', 'maj.log');
+        setTimeout(() => {
+          let demarre = false;
+          try {
+            const t = fs.statSync(journal).mtimeMs;
+            demarre = (Date.now() - t) < 30000;
+          } catch (e) { demarre = false; }
+          if (!demarre) {
+            XRN.report('MAJ-ERREUR', 'le script de mise a jour n a pas demarre, le launcher reste ouvert');
+            return;
+          }
+          try { XRN.close(); } catch (e) { }
+          setTimeout(() => { try { process.exit(0); } catch (e) { } }, 800);
+        }, 4000);
         return { ok: true };
       } catch (e) {
         XRN.report('MAJ-ERREUR', String(e && e.message ? e.message : e));
