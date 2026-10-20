@@ -212,8 +212,17 @@
     Toast.show('Nouvelle mise a jour',
       'XRNLauncher v' + r.version + ' est en ligne. Vous avez la v' + r.courant + '.',
       'info', 24000,
-      { label: r.telecharger ? 'Ouvrir' : 'Voir',
-        run: () => { X.env.openUrl(r.telecharger || r.url); } });
+      { label: r.telecharger ? 'Mettre a jour' : 'Voir',
+        run: () => {
+          /*  On applique la mise a jour nous-memes : le joueur ne
+              telecharge rien et ne decompresse rien.                  */
+          if (r.telecharger) {
+            api(x => x.env.appliquerMiseAJour(r.telecharger))
+              .then(rr => { if (rr && rr.ok) Toast.show('Mise a jour', 'Le launcher redemarre tout seul.', 'ok', 6000); });
+          } else {
+            X.env.openUrl(r.url);
+          }
+        } });
   }
 
   /* ================================================================== *
