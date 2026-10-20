@@ -864,10 +864,18 @@ function appRootGuess() {
   return '.';
 }
 function pkgVersion() {
+  /*  Le package.json est a la racine de l application, alors que ce
+      fichier vit dans lib/. On cherche donc en remontant, sinon on
+      retombait sur une version de secours fossilisee.                  */
   try {
-    const pj = util.readJSON(path.join(appRootGuess(), 'package.json'), null);
-    return (pj && pj.version) || '3.5.0';
-  } catch (e) { return '3.5.0'; }
+    const racines = [path.join(__dirname, '..'), path.join(__dirname, '..', '..')];
+    try { if (process && process.cwd()) racines.push(process.cwd()); } catch (e) {}
+    for (const r of racines) {
+      const pj = util.readJSON(path.join(r, 'package.json'), null);
+      if (pj && pj.version) return String(pj.version);
+    }
+  } catch (e) {}
+  return '0.0.0';
 }
 
 /*  Valeurs que le client sait remplacer dans les arguments qu'il
@@ -980,6 +988,10 @@ function buildArgs(plan, opts) {
   if (opts.extraJavaArgs) jvm.push(...String(opts.extraJavaArgs).split(/\s+/).filter(Boolean));
   jvm.push('-Xmx' + Math.round(ram * 1024) + 'M');
   jvm.push('-Dfile.encoding=UTF-8');
+  /*  Le mod XRN HUD affiche la version du launcher dans sa signature.
+      On la lui passe donc ici : sinon il ne pourrait afficher que la
+      sienne, qui n est pas la meme numerotation.                      */
+  jvm.push('-DXRNLauncherVersion=' + pkgVersion());
 
   const jeu = [];
   const mainClass = plan.mainClass || 'net.minecraft.client.main.Main';
@@ -1078,7 +1090,7 @@ function renommerFenetre(pid, titre, bus) {
 
   try {
     const p = spawn('powershell', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
-      '-File', script, '-Cible', String(pid), '-Title', titre, '-Seconds', '45'], {
+      '-File', script, '-Cible', String(pid), '-Title', titre, '-Seconds', '180'], {
       windowsHide: true, detached: true,
       stdio: fd === null ? 'ignore' : ['ignore', fd, fd]
     });

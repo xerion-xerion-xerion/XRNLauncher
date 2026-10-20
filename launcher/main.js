@@ -20,6 +20,7 @@ const servers = require('./lib/servers');
 const alib   = require('./lib/authlib');
 const mods   = require('./lib/mods');
 const skins  = require('./lib/skins');
+const notif  = require('./lib/notification');
 
 util.ensureDir(util.appRoot());
 
@@ -147,6 +148,19 @@ if (dejaOuvert) {
 /* ------------------------------------------------------------------ */
 /*  API exposed a l'UI                                                */
 /* ------------------------------------------------------------------ */
+/* -------------------------------------------------------------------- *
+ *  Compare deux versions du type "4.2.0". Vrai si b est plus recente
+ *  que a. Les parties non numeriques sont ignorees.
+ * -------------------------------------------------------------------- */
+function plusRecente(a, b) {
+  const pa = String(a).split(/[.\-+]/).map(x => parseInt(x, 10) || 0);
+  const pb = String(b).split(/[.\-+]/).map(x => parseInt(x, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const va = pa[i] || 0, vb = pb[i] || 0;
+    if (va !== vb) return va > vb;
+  }
+  return false;
+}
 const XRN = {
   isDesktop: true,
   version: pkg.version,
@@ -158,7 +172,7 @@ const XRN = {
   off(evt, fn) { bus.off(evt, fn); },
   emit(evt, data) { bus.emit(evt, data); },
 
-  /* ---------------------------------------------------------------- */
+  
   env: {
     info() {
       const c = cfgm.load();
@@ -174,10 +188,66 @@ const XRN = {
     },
     config() { return cfgm.load(); },
     shippedClientId() { return cfgm.shipped().microsoftClientId || ''; },
-    saveConfig(patch) { return cfgm.save(patch); },
+    saveConfig(patch) {
+      const c = cfgm.save(patch);
+      /*  Une trace par enregistrement : on voit dans le journal ce qui
+          a ete ecrit, et quand. Sans cela, un reglage qui ne seemingly
+          part pas reste impossible a diagnostiquer.                      */
+      writeLog('CFG', 'enregistre : ' + Object.keys(patch || {}).map(k => k + '=' + c[k]).join(', '));
+      return c;
+    },
     openFolder(p) { return util.openExplorer(p); },
     selectInExplorer(p) { return util.openExplorer(p, true); },
     openUrl(url) { return util.openUrl(url); },
+
+    /*  Message envoye par l auteur du launcher.
+
+        Il vient d un point d entree chez lui, qui garde au passage la
+        liste des installations. C est ce qui lui permet d envoyer
+        n importe quelle notification, et pas seulement une mise a
+        jour. Si le point d entree est hors ligne, on ne dit rien.  */
+    async notification() {
+      try {
+        const r = await notif.verifier();
+        XRN.report('NOTIF', r ? ('message recu : ' + r.id) : 'aucun message');
+        return r;
+      } catch (e) {
+        XRN.report('NOTIF', 'erreur : ' + (e && e.message ? e.message : e));
+        return null;
+      }
+    },
+    marquerNotificationVue(id) { notif.marquerVue(id); },
+
+    /*  Cherche si une version plus recente du launcher est publiee.
+
+        L API publique de GitHub suffit : aucune cle, aucune
+        authentification, et elle renvoie la release publiee la plus
+        recente, celle que les telechargeurs utilisent. Le test est
+        silencieux : sans reseau, on ne dit rien du tout.            */
+    async chercherMiseAJour() {
+      const courant = String((pkg && pkg.version) || '0.0.0');
+      try {
+        const r = await http.getJSON('https://api.github.com/repos/xerion-xerion-xerion/XRNLauncher/releases/latest');
+        const tag = String((r && r.tag_name) || '');
+        const version = tag.replace(/^v/i, '');
+        if (!version) return { ok: false };
+        if (!plusRecente(version, courant)) return { ok: false, version, courant };
+        /*  Le lien direct vers le zip, s il est dans les assets : le
+            bouton de la notification telecharge alors directement.  */
+        const assets = (r && r.assets) || [];
+        let telecharger = '';
+        for (const a of assets) {
+          if (a && a.name && /\.zip$/i.test(a.name) && a.browser_download_url) {
+            telecharger = String(a.browser_download_url);
+            break;
+          }
+        }
+        return { ok: true, version, courant, telecharger,
+                 url: String((r && r.html_url) || '') };
+      } catch (e) {
+        return { ok: false, courant };
+      }
+    },
     revealGameDir() { return util.openExplorer(cfgm.load().gameDir); },
 
     /*  Resout un sous-dossier connu du dossier du jeu ("saves", "mods",

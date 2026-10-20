@@ -251,6 +251,134 @@ footer a:hover{color:var(--v1)}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important}
   .rv{opacity:1;transform:none}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REWORK 4.2.0 — le site reprend la matiere du launcher
+
+   Meme palette, meme regle : les surfaces sont pleines et neutres, et le
+   violet ne sert plus que d'accent. Disparaissent les nebuleuses floues,
+   le degrade rose du titre, les halos, et la planete.
+
+   La planete est remplacee par la marque XRN tracee au trait : c est la
+   meme identite que dans l application et dans le splash, et un volume au
+   trait ne ressemble pas a une image generee.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0a0b0f;
+  --line:#23262f;
+  --v1:#c4aeff; --v2:#a78bfa; --v3:#8b5cf6; --v4:#6d28d9;
+  --rose:#a78bfa;
+  --ink:#e9ebf2; --muted:#9aa0b0; --dim:#6b7180;
+  --surface:#12141a; --surface-2:#171a21; --surface-3:#1f232c;
+  --accent-soft:rgba(167,139,250,.12); --accent-line:rgba(167,139,250,.4);
+}
+
+body{background:#0a0b0f;color:var(--ink)}
+::selection{background:rgba(167,139,250,.28);color:#fff}
+
+/*  Le ciel etait trois grosses taches floues violettes : on les retire.
+    La grille reste, mais en texture technique discrete, plus en decoration
+    de ciel etoile.                                                     */
+.nb{display:none}
+.reseau{opacity:.5;background-image:linear-gradient(rgba(167,139,250,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(167,139,250,.045) 1px,transparent 1px);background-size:64px 64px}
+#stars{opacity:.35}
+
+/*  Splash du site. */
+#splash{background:#0a0b0f}
+.sp-logo{background:#241d3d;border:1px solid #3d3363;box-shadow:0 16px 44px rgba(0,0,0,.5)}
+.ring{border-color:rgba(233,235,242,.12)}
+.sp-t{background:none;-webkit-background-clip:initial;background-clip:initial;color:var(--ink);-webkit-text-fill-color:var(--ink);animation:none}
+.sp-k{color:var(--dim)}
+.sp-q{color:var(--muted)}
+.sp-bar{background:#1e222b}
+.sp-bar i{background:var(--v2);box-shadow:none}
+.sp-skip{background:#12141a;border-color:var(--line)}
+.sp-skip:hover{color:var(--ink);border-color:#3d4351}
+
+/*  Structure. */
+.lang{background:#12141a;border-color:var(--line);box-shadow:0 8px 22px rgba(0,0,0,.4);backdrop-filter:none;-webkit-backdrop-filter:none}
+.lang button.on{background:#a78bfa;color:#14101f;box-shadow:none}
+.lang button:hover{color:var(--ink)}
+.kick{color:var(--muted)}
+.kick::before{color:var(--dim)}
+h2{color:var(--ink)}
+.sub{color:var(--muted)}
+.sous{color:var(--dim)}
+.sous b{color:var(--ink)}
+
+/*  Le titre du hero : fini le degrade rose. */
+.grad{background:none;-webkit-background-clip:initial;background-clip:initial;color:var(--ink);-webkit-text-fill-color:var(--ink);animation:none}
+
+/*  Boutons : aplats, plus de degrade anime ni de halo. */
+.btn-p{background:#a78bfa;color:#14101f;box-shadow:none;animation:none}
+.btn-p::before{background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent)}
+.btn-p:hover{background:#b9a2fb;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.btn-g{background:#15171e;border-color:var(--line);color:var(--ink)}
+.btn-g:hover{border-color:#3d4351;color:var(--ink);box-shadow:none}
+
+/*  Pastilles et badges. */
+.puce{background:var(--accent-soft);border-color:var(--accent-line);color:#cfc4f5}
+.puce i{background:var(--v2);box-shadow:none}
+.chip{background:#15171e;border-color:var(--line);color:var(--muted)}
+.chip.ok{color:#8df0cb;border-color:rgba(52,211,153,.28);background:rgba(52,211,153,.07)}
+.chip.warn{color:#ffd88a;border-color:rgba(251,191,36,.28);background:rgba(251,191,36,.06)}
+
+/*  La marque XRN, en trait. */
+.planete{height:340px;display:grid;place-items:center}
+.mk-art{width:300px;height:300px;overflow:visible}
+.mk-orbit{fill:none;stroke:rgba(233,235,242,.22);stroke-width:.8}
+.mk-orbit.mk-orbit2{stroke:rgba(167,139,250,.34)}
+.mk-x{stroke:#a78bfa;stroke-width:2.4;stroke-linecap:round;fill:none}
+.mk-star{fill:#f2e9ff}
+@keyframes mkTourne{to{transform:rotate(360deg)}}
+
+/*  Maquettes de l application. */
+.vit{background:#0f1116;border-color:var(--line);box-shadow:0 28px 70px rgba(0,0,0,.5)}
+.vit-bar{background:#15171e;border-bottom-color:var(--line)}
+.vit-bar em{background:#15171e;border-color:var(--line)}
+
+/*  Cartes, sections, tableau. */
+.card{background:#12141a;border-color:var(--line);box-shadow:none}
+.card:hover{border-color:#343a48;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.tbl{border-color:var(--line);border-radius:12px}
+.tbl th,.tbl td{border-bottom-color:var(--line)}
+.tbl th{background:#15171e;color:var(--muted)}
+.tbl tbody tr:hover{background:#171a21}
+.ok{color:#8df0cb}
+.no{color:#ffb0bd}
+.note{background:rgba(251,191,36,.05);border-color:rgba(251,191,36,.26);color:#f0e6cd}
+.note .t{color:#ffd88a}
+.note b{color:#ffe9b0}
+footer{border-top-color:var(--line);color:var(--dim)}
+footer .co{background:none;-webkit-background-clip:initial;background-clip:initial;color:var(--ink);-webkit-text-fill-color:var(--ink)}
+footer a{color:var(--v2)}
+
+/*  Banniere de mise a jour, en haut de la page.
+
+    C est le seul canal qui atteint les joueurs qui ont encore une
+    ancienne version du launcher : leur application ne contient pas
+    encore le test automatique, seul le site peut les prevenir.     */
+.bandeau-maj{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:70;
+  display:flex;align-items:center;gap:14px;padding:10px 12px 10px 16px;
+  max-width:min(560px,calc(100vw - 120px));
+  background:#12141a;border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 14px 40px rgba(0,0,0,.55);transition:transform .32s,opacity .32s}
+.bandeau-maj.out{transform:translateX(-50%) translateY(-140%);opacity:0}
+.bm-ico{color:var(--v2);font-size:15px;line-height:1}
+.bm-txt{display:flex;align-items:baseline;gap:10px;min-width:0}
+.bm-txt b{color:var(--ink);font-weight:700;font-size:13.5px;white-space:nowrap}
+.bm-txt span{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bm-btn{padding:8px 15px;border-radius:9px;background:#a78bfa;color:#14101f;
+  font-family:var(--ui);font-size:12.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;text-decoration:none;white-space:nowrap;transition:background .18s}
+.bm-btn:hover{background:#b9a2fb}
+.bm-x{width:26px;height:26px;flex:0 0 auto;border:1px solid var(--line);border-radius:8px;
+  background:#15171e;color:var(--muted);font-size:11px;line-height:1;cursor:pointer;transition:.18s}
+.bm-x:hover{color:var(--ink);border-color:#3d4351}
+@media (max-width:760px){
+  .bandeau-maj{top:auto;bottom:16px;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 32px);text-align:center}
+  .bm-txt{flex-direction:column;gap:1px;align-items:center}
+}
 </style>
 </head>
 <!-- ==================================================================
@@ -258,12 +386,24 @@ footer a:hover{color:var(--v1)}
      ZIP_LIEN : l'URL de telechargement du .zip (187 Mo).
               Le fichier doit heberger le ZIP LUI-MEME, pas le site.
               Exemples qui tiennent 187 Mo :
-                · itch.io       https://<projet>.itch.io/XRNLauncher-v4.0.0-win-x64.zip
-                · GitHub Release .../releases/latest/download/XRNLauncher-v4.0.0-win-x64.zip
+                · itch.io       https://<projet>.itch.io/XRNLauncher-v4.2.0-win-x64.zip
+                · GitHub Release .../releases/latest/download/XRNLauncher-v4.2.0-win-x64.zip
               Netlify et Cloudflare Pages refusent tout fichier > 30 Mo.
      SRC_LIEN  : le depot du code source (facultatif).
      ================================================================== -->
 <body class="verrou">
+
+<!--  Banniere de mise a jour. Elle se ferme et ne revient pas : la
+      personne qui l a fermee n a pas besoin d etre prevenu.        -->
+<div class="bandeau-maj" id="bandeauMaj" data-version="4.2.0">
+  <span class="bm-ico">&#10022;</span>
+  <span class="bm-txt">
+    <b data-fr="XRNLauncher 4.2.0" data-en="XRNLauncher 4.2.0">XRNLauncher 4.2.0</b>
+    <span data-fr="la derniere version est disponible" data-en="the latest version is available">la derniere version est disponible</span>
+  </span>
+  <a class="bm-btn" href="https://github.com/xerion-xerion-xerion/XRNLauncher/releases/latest/download/XRNLauncher-v4.2.0-win-x64.zip" download data-fr="Telecharger" data-en="Download">Telecharger</a>
+  <button class="bm-x" id="bandeauFermer" type="button" title="Fermer">&#10005;</button>
+</div>
 
 <!-- ══════ SPLASH ══════ -->
 <div id="splash">
@@ -315,7 +455,7 @@ footer a:hover{color:var(--v1)}
 
         <div class="actions rv">
           <!-- ══ REMPLACE xerion-xerion-xerion ══ -->
-          <a class="btn btn-p" href="https://github.com/xerion-xerion-xerion/XRNLauncher/releases/latest/download/XRNLauncher-v4.0.0-win-x64.zip" download data-fr="⬇ Télécharger" data-en="⬇ Download">⬇ Download</a>
+          <a class="btn btn-p" href="https://github.com/xerion-xerion-xerion/XRNLauncher/releases/latest/download/XRNLauncher-v4.2.0-win-x64.zip" download data-fr="⬇ Télécharger" data-en="⬇ Download">⬇ Download</a>
           <a class="btn btn-g" href="#apercu" data-fr="Aperçu de l'interface" data-en="See the interface">See the interface</a>
         </div>
         <p class="rv" style="margin-top:18px;font-family:var(--ui);font-size:12.5px;letter-spacing:.14em;color:var(--dim)"
@@ -323,10 +463,12 @@ footer a:hover{color:var(--v1)}
       </div>
 
       <div class="planete rv">
-        <span class="orbit o1"><span class="lune"><i></i></span></span>
-        <span class="orbit o2"></span><span class="orbit o3"></span>
-        <div class="orb"></div>
-        <div class="etiq" data-fr="Système violet" data-en="Violet system">Violet system</div>
+        <svg class="mk-art" viewBox="0 0 64 64" fill="none">
+          <ellipse class="mk-orbit" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(-22 32 32)"/>
+          <ellipse class="mk-orbit mk-orbit2" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(38 32 32)"/>
+          <path class="mk-x" d="M19.5 16 L44.5 48 M44.5 16 L19.5 48"/>
+          <path class="mk-star" d="M32 25 L34.2 29.8 L39 32 L34.2 34.2 L32 39 L29.8 34.2 L25 32 L29.8 29.8 Z"/>
+        </svg>
       </div>
     </div>
   </div>
@@ -341,7 +483,7 @@ footer a:hover{color:var(--v1)}
        data-en="Nine tabs, live storage panel, quick access. Click to browse.">Nine tabs, live storage panel, quick access. Click to browse.</p>
 
     <div class="vit rv">
-      <div class="vit-bar"><i></i><i></i><i></i><b>XRNLAUNCHER</b><em>v4.0.0</em></div>
+      <div class="vit-bar"><i></i><i></i><i></i><b>XRNLAUNCHER</b><em>v4.2.0</em></div>
       <div class="tabs">
         <div class="tab on" data-mk="accueil" data-fr="Accueil" data-en="Home">Home</div>
         <div class="tab" data-mk="versions" data-fr="Versions" data-en="Versions">Versions</div>
@@ -591,9 +733,9 @@ footer a:hover{color:var(--v1)}
     <p class="sub rv" style="margin-inline:auto" data-fr="Un dossier, un exécutable, rien à installer."
        data-en="One folder, one executable, nothing to install.">One folder, one executable, nothing to install.</p>
     <div class="actions rv" style="justify-content:center">
-      <a class="btn btn-p" href="https://github.com/xerion-xerion-xerion/XRNLauncher/releases/latest/download/XRNLauncher-v4.0.0-win-x64.zip" download data-fr="⬇ Télécharger XRNLauncher" data-en="⬇ Download XRNLauncher">⬇ Download XRNLauncher</a>
+      <a class="btn btn-p" href="https://github.com/xerion-xerion-xerion/XRNLauncher/releases/latest/download/XRNLauncher-v4.2.0-win-x64.zip" download data-fr="⬇ Télécharger XRNLauncher" data-en="⬇ Download XRNLauncher">⬇ Download XRNLauncher</a>
     </div>
-    <p class="rv" style="margin-top:18px;font-family:var(--ui);font-size:12.5px;letter-spacing:.2em;color:var(--dim)">187 MB · V4.0.0</p>
+    <p class="rv" style="margin-top:18px;font-family:var(--ui);font-size:12.5px;letter-spacing:.2em;color:var(--dim)">187 MB · V4.2.0</p>
   </div>
 </section>
 
@@ -823,7 +965,23 @@ document.querySelectorAll('[data-n]').forEach(el=>obs2.observe(el));
 /* Applique la langue une fois le module entierement initialise :
    citer() utilise qi, declare plus haut ; appeler appliquerLang()
    plus tot declenchait une erreur d initialisation. */
-appliquerLang(langue);
+  appliquerLang(langue);
+
+  /*  Banniere de mise a jour : une fois fermee, elle ne revient pas.
+      La clef depend de la version annoncee, donc la prochaine
+      version reapparait normalement.                                */
+  (function banniereMaj() {
+    const b = document.getElementById('bandeauMaj');
+    if (!b) return;
+    const clef = 'xrn-maj-' + (b.dataset.version || 'x');
+    try { if (localStorage.getItem(clef) === 'ferme') { b.remove(); return; } } catch (e) {}
+    const x = document.getElementById('bandeauFermer');
+    if (x) x.addEventListener('click', () => {
+      b.classList.add('out');
+      setTimeout(() => b.remove(), 340);
+      try { localStorage.setItem(clef, 'ferme'); } catch (e) {}
+    });
+  })();
 })();
 </script>
 </body>

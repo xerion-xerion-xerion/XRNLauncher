@@ -17,7 +17,7 @@
 param(
     [Parameter(Mandatory = $true)][int]$Cible,
     [string]$Title = 'XRNLauncher',
-    [int]$Seconds = 40
+    [int]$Seconds = 180
 )
 
 Add-Type @"
@@ -80,12 +80,10 @@ while ((Get-Date) -lt $limite) {
         }
     }
 
-    if ($renommees -gt 0) {
-        # Fenetre trouvee : on surveille encore quelques secondes, car le
-        # jeu peut remettre son titre apres coup.
-        if (-not $surveillance) { $surveillance = (Get-Date).AddSeconds(7) }
-        if ((Get-Date) -gt $surveillance) { break }
-    }
+    /*  On ne sort pas de la boucle apres un premier renommage : le jeu
+        reprend la main sur son titre quand il a fini de charger, et
+        c est souvent bien apres le premier passage. On surveille donc
+        jusqu au bout, et on remet le titre a chaque fois qu il change. */
     Start-Sleep -Milliseconds 400
 }
 

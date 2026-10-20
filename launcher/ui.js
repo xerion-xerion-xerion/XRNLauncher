@@ -126,7 +126,7 @@
    *  TOASTS
    * ================================================================== */
   const Toast = {
-    show(title, msg, kind, ms) {
+    show(title, msg, kind, ms, action) {
       const box = $('#toasts');
       const el = document.createElement('div');
       el.className = 'toast ' + (kind || 'info');
@@ -134,10 +134,52 @@
       el.innerHTML = ic(icons[kind] || 'i-info', 18) + '<div><b></b><span></span></div>';
       el.querySelector('b').textContent = title;
       el.querySelector('span').textContent = msg || '';
+      /*  Bouton d action facultatif : c est lui qui permet de
+          telecharger depuis la notification.                        */
+      if (action && action.label) {
+        const b = document.createElement('button');
+        b.className = 'toast-act';
+        b.textContent = action.label;
+        b.addEventListener('click', () => { try { action.run(); } catch (e) {} el.remove(); });
+        el.querySelector('div').appendChild(b);
+      }
       box.appendChild(el);
       setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, ms || 3800);
     }
   };
+
+  /*  Message de l auteur : il peut envoyer n importe quoi, pas
+      seulement une mise a jour. Le message porte un identifiant : on
+      ne le montre qu une fois, et seulement s il change.            */
+  let notificationVue = false;
+  async function verifierNotification() {
+    if (notificationVue) return;
+    notificationVue = true;
+    let r = null;
+    try { r = await X.env.notification(); } catch (e) { return; }
+    if (!r || !r.id) return;
+    try { X.env.marquerNotificationVue(r.id); } catch (e) {}
+    Toast.show(r.titre || 'XRNLauncher', r.texte || '', r.niveau || 'info', 24000,
+      r.lien ? { label: r.bouton || 'Ouvrir', run: () => { X.env.openUrl(r.lien); } } : null);
+  }
+
+  /*  Cherche une version plus recente du launcher et previent, une
+      seule fois par session. Sans reseau ou en cas d erreur, on ne
+      dit rien : une notification inutile serait pire que pas de
+      notification du tout.                                          */
+  let miseAJourVue = false;
+  async function verifierMiseAJour() {
+    if (miseAJourVue) return;
+    miseAJourVue = true;
+    let r = null;
+    try { r = await X.env.chercherMiseAJour(); } catch (e) { return; }
+    if (!r || !r.ok || !r.url) return;
+    Toast.show('Nouvelle mise a jour',
+      'XRNLauncher v' + r.version + ' est disponible. Vous avez la v' + r.courant + '.',
+      'info', 24000,
+      { label: r.telecharger ? 'Telecharger' : 'Ouvrir la release',
+        run: () => { X.env.openUrl(r.telecharger || r.url); } });
+  }
 
   /* ================================================================== *
    *  FOND ÉTOILÉ
@@ -440,9 +482,9 @@
       }
 
       const grad = g.createLinearGradient(0, 0, canvas.width, canvas.height);
-      grad.addColorStop(0, '#7c3aed'); grad.addColorStop(1, '#c026d3');
+      grad.addColorStop(0, '#2a2145'); grad.addColorStop(1, '#1b1630');
       g.fillStyle = grad; g.fillRect(0, 0, canvas.width, canvas.height);
-      g.fillStyle = '#fff'; g.font = 'bold ' + (px * 3) + 'px Inter, sans-serif';
+      g.fillStyle = '#cfc4f5'; g.font = 'bold ' + (px * 3) + 'px Inter, sans-serif';
       g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText((letter || '?').charAt(0).toUpperCase(), canvas.width / 2, canvas.height / 2 + px * 0.4);
     },
@@ -2035,6 +2077,15 @@ const Login = {
     $$('[data-ram]').forEach(c => c.classList.toggle('on', parseFloat(c.dataset.ram) === v));
     Settings.save({ ramGB: v });
   });
+  /*  On enregistre sur "input" (chaque mouvement) et sur "change"
+      (quand le controle est relache) : le reglage est ainsi ecrit
+      dans tous les cas, meme si on quitte la fenetre vite.      */
+  $('#setRam').addEventListener('change', e => {
+    Settings.save({ ramGB: parseFloat(e.target.value) });
+  });
+  $('#setVol').addEventListener('change', e => {
+    Settings.save({ ambientVolume: parseInt(e.target.value, 10) / 100 });
+  });
   $$('[data-ram]').forEach(c => c.addEventListener('click', () => {
     const v = parseFloat(c.dataset.ram);
     setRange('#setRam', v, 1, 32);
@@ -2323,6 +2374,10 @@ const Login = {
     Splash.boot();
     if (DESKTOP) {
       $('#brandTag').textContent = 'v' + X.version;
+    /*  On regarde si une version plus recente est publiee. Le test ne
+        bloque rien et n affiche rien s il n y a pas de reseau.     */
+    verifierMiseAJour();
+    verifierNotification();
       Account.watch();
       // on laisse le launcher s'afficher tout de suite, puis on reconnecte
       Account.apply(null);

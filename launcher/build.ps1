@@ -285,7 +285,7 @@ function Build-App {
     }
 
     # Fichiers de l'application
-    $payload = @('index.html','style.css','ui.js','main.js')
+    $payload = @('index.html','style.css','ui.js','main.js','notification.json')
     foreach ($f in $payload) {
         $src = Join-Path $Root $f
         if (Test-Path -LiteralPath $src) {
@@ -316,6 +316,24 @@ function Build-App {
         Ok "tools\ copie ($k scripts)."
         if (-not (Test-Path -LiteralPath (Join-Path $toolsDst 'rename-window.ps1'))) {
             Warn "rename-window.ps1 absent : le titre de la fenetre du jeu ne sera pas change."
+        }
+    }
+
+    # Point d entree des notifications : l adresse vient du fichier
+    # local de la machine, pour que rien de personnel n entre dans le
+    # depot public.
+    $notifUrl = ''
+    try {
+        $cfgLocale = Get-Content -LiteralPath (Join-Path $Root 'config.local.json') -Raw | ConvertFrom-Json
+        if ($cfgLocale.notificationUrl) { $notifUrl = [string]$cfgLocale.notificationUrl }
+    } catch { }
+    if ($notifUrl) {
+        $notifDst = Join-Path $StageDir 'notification.json'
+        if (Test-Path -LiteralPath $notifDst) {
+            $notif = Get-Content -LiteralPath $notifDst -Raw | ConvertFrom-Json
+            $notif.url = $notifUrl
+            [System.IO.File]::WriteAllText($notifDst, ($notif | ConvertTo-Json -Depth 5), (New-Object System.Text.UTF8Encoding $false))
+            Ok 'Point d entree des notificationsConfigure.'
         }
     }
 
@@ -350,6 +368,9 @@ function Build-App {
 
     # Config livree : modele vierge, sans reglage personnel, et avec
     # l identifiant d application choisi pour cette distribution.
+    #
+    # L adresse du point d entree des notifications vient aussi du
+    # fichier local, jamais du depot : le depot public reste neutre.
     $cfgSrc = Join-Path $Root 'config.json'
     if (Test-Path -LiteralPath $cfgSrc) {
         $cfg = Get-Content -LiteralPath $cfgSrc -Raw | ConvertFrom-Json
