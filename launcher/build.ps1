@@ -554,6 +554,16 @@ try {
 
     if (-not $SkipZip) { Compress-Dist }
 
+    #  Installeur : un petit script qui telecharge l application
+    #  depuis GitHub, la pose dans le dossier de l'utilisateur et
+    #  met un raccourci sur le Bureau. C'est lui que l'on distribue.
+    $instSrc = Join-Path $Root 'tools\installer.cmd'
+    if (Test-Path -LiteralPath $instSrc) {
+        $instDst = Join-Path $DistDir 'XRN-Installer.cmd'
+        Copy-Item -LiteralPath $instSrc -Destination $instDst -Force
+        Ok ("Installeur : dist\{0}" -f (Split-Path -Leaf $instDst))
+    }
+
     Step 'Termine'
     Write-Host "       Dossier  : $StageDir" -ForegroundColor Gray
     Write-Host "       Executable : $(Join-Path $StageDir "$AppName.exe")" -ForegroundColor Gray
