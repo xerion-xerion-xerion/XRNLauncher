@@ -820,6 +820,7 @@ const Splash = {
       if (name === 'login') Login.refresh();
       if (name === 'home') Home.refresh();
       if (name === 'mods') Mods.refresh();
+      if (name === 'boutique') Boutique.refresh();
     }
   };
   Nav.items.forEach(b => b.addEventListener('click', () => Nav.go(b.dataset.view)));
@@ -1502,6 +1503,169 @@ const Splash = {
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); play(null); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('.title-search input').focus(); }
+  });
+
+  /* ================================================================== *
+   *  BOUTIQUE
+   * ================================================================== */
+  /*  Le catalogue vient du serveur, les droits aussi. Le client ne
+      decide rien : il montre ce que le serveur a accorde, et il
+      demande un code quand le joueur en a un.                         */
+  const Boutique = {
+    /*  Les sept jours de la serie : plus la serie est longue, plus la
+        recompense est grande. C'est le serveur qui compte, et qui
+        garde la date du dernier retrait.                                */
+    _serie(etat) {
+        const gains = [10, 15, 20, 25, 30, 40, 50];
+        const jour = (etat && etat.jour) ? etat.jour : 0;
+        const box = $('#btSerie');
+        if (!box) return;
+        let html = '';
+        for (let i = 0; i < 7; i++) {
+          const classe = (i + 1) < jour ? ' fait' : (i + 1) === jour ? ' reclasse' : '';
+          const etoile = (i + 1) === jour ? '★' : '☆';
+          html += '<div class="serie-jour' + classe + '"><b>Jour ' + (i + 1) + '</b><i>' + etoile + '</i><span>' + gains[i] + ' etoiles</span></div>';
+        }
+        box.innerHTML = html;
+        const badge = $('#btSerieBadge');
+        if (badge) badge.hidden = !jour;
+        const j = $('#btSerieJour');
+        if (j) j.textContent = String(jour);
+        const txt = $('#btSerieTexte');
+        if (txt) {
+          if (!jour) {
+            txt.textContent = 'Reviens chaque jour : la serie de recompenses ne s interrompt pas.';
+          } else if (etat.prochainDans > 0) {
+            const h = Math.floor(etat.prochainDans / 3600);
+            const m = Math.floor((etat.prochainDans % 3600) / 60);
+            txt.textContent = 'Serie de ' + jour + ' jour(s). Prochaine recompense dans ' + h + ' h ' + m + ' min.';
+          } else {
+            txt.textContent = 'Serie de ' + jour + ' jour(s). Ta recompense du jour est disponible.';
+          }
+        }
+        const btn = $('#btRecompense');
+        if (btn) btn.disabled = !!(etat.prochainDans > 0);
+      },
+
+    async refresh() {
+      if (!DESKTOP) {
+        const l = $('#btProduits');
+        if (l) l.innerHTML = '<p class="empty">La boutique est disponible uniquement dans l\'application Windows.</p>';
+        return;
+      }
+      const r = await api(x => x.env.boutique.catalogue(), { soft: true });
+      const l = $('#btProduits');
+      if (r && r.ok) {
+        const produits = r.produits || [];
+        if (!produits.length) {
+          l.innerHTML = '<p class="empty">Le catalogue est vide pour le moment.</p>';
+        } else {
+          const droits = r.droits || [];
+          l.innerHTML = produits.map(p => {
+            const possede = droits.indexOf(p.id) >= 0;
+            const prix = Number(p.etoiles != null ? p.etoiles : p.diamants) || 0;
+            return `<div class="boutique-row">
+              <span class="boutique-ico" style="background:${esc(p.couleur || '#7b5cff')}22;color:${esc(p.couleur || '#b9a0ff')}">${ic('i-star', 18)}</span>
+              <div style="flex:1;min-width:0">
+                <div class="boutique-nom">${esc(p.nom || p.id)}</div>
+                <div class="boutique-txt" style="margin:2px 0 0">${esc(p.description || '')}</div>
+              </div>
+              <div style="text-align:right;white-space:nowrap">
+                ${possede
+                  ? '<span class="badge good">Acquis</span>'
+                  : '<span class="badge">' + prix + ' etoiles</span>'}
+              </div>
+            </div>`;
+          }).join('');
+        }
+        const d = $('#btEtoiles');
+        if (d) d.innerHTML = (Number(r.etoiles) || 0) + '<small>etoiles</small>';
+        const n = $('#btDroits');
+        if (n) n.textContent = String((r.droits || []).length);
+        Boutique._serie(r.serie || { jour: 0, streak: 0, prochainDans: 0 });
+      } else if (l) {
+        l.innerHTML = '<p class="empty">Le catalogue n a pas repondu. Reessayez dans un instant.</p>';
+      }
+
+      const c = await api(x => x.env.communaute.liste(), { soft: true });
+      const pseudos = c || [];
+      const nc = $('#btCommunaute');
+      if (nc) nc.textContent = String(pseudos.length);
+      const lp = $('#btPseudos');
+      if (lp) {
+        lp.innerHTML = pseudos.length
+          ? '<div class="boutique-pseudo">' + pseudos.map(p =>
+              '<span class="badge">' + esc(p) + '</span>').join('') + '</div>'
+          : '<p class="empty">Personne pour le moment. Connecte ton compte, ou ajoute un pseudo.</p>';
+      }
+    },
+
+    async recompense() {
+      const r = await api(x => x.env.boutique.recompense());
+      if (r && r.ok) {
+        if (r.gagne) {
+          Toast.show('Recompense', '+' + r.gagne + ' etoiles. Serie de ' + r.jour + ' jour(s).', 'ok', 6000);
+        } else {
+          Toast.show('Deja reclame', 'Reviens dans ' + Math.ceil((r.prochainDans || 0) / 3600) + ' h.', 'info', 5000);
+        }
+        Boutique.refresh();
+      } else {
+        Toast.show('Recompense indisponible', (r && r.detail) ? r.detail : 'Reessayez plus tard.', 'err', 6000);
+      }
+    },
+
+    async activer() {
+      const champ = $('#btCode');
+      const code = champ ? String(champ.value || '').trim() : '';
+      if (!code) { Toast.show('Code manquant', 'Entre un code d activation.', 'warn', 4000); return; }
+      const r = await api(x => x.env.boutique.activer(code));
+      if (r && r.ok) {
+        Toast.show('Actif', 'Le cosmetique est desormais a toi.', 'ok', 5000);
+        if (champ) champ.value = '';
+        Boutique.refresh();
+      } else {
+        Toast.show('Activation refusee', (r && r.detail) ? r.detail : 'Code inconnu.', 'err', 6000);
+      }
+    },
+
+    async ajouterPseudo() {
+      const champ = $('#btPseudoAjout');
+      const nom = champ ? String(champ.value || '').trim() : '';
+      if (!nom) return;
+      const r = await api(x => x.env.communaute.ajouter([nom]));
+      if (r && r.ok) {
+        if (champ) champ.value = '';
+        Toast.show('Ajoute', nom + ' desormais fait partie de la liste.', 'ok', 4000);
+        Boutique.refresh();
+      }
+    }
+  };
+  $('#btCodeOk').addEventListener('click', () => Boutique.activer());
+  $('#btPseudoOk').addEventListener('click', () => Boutique.ajouterPseudo());
+  $('#btnBoutiqueRefresh').addEventListener('click', () => Boutique.refresh());
+  $('#btRecompense').addEventListener('click', () => Boutique.recompense());
+
+  /*  Le mode Boost FPS : il se decide ici, et il s'applique au
+      lancement suivant. Le mod lit la meme preference, et sait
+      revenir en arriere si le joueur le desactive en jeu.               */
+  function majEtatBoost(cfg) {
+    const actif = !!(cfg && cfg.boostFps);
+    const badge = $('#boostBadge');
+    if (badge) badge.hidden = !actif;
+    const btn = $('#boostBtn');
+    if (btn) {
+      btn.textContent = actif ? 'Desactiver le mode Boost FPS' : 'Activer le mode Boost FPS';
+      btn.classList.toggle('danger', actif);
+    }
+  }
+  $('#boostBtn').addEventListener('click', async () => {
+    const cfg = await api(x => x.env.config(), { soft: true });
+    const actif = !!(cfg && cfg.boostFps);
+    const r = await api(x => x.env.saveConfig({ boostFps: !actif }));
+    majEtatBoost(r);
+    Toast.show('Boost FPS', !actif
+      ? 'Le profil de performance sera applique au prochain lancement.'
+      : 'Le jeu retrouvera tes reglages au prochain lancement.', 'ok', 5000);
   });
 
   /* ================================================================== *
@@ -2538,6 +2702,9 @@ const Login = {
       // on laisse le launcher s'afficher tout de suite, puis on reconnecte
       Account.apply(null);
       Settings.refresh();
+      /*  L'etat du mode Boost FPS, pour que le bouton d'accueil
+          dise la verite des le premier affichage.                      */
+      api(x => x.env.config(), { soft: true }).then(c => { if (c) majEtatBoost(c); });
       const acc = await X.auth.resume();
       Account.apply(acc);
       await Home.refresh();

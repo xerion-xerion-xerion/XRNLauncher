@@ -23,6 +23,10 @@
   <g id="i-gear"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.6 1.6 0 0 0 9 4.6a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.6 1.6 0 0 0 19.4 9v0a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.47 1Z"/></g>
   <g id="i-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g>
   <g id="i-play"><path d="M7 4.5v15l13-7.5Z" fill="currentColor" stroke="none"/></g>
+  <g id="i-gem"><path d="M6 3h12l4 6-10 12L2 9Z"/><path d="M2 9h20M9 3 6 9l6 12 6-12-3-6"/></g>
+  <g id="i-star"><path d="m12 3 2.9 5.9 6.6.9-4.8 4.6 1.2 6.5L12 17.8 6.1 20.9l1.2-6.5L2.5 9.8l6.6-.9Z"/></g>
+  <g id="i-bolt"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"/></g>
+  <g id="i-users"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></g>
   <g id="i-search"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g>
   <g id="i-min"><path d="M5 12h14"/></g>
   <g id="i-max"><rect x="5" y="5" width="14" height="14" rx="2"/></g>
@@ -144,6 +148,7 @@
       <button class="nav-item" data-view="files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"/></svg>Fichiers</button>
       <button class="nav-item" data-view="servers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-globe"/></svg>Serveurs</button>
       <button class="nav-item" data-view="videos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-play"/></svg>Vidéos</button>
+      <button class="nav-item" data-view="boutique"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gem"/></svg>Boutique</button>
 
       <div class="nav-label" style="margin-top:10px">Compte & système</div>
       <button class="nav-item" data-view="login"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"/></svg>Connexion</button>
@@ -227,6 +232,22 @@
           <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cube"/></svg>Versions</div><div class="t-val" id="stVersions">0</div><div class="t-sub" id="stVersionsSub">installées</div></div>
           <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"/></svg>Sauvegardes</div><div class="t-val" id="stSaves">0</div><div class="t-sub" id="stSavesSub">dans le dossier du jeu</div></div>
           <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"/></svg>Mémoire</div><div class="t-val" id="stRam">4.0<small>Go</small></div><div class="t-sub">allouée à Minecraft</div></div>
+        </div>
+
+        <!--  Le mode Boost FPS : d ici, on decide comment le jeu tourne.
+              Il applique un profil de performance, et dit clairement ce
+              qu il fait, parce qu un gain d images par seconde se
+              paie en distance d affichage et en details.              -->
+        <div class="panel" style="margin-top:14px" id="boostPanel">
+          <div class="panel-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bolt"/></svg>
+            <h4>Boost FPS</h4>
+            <span class="live" id="boostBadge" hidden><span class="dot"></span>ACTIF</span>
+          </div>
+          <div class="panel-b">
+            <p class="boutique-txt" id="boostTexte">Un profil de performance applique au demarrage : distance d affichage reduite, mode graphique rapide, particules minimales, ombres et nuages coupes, moteur de lumiere le plus econome. Tu vois moins loin, et tu gagnes des images par seconde.</p>
+            <button class="btn" id="boostBtn">Activer le mode Boost FPS</button>
+          </div>
         </div>
 
         <div class="view-head" style="margin-top:32px">
@@ -324,6 +345,64 @@
         <div class="panel" style="margin-top:18px">
           <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"/></svg><h4>Archives de sauvegarde</h4></div>
           <div class="panel-b" id="backupsList"><p class="empty">Aucune archive.</p></div>
+        </div>
+      </section>
+
+      <!-- ========== BOUTIQUE ========== -->
+      <section class="view" id="view-boutique">
+        <div class="view-head">
+          <div><div class="eyebrow">Communaute</div><h2>Boutique</h2><p>Les cosmetiques du client, et la communaute qui les porte.</p></div>
+          <button class="btn" id="btnBoutiqueRefresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-refresh"/></svg>Actualiser</button>
+        </div>
+
+        <div class="stats">
+          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-star"/></svg>Solde</div><div class="t-val" id="btEtoiles">0<small>etoiles</small></div><div class="t-sub">a convertir en code</div></div>
+          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"/></svg>Possedees</div><div class="t-val" id="btDroits">0</div><div class="t-sub">cosmetiques</div></div>
+          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-users"/></svg>Communaute</div><div class="t-val" id="btCommunaute">0</div><div class="t-sub">pseudos connus</div></div>
+        </div>
+
+        <!--  La recompense du jour : une fois par jour, et d autant
+              plus que la serie est longue. Le serveur garde la date
+              du dernier retrait : impossible d encaisser deux fois.  -->
+        <div class="panel" style="margin-top:14px">
+          <div class="panel-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-star"/></svg>
+            <h4>Recompense du jour</h4>
+            <span class="live" id="btSerieBadge" hidden><span class="dot"></span>SERIE <b id="btSerieJour">0</b></span>
+          </div>
+          <div class="panel-b">
+            <div class="serie" id="btSerie"></div>
+            <p class="boutique-txt" id="btSerieTexte" style="margin-top:12px">Reviens chaque jour : la serie de recompenses ne s interrompt pas.</p>
+            <button class="btn btn-p" id="btRecompense">Reclamer ma recompense</button>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:14px">
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-star"/></svg><h4>Activer un code</h4></div>
+          <div class="panel-b">
+            <p class="boutique-txt">Un code donne acces a un cosmetique. Le serveur accorde le droit, jamais le client : il est donc valable sur toutes les machines, et il ne peut pas etre forge.</p>
+            <div class="champ-code">
+              <input type="text" id="btCode" class="input" placeholder="XRN-..." spellcheck="false" />
+              <button class="btn btn-p" id="btCodeOk">Activer</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:14px">
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"/></svg><h4>Catalogue</h4></div>
+          <div class="panel-b" id="btProduits"><p class="empty">Chargement…</p></div>
+        </div>
+
+        <div class="panel" style="margin-top:14px">
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-users"/></svg><h4>Annnuaire de la communaute</h4></div>
+          <div class="panel-b">
+            <p class="boutique-txt">Les pseudos qui utilisent ce client. Leur logo apparait a cote de leur pseudo, en jeu et dans la liste des joueurs. Seuls des pseudos de jeu sont partages : ni identifiant, ni jeton, ni adresse.</p>
+            <div class="panel-b" id="btPseudos" style="padding:0;margin-top:10px"><p class="empty">Chargement…</p></div>
+            <div class="champ-code">
+              <input type="text" id="btPseudoAjout" class="input" placeholder="Ajouter un pseudo (optionnel)" spellcheck="false" />
+              <button class="btn" id="btPseudoOk">Ajouter</button>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -1217,3 +1217,31 @@ input[type=range]::-webkit-slider-thumb{background:#d8dce6;border:2px solid #121
 .v-opt.sel{background:#22262f}
 .card-tag.new{color:#c8ccd6;border-color:var(--stroke-2);background:#15171e}
 .token-box > summary::after{color:var(--muted)}
+
+/* ==================== BOUTIQUE ET BOOST FPS ====================
+   Les deuxfonctions qui distinguent le launcher d'un simple
+   telechargeur : la boutique, et le mode de performance.            */
+.boutique-txt{color:var(--muted);font-size:12.5px;line-height:1.65;margin:0 0 10px}
+.boutique-ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto}
+.boutique-ico svg{width:17px;height:17px}
+.boutique-row{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--stroke)}
+.boutique-row:last-child{border-bottom:0}
+.boutique-nom{font-size:13px;font-weight:600;color:var(--text,#eee)}
+.boutique-pseudo{display:flex;flex-wrap:wrap;gap:6px}
+#boostBtn{margin-top:4px}
+/*  La serie de recompenses : sept jours, comme sur un jeu de
+    recompense classique. On voit d un coup d oeil ou l on en est.   */
+.serie{display:flex;gap:8px;flex-wrap:wrap}
+.serie-jour{flex:1;min-width:74px;border:1px solid var(--stroke);border-radius:var(--r-md);
+  padding:11px 6px;text-align:center;background:rgba(9,6,22,.45);transition:var(--fast)}
+.serie-jour b{display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.serie-jour i{display:block;font-style:normal;margin:7px 0 3px;color:var(--v2);font-size:15px}
+.serie-jour span{font-size:11px;color:var(--muted)}
+.serie-jour.reclasse{border-color:rgba(124,58,237,.5);background:rgba(124,58,237,.14)}
+.serie-jour.reclasse i{color:#c4b5fd}
+.serie-jour.fait{opacity:.45}
+
+/*  Un champ de saisie et son bouton, cotes a cotes, sans deformation. */
+.champ-code{display:flex;gap:9px;margin-top:12px;align-items:stretch}
+.champ-code .input{flex:1;min-width:0;height:42px}
+.champ-code .btn{flex:0 0 auto;height:42px}

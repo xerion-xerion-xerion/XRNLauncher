@@ -997,6 +997,9 @@ function buildArgs(plan, opts) {
   const jvm = [];
   if (opts.extraJavaArgs) jvm.push(...String(opts.extraJavaArgs).split(/\s+/).filter(Boolean));
   jvm.push('-Xmx' + Math.round(ram * 1024) + 'M');
+  /*  Le mode Boost FPS ajoute ses options de JVM : c'est la partie
+      qui ne depend pas de la carte graphique.                           */
+  jvm.push(...require('./boost').optionsJVM(!!cfg.boostFps, cfg.javaArgs, ram));
   jvm.push('-Dfile.encoding=UTF-8');
   /*  Le mod XRN HUD affiche la version du launcher dans sa signature.
       On la lui passe donc ici : sinon il ne pourrait afficher que la
@@ -1006,6 +1009,16 @@ function buildArgs(plan, opts) {
   ce que jouent Deezer ou Spotify et l'ecrit dans un fichier : on lui
   passe le chemin, sinon il n'a aucun moyen de le trouver.            */
   jvm.push('-DXRNMediaFile=' + require('./media').fichierMedia());
+  /*  L'annuaire de la communaute : la liste des pseudos qui utilisent
+      le client, pour mettre leur logo a cote de leur pseudo. Le mod la
+      lit sur le disque, sans avoir besoin du reseau.                     */
+  jvm.push('-DXRNCommunaute=' + require('./communaute').fichierListe());
+  /*  Les droits de la boutique : les cosmetiques que le joueur
+      possede. Le mod en a besoin pour les montrer.                      */
+  jvm.push('-DXRNDroits=' + require('./boutique').fichierDroits());
+  /*  Le mode Boost FPS : le mod applique le profil de performance au
+      demarrage, et sait revenir en arriere si le joueur le desactive.  */
+  jvm.push(require('./boost').optionMod(!!cfg.boostFps));
 
   const jeu = [];
   const mainClass = plan.mainClass || 'net.minecraft.client.main.Main';

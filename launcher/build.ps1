@@ -327,9 +327,11 @@ function Build-App {
     # local de la machine, pour que rien de personnel n entre dans le
     # depot public.
     $notifUrl = ''
+    $serviceUrl = ''
     try {
         $cfgLocale = Get-Content -LiteralPath (Join-Path $Root 'config.local.json') -Raw | ConvertFrom-Json
         if ($cfgLocale.notificationUrl) { $notifUrl = [string]$cfgLocale.notificationUrl }
+        if ($cfgLocale.serviceUrl) { $serviceUrl = [string]$cfgLocale.serviceUrl }
     } catch { }
     if ($notifUrl) {
         $notifDst = Join-Path $StageDir 'notification.json'
@@ -386,6 +388,10 @@ function Build-App {
         $cfg | Add-Member -NotePropertyName 'lastVersion' -NotePropertyValue $null -Force
         $cfg | Add-Member -NotePropertyName 'lastProfile' -NotePropertyValue $null -Force
         $cfg | Add-Member -NotePropertyName 'offlineProfiles' -NotePropertyValue @() -Force
+        $cfg | Add-Member -NotePropertyName 'boostFps' -NotePropertyValue $false -Force
+        #  L adresse du service en ligne (annuaire, boutique) : elle
+        #  vient du fichier local, comme celle des notifications.
+        $cfg | Add-Member -NotePropertyName 'serviceUrl' -NotePropertyValue $serviceUrl -Force
         if ($ClientId) { $cfg | Add-Member -NotePropertyName 'microsoftClientId' -NotePropertyValue $ClientId -Force }
         else { $cfg | Add-Member -NotePropertyName 'microsoftClientId' -NotePropertyValue '' -Force }
         $jsonCfg = $cfg | ConvertTo-Json -Depth 8

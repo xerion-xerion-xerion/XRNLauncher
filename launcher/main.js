@@ -23,6 +23,8 @@ const skins  = require('./lib/skins');
 const notif  = require('./lib/notification');
 const media  = require('./lib/media');
 const manif  = require('./lib/manifeste');
+const communaute = require('./lib/communaute');
+const boutique = require('./lib/boutique');
 
 util.ensureDir(util.appRoot());
 
@@ -40,6 +42,14 @@ const pkg = util.readJSON(path.join(appDir(), 'package.json'), { version: '0.0.0
     reglages ne bougent pas ensemble.                                */
 function dossierInstall() {
   return manif.dossierInstall();
+}
+
+/*  Le pseudo du joueur connecte, ou une chaine vide. C'est la seule
+    information envoyee au service : un pseudo de jeu, rien d autre.  */
+function pseudoSession() {
+  try {
+    return (session.account && session.account.name) ? String(session.account.name) : '';
+  } catch (e) { return ''; }
 }
 const bus = new EventEmitter();
 bus.setMaxListeners(64);
@@ -198,6 +208,36 @@ const XRN = {
     },
     config() { return cfgm.load(); },
     shippedClientId() { return cfgm.shipped().microsoftClientId || ''; },
+
+    /*  La communaute : l'annuaire des pseudos qui utilisent le client.
+        Le launcher s'y inscrit, et recupere la liste, pour que le mod
+        puisse mettre le logo a cote de leur pseudo.                      */
+    communaute: {
+      liste() { return communaute.listeLocale(); },
+      async rafraichir() {
+        const r = await communaute.rafraichir(pseudoSession());
+        if (r.ok) XRN.report('COMMUNAUTE', r.total + ' pseudo(s) a l annuaire');
+        return r;
+      },
+      ajouter(pseudos) { return communaute.ajouter(pseudos); }
+    },
+
+    /*  La boutique : le catalogue, les droits, l'activation d'un code,
+        et la recompense quotidienne.                                     */
+    boutique: {
+      async catalogue() { return boutique.catalogue(pseudoSession()); },
+      async activer(code) {
+        const r = await boutique.activer(pseudoSession(), code);
+        if (r.ok) XRN.report('BOUTIQUE', 'droit obtenu : ' + r.produit);
+        return r;
+      },
+      async recompense() {
+        const r = await boutique.recompense(pseudoSession());
+        if (r && r.ok && r.gagne) XRN.report('BOUTIQUE', 'recompense du jour : +' + r.gagne + ' etoiles');
+        return r;
+      },
+      droits() { return boutique.droitsLocaux(); }
+    },
     saveConfig(patch) {
       const c = cfgm.save(patch);
       /*  Une trace par enregistrement : on voit dans le journal ce qui
@@ -1129,6 +1169,7 @@ async function resumeSession() {
   if (acc.type === 'offline') {
     const pub = auth.publicAccount(acc);
     bus.emit('auth:connected', pub);
+    inscrireCommunaute();
     return pub;
   }
 
@@ -1148,6 +1189,7 @@ async function resumeSession() {
       const fresh = await refreshAuthlib(acc);
       const pub = auth.publicAccount(fresh);
       bus.emit('auth:connected', pub);
+      inscrireCommunaute();
       return pub;
     } catch (e) {
       /* pas de rafraichissement : on garde la session telle quelle,
@@ -1207,6 +1249,7 @@ async function resumeSession() {
       session.resuming = false;
       const pub = auth.publicAccount(fresh);
       bus.emit('auth:connected', pub);
+      inscrireCommunaute();
       return pub;
     } catch (e) {
       session.resuming = false;
@@ -1264,6 +1307,39 @@ async function resumeSession() {
 XRN.auth.resume = resumeSession;
 XRN.auth.resuming = () => session.resuming;
 XRN.auth.expired = () => session.expired;
+
+/*  Annuaire de la communaute.
+
+    Au demarrage, le launcher inscrit son pseudo et va chercher la
+    liste des joueurs qui utilisent le client. C'est ce qui permet a
+    chacun de voir le logo a cote des autres.
+
+    C'est fait en arriere-plan : le lanceur demarre tout de suite, et
+    la liste arrive quand elle arrive. Sans reseau, le mod garde la
+    liste qu il a deja.                                                 */
+function inscrireCommunaute() {
+  const pseudo = pseudoSession();
+  if (!pseudo) return;
+  setTimeout(async () => {
+    try {
+      const r = await communaute.rafraichir(pseudo);
+      if (r.ok) {
+        bus.emit('communaute:maj', { total: r.total });
+        XRN.report('COMMUNAUTE', 'annuaire a jour : ' + r.total + ' pseudo(s)');
+      }
+    } catch (e) { }
+
+    /*  Les droits de la boutique sont rafraichis dans la foulure :
+        le mod les lit au demarrage du jeu, et il ne doit pas trouver
+        une liste de la veille.                                            */
+    try {
+      const b = await boutique.catalogue(pseudo);
+      if (b && b.ok) {
+        XRN.report('BOUTIQUE', (b.droits || []).length + ' cosmetique(s), ' + (b.etoiles || 0) + ' etoiles');
+      }
+    } catch (e) { }
+  }, 4000);
+}
 
 /* Rafraichit un profil a la volee (bouton de la barre laterale). */
 XRN.auth.revalidate = async function () {

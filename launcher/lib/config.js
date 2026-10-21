@@ -30,7 +30,15 @@ function defaults() {
     ambientVolume: 0.3,
     lastVersion: null,
     lastProfile: null,
-    offlineProfiles: []
+    offlineProfiles: [],
+    /*  Le mode « Boost FPS » : un profil de performance applique au
+        demarrage, cote client. C'est une preference du joueur, elle
+        n'a rien a voir avec le compte.                                  */
+    boostFps: false,
+    /*  L'adresse du service en ligne (annuaire, boutique). Elle vient
+        du fichier livre avec l'application, comme celle des
+        notifications.                                                    */
+    serviceUrl: ''
   };
 }
 
