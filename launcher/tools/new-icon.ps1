@@ -1,60 +1,45 @@
 ﻿#Requires -Version 5.1
 <#
-  Genere l'icone de l'application, identique au logo de la barre de
-  titre et du site.
+    Genere l'icone de l'application, identique au logo de la barre de
+    titre et du site.
 
-  Le logo d'origine est un SVG en ligne (index.html) pose sur un fond
-  degrade. On le re-dessine ici a partir de la meme recette, en haute
-  resolution : c'est la seule facon d'obtenir un icone net dans la barre
-  des taches, dans un raccourci, ou dans l'explorateur.
+    L'icone est dessinee a la taille demandee, et non reduite depuis
+    une grande image : reduire efface les traits fins, et une icone de
+    bureau reductions a 32 ou 48 pixels devient une suite de pointilles.
+    On epaissit donc tout ce qui doit rester visible en petit.
 
-  Depuis le rework 4.2.0, l'icone suit exactement la marque du hero :
-  deux orbites fines, une croix violette et une etoile blanche, nette.
-  L'ancien fond en degrade conique et le halo de la croix donnaient un
-  rendu « image generee » : ils ont ete supprimes.
+    Depuis le rework 4.2.0, l'icone suit exactement la marque du hero :
+    une croix violette et une etoile blanche, sur un fond violet tres
+    sombre. Les orbites fines ont ete retirees : a 48 pixels elles ne
+    sont qu'une grouille de pixels gris autour de la croix.
 
-  Les couleurs viennent de style.css :
-    fond       #1b1630 -> #100d1c, degrade diagonal tres sobre
-    orbites    rgba(233,235,242,.28) et rgba(167,139,250,.45)
-    croix      #a78bfa
-    etoile     #f2e9ff
-
-  Les couleurs sont stockees en entier, et non en tableau : PowerShell
-  deballe un tableau passe en argument, ce qui casserait les fonctions
-  de melange.
+    Les couleurs viennent de style.css :
+      fond       #2a2050 -> #14102a, degrade diagonal tres sobre
+      croix      #b9a0ff
+      etoile     #f5eeff
 #>
 [CmdletBinding()]
 param(
-  [string]$OutFile = (Join-Path $PSScriptRoot '..\assets\icon.png'),
-  [int]$Size = 1024
+    [string]$OutFile = (Join-Path $PSScriptRoot '..\assets\icon.png'),
+    [int]$Size = 1024
 )
 
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
-function Lerp-Couleur([int]$a, [int]$b, [double]$t) {
-  $t = [Math]::Max(0.0, [Math]::Min(1.0, $t))
-  $ar = ($a -shr 16) -band 0xFF; $ag = ($a -shr 8) -band 0xFF; $ab = $a -band 0xFF
-  $br = ($b -shr 16) -band 0xFF; $bg = ($b -shr 8) -band 0xFF; $bb = $b -band 0xFF
-  $r = [int]($ar + ($br - $ar) * $t)
-  $v = [int]($ag + ($bg - $ag) * $t)
-  $w = [int]($ab + ($bb - $ab) * $t)
-  return [System.Drawing.Color]::FromArgb(255, $r, $v, $w)
-}
-
 function Chemin-Arrondi($x, $y, $w, $h, $r) {
-  $d = [int]($r * 2)
-  $p = New-Object System.Drawing.Drawing2D.GraphicsPath
-  $p.AddArc($x, $y, $d, $d, 180, 90)
-  $p.AddArc(($x + $w - $d), $y, $d, $d, 270, 90)
-  $p.AddArc(($x + $w - $d), ($y + $h - $d), $d, $d, 0, 90)
-  $p.AddArc($x, ($y + $h - $d), $d, $d, 90, 90)
-  $p.CloseFigure()
-  return $p
+    $d = [int]($r * 2)
+    $p = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $p.AddArc($x, $y, $d, $d, 180, 90)
+    $p.AddArc(($x + $w - $d), $y, $d, $d, 270, 90)
+    $p.AddArc(($x + $w - $d), ($y + $h - $d), $d, $d, 0, 90)
+    $p.AddArc($x, ($y + $h - $d), $d, $d, 90, 90)
+    $p.CloseFigure()
+    return $p
 }
 
-# --- echelle : le dessin est concu en 38 unites, comme le CSS ---------
-$U = $Size / 38.0
+# --- echelle : le dessin est concu en 64 unites, comme la police ------
+$U = $Size / 64.0
 
 $bmp = New-Object System.Drawing.Bitmap($Size, $Size, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
 $g = [System.Drawing.Graphics]::FromImage($bmp)
@@ -63,69 +48,48 @@ $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQuality
 $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
 $g.Clear([System.Drawing.Color]::Transparent)
 
-# --- fond : un degrade diagonal sombre, pas de degrade conique ---------
-$coins = 12.0 * $U
+# --- fond : un degrade diagonal violet, assez clair pour que la
+#     silhouette de la croix se detache sur un bureau clair ou sombre ---
+$coins = 13.0 * $U
 $formeFond = Chemin-Arrondi 0 0 $Size $Size $coins
 $degradeFond = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-  (New-Object System.Drawing.PointF([float]($Size * 0.15), [float]($Size * 0.05))),
-  (New-Object System.Drawing.PointF([float]($Size * 0.85), [float]($Size * 0.95))),
-  [System.Drawing.Color]::FromArgb(255, 0x1B, 0x16, 0x30),
-  [System.Drawing.Color]::FromArgb(255, 0x10, 0x0D, 0x1C))
+    (New-Object System.Drawing.PointF([float]($Size * 0.12), [float]($Size * 0.02))),
+    (New-Object System.Drawing.PointF([float]($Size * 0.88), [float]($Size * 0.98))),
+    [System.Drawing.Color]::FromArgb(255, 0x2A, 0x20, 0x50),
+    [System.Drawing.Color]::FromArgb(255, 0x14, 0x10, 0x2A))
 $g.FillPath($degradeFond, $formeFond)
 $degradeFond.Dispose()
 
-# --- liseré violet, tres discret --------------------------------------
-$liser = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(70, 0xA7, 0x8B, 0xFA), [single](0.85 * $U))
+# --- liseré violet : il donne le contour de l icone sur un fond clair ---
+$liser = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(150, 0xA7, 0x8B, 0xFA), [single](0.9 * $U))
 $g.DrawPath($liser, $formeFond)
 $liser.Dispose()
 
-# --- le SVG de la barre de titre, a l identique -----------------------
-$cote = 32.0 * $U
-$decalage = ($Size - $cote) / 2.0
-$vue = $cote / 64.0
+# --- la croix : le trait epais reste continu a 32 pixels ------------
+$largeurCroix = 6.2 * $U
+$ax = 19.5 * $U; $ay = 15.0 * $U
+$bx = 44.5 * $U; $by = 49.0 * $U
+$cx = 44.5 * $U; $cy = 15.0 * $U
+$dx = 19.5 * $U; $dy = 49.0 * $U
 
-function Anneau([double]$rotation, [System.Drawing.Color]$couleur, [double]$largeur) {
-  $mx = $decalage + 32 * $vue
-  $my = $decalage + 32 * $vue
-  $rx = 27.5 * $vue
-  $ry = 11.0 * $vue
-  $st = $g.Save()
-  $g.TranslateTransform([float]$mx, [float]$my)
-  $g.RotateTransform([float]$rotation)
-  $pinceau = [System.Drawing.Pen]::new($couleur, [single]$largeur)
-  $g.DrawEllipse($pinceau, [float](-$rx), [float](-$ry), [float]($rx * 2), [float]($ry * 2))
-  $pinceau.Dispose()
-  $g.Restore($st)
-}
-Anneau -22.0 ([System.Drawing.Color]::FromArgb(96, 0xE9, 0xEB, 0xF2)) (1.9 * $vue)
-Anneau  38.0 ([System.Drawing.Color]::FromArgb(140, 0xA7, 0x8B, 0xFA)) (1.9 * $vue)
-
-# --- la croix : violet plein, sans halo -------------------------------
-$largeurCroix = 5.2 * $vue
-$ax = $decalage + 19.5 * $vue; $ay = $decalage + 16.0 * $vue
-$bx = $decalage + 44.5 * $vue; $by = $decalage + 48.0 * $vue
-$cx2 = $decalage + 44.5 * $vue; $cy2 = $decalage + 16.0 * $vue
-$dx2 = $decalage + 19.5 * $vue; $dy2 = $decalage + 48.0 * $vue
-
-$croix = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(255, 0xA7, 0x8B, 0xFA), [single]$largeurCroix)
+$croix = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(255, 0xB9, 0xA0, 0xFF), [single]$largeurCroix)
 $croix.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
 $croix.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
 $g.DrawLine($croix, [float]$ax, [float]$ay, [float]$bx, [float]$by)
-$g.DrawLine($croix, [float]$cx2, [float]$cy2, [float]$dx2, [float]$dy2)
+$g.DrawLine($croix, [float]$cx, [float]$cy, [float]$dx, [float]$dy)
 $croix.Dispose()
 
-# --- l etoile : quatre branches fines, comme dans le hero et le site ---
+# --- l etoile : quatre branches, nette a toutes les tailles -----------
 $etoile = @(
-  @(32.0, 25.2), @(33.4, 30.6), @(38.8, 32.0), @(33.4, 33.4),
-    @(32.0, 38.8), @(30.6, 33.4), @(25.2, 32.0), @(30.6, 30.6)
+    @(32.0, 23.0), @(33.8, 30.2), @(41.0, 32.0), @(33.8, 33.8),
+    @(32.0, 41.0), @(30.2, 33.8), @(23.0, 32.0), @(30.2, 30.2)
 )
 $points = New-Object 'System.Drawing.PointF[]' $etoile.Count
 for ($i = 0; $i -lt $etoile.Count; $i++) {
-  $points[$i] = New-Object System.Drawing.PointF(
-    [float]($decalage + $etoile[$i][0] * $vue),
-    [float]($decalage + $etoile[$i][1] * $vue))
+    $points[$i] = New-Object System.Drawing.PointF(
+        [float]($etoile[$i][0] * $U), [float]($etoile[$i][1] * $U))
 }
-$remplissage = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 0xF2, 0xE9, 0xFF))
+$remplissage = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 0xF5, 0xEE, 0xFF))
 $g.FillPolygon($remplissage, $points)
 $remplissage.Dispose()
 
@@ -133,7 +97,7 @@ $g.Dispose()
 
 $dossier = Split-Path -Parent $OutFile
 if ($dossier -and -not (Test-Path -LiteralPath $dossier)) {
-  New-Item -ItemType Directory -Path $dossier -Force | Out-Null
+    New-Item -ItemType Directory -Path $dossier -Force | Out-Null
 }
 $bmp.Save($OutFile, [System.Drawing.Imaging.ImageFormat]::Png)
 $bmp.Dispose()

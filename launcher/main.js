@@ -210,7 +210,18 @@ const XRN = {
     /*  Mise a jour automatique : on telecharge l archive, puis un
         script applique les fichiers une fois le launcher ferme, et le
         relance. Le joueur n a rien a decompresser.                   */
-    async appliquerMiseAJour(url, total) {
+    /*  Mise a jour appliquee seule : on cherche la derniere version,
+        puis on prend le patch si l installation locale s y prete. C est
+        ce que fait la notification quand elle annonce une version.   */
+    async appliquerMiseAJourAuto() {
+      const r = await this.chercherMiseAJour();
+      if (!r || !r.ok) return { ok: false, detail: 'aucune mise a jour' };
+      const url = r.mode === 'patch' ? r.patch : (r.telecharger || r.url);
+      if (!url) return { ok: false, detail: 'adresse introuvable' };
+      return this.appliquerMiseAJour(url, r.taille, r.mode);
+    },
+
+    async appliquerMiseAJour(url, total, mode) {
       try {
         if (!url) return { ok: false, detail: 'aucune adresse' };
         const zip = path.join(require('os').tmpdir(), 'xrn-update-' + Date.now() + '.zip');
@@ -267,7 +278,7 @@ const XRN = {
 
         const child = spawn('explorer.exe', [fichierVbs], { stdio: 'ignore', windowsHide: true });
         child.unref();
-        XRN.report('MAJ', 'mise a jour programmee, fichier=' + fichierVbs);
+        XRN.report('MAJ', 'mise a jour programmee (' + (mode || 'complet') + '), fichier=' + fichierVbs);
 
         /*  On ne ferme que si le script a reellement demarre : sinon
             on resterait sans launcher et sans mise a jour.         */
@@ -328,15 +339,37 @@ const XRN = {
             bouton de la notification telecharge alors directement.  */
         const assets = (r && r.assets) || [];
         let telecharger = '';
+        let patch = '';
+        let manifesteUrl = '';
         let taille = 0;
+        let taillePatch = 0;
         for (const a of assets) {
-          if (a && a.name && /\.zip$/i.test(a.name) && a.browser_download_url) {
+          if (!a || !a.name || !a.browser_download_url) continue;
+          const nom = String(a.name);
+          if (/^XRNLauncher-win-x64\.zip$/i.test(nom)) {
             telecharger = String(a.browser_download_url);
-          taille = Number(a.size) || 0;
-            break;
+            taille = Number(a.size) || 0;
+          } else if (/^XRNLauncher-patch\.zip$/i.test(nom)) {
+            patch = String(a.browser_download_url);
+            taillePatch = Number(a.size) || 0;
+          } else if (/^XRNLauncher-manifest\.json$/i.test(nom)) {
+            manifesteUrl = String(a.browser_download_url);
           }
         }
-        return { ok: true, version, courant, telecharger, taille,
+        /*  Le manifeste dit si le patch suffit : on ne telecharge que
+            les fichiers qui ont change, quand le runtime est le meme.
+            Sinon on reprend l installation complete.                  */
+        let mode = 'complet';
+        if (patch && manifesteUrl) {
+          try {
+            const m = await http.getJSON(manifesteUrl);
+            if (m && this.etatLocalCompatible(m)) {
+              mode = 'patch';
+              taille = taillePatch;
+            }
+          } catch (e) { }
+        }
+        return { ok: true, version, courant, telecharger, patch, mode, taille,
                  url: String((r && r.html_url) || '') };
       } catch (e) {
         return { ok: false, courant };

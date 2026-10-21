@@ -31,11 +31,17 @@ function New-IcoBytes {
   $offset = 6 + (16 * $Sizes.Count)
   $blobs = @()
   foreach ($sz in $Sizes) {
+    #  On redessine l icone a la taille voulue au lieu de reduire
+    #  l image de depart : reduire casse les traits fins, et une
+    #  icone de bureau finit en pointilles.
+    $dessin = Join-Path $env:TEMP ("xrn-ico-" + $sz + ".png")
+    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'new-icon.ps1') -OutFile $dessin -Size $sz | Out-Null
     $bmp = New-Object System.Drawing.Bitmap($sz, $sz)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-    $g.DrawImage($src, (New-Object System.Drawing.Rectangle(0, 0, $sz, $sz)))
+    $g.DrawImage([System.Drawing.Image]::FromFile($dessin), (New-Object System.Drawing.Rectangle(0, 0, $sz, $sz)))
     $g.Dispose()
+    Remove-Item -LiteralPath $dessin -Force -ErrorAction SilentlyContinue
     $tmp = New-Object System.IO.MemoryStream
     $bmp.Save($tmp, [System.Drawing.Imaging.ImageFormat]::Png)
     $bmp.Dispose()

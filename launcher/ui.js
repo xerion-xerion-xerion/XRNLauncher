@@ -183,7 +183,9 @@
       const texte = $('#barreMajTexte');
       const bouton = $('#barreMajBtn');
       if (titre) titre.textContent = 'XRNLauncher v' + r.version + ' est disponible';
-      if (texte) texte.textContent = 'Vous utilisez la v' + r.courant + ' - la mise a jour se fait toute seule.';
+      if (texte) texte.textContent = r.mode === 'patch'
+        ? 'Vous utilisez la v' + r.courant + ' - seuls les fichiers modifies seront telecharges.'
+        : 'Vous utilisez la v' + r.courant + ' - la mise a jour se fait toute seule.';
       if (bouton) {
         bouton.textContent = 'Mettre a jour';
         bouton.onclick = async () => {
@@ -191,7 +193,8 @@
           bouton.textContent = 'Telechargement...';
           maj.ouvrir(r.version);
           try {
-            const r2 = await api(x => x.env.appliquerMiseAJour(r.telecharger || r.url));
+            const cible = r.mode === 'patch' ? r.patch : (r.telecharger || r.url);
+            const r2 = await api(x => x.env.appliquerMiseAJour(cible, r.taille, r.mode));
             if (r2 && r2.ok) {
               bouton.textContent = 'Redemarrage...';
               Toast.show('Mise a jour', 'Le launcher va se redemarrer tout seul.', 'ok', 6000);
@@ -221,7 +224,7 @@
           const archive = r.telecharger || (/\.zip(\?|$)/i.test(r.lien || '') ? r.lien : '');
           if (archive) {
             maj.ouvrir(r.version);
-            api(x => x.env.appliquerMiseAJour(archive, r.taille))
+            api(x => x.env.appliquerMiseAJourAuto())
               .then(rr => { if (rr && rr.ok) Toast.show('Mise a jour', 'Le launcher redemarre tout seul.', 'ok', 6000); });
           } else {
             X.env.openUrl(r.lien || r.url);

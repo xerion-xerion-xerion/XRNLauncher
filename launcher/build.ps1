@@ -503,6 +503,129 @@ function Get-Version {
     return $script:VersionCache
 }
 
+# ---------------------------------------------------------------------------
+#  Mise a jour incrementale
+#
+#  Le runtime NW.js pese 400 Mo et ne change que rarement. L'application,
+#  elle, fait quelques Mo. On publie donc, a cote de l archive complete :
+#
+#    - un manifeste : la version, la version du runtime, et la liste des
+#      fichiers de l application avec leur empreinte ;
+#    - un patch : uniquement les fichiers qui ont change depuis la
+#      version precedente.
+#
+#  Au moment d installer, le launcher compare son etat local au
+#  manifeste : si tout correspond, il ne telecharge que le patch ; sinon
+#  il retelecharge tout. Un gros changement du runtime passe donc par un
+#  telechargement complet, ce qui est normal.
+# ---------------------------------------------------------------------------
+function Build-Patch {
+    Step 'Mise a jour incrementale'
+
+    $fichiersApp = @('index.html','style.css','ui.js','main.js','notification.json','package.json')
+    $dossiersApp = @('lib','assets','tools','mods-integres')
+
+    #  Le manifeste precedent sert a savoir quels fichiers ont change.
+    $manifestePrec = Join-Path $DistDir 'XRNLauncher-manifest.json'
+    $precedents = @{}
+    $exePrecedent = ''
+    $runtimePrecedent = ''
+    if (Test-Path -LiteralPath $manifestePrec) {
+        try {
+            $mp = Get-Content -LiteralPath $manifestePrec -Raw | ConvertFrom-Json
+            foreach ($f in $mp.fichiers) { $precedents[$f.chemin] = $f.sha256 }
+            if ($mp.exe) { $exePrecedent = $mp.exe.sha256 }
+            $runtimePrecedent = $mp.runtime
+        } catch { }
+    }
+
+    #  Empreinte de chaque fichier de l application.
+    $liste = @()
+    foreach ($f in $fichiersApp) {
+        $abs = Join-Path $StageDir $f
+        if (-not (Test-Path -LiteralPath $abs)) { continue }
+        $liste += [ordered]@{
+            chemin = $f
+            taille = (Get-Item -LiteralPath $abs).Length
+            sha256 = (Get-FileHash -LiteralPath $abs -Algorithm SHA256).Hash.ToLower()
+        }
+    }
+    foreach ($d in $dossiersApp) {
+        $abs = Join-Path $StageDir $d
+        if (-not (Test-Path -LiteralPath $abs)) { continue }
+        foreach ($fichier in (Get-ChildItem -LiteralPath $abs -Recurse -File)) {
+            $rel = $d + '/' + ($fichier.FullName.Substring($abs.Length + 1) -replace '\\','/')
+            $liste += [ordered]@{
+                chemin = $rel
+                taille = $fichier.Length
+                sha256 = (Get-FileHash -LiteralPath $fichier.FullName -Algorithm SHA256).Hash.ToLower()
+            }
+        }
+    }
+
+    #  Ce qui a change par rapport a la version precedente.
+    $changement = @()
+    foreach ($e in $liste) {
+        $ancien = $precedents[$e.chemin]
+        if (-not $ancien -or $ancien -ne $e.sha256) { $changement += $e.chemin }
+    }
+    #  L executable porte l icone : s il change, le patch doit le
+    #  contenir aussi, sans quoi l icone resterait celle d avant.
+    $empreinteExe = (Get-FileHash -LiteralPath (Join-Path $StageDir "$AppName.exe") -Algorithm SHA256).Hash.ToLower()
+    if ($exePrecedent -and $exePrecedent -ne $empreinteExe) {
+        $changement += "$AppName.exe"
+    }
+
+    #  Les fichiers qui ont disparu doivent aussi etre effaces.
+    foreach ($chemin in $precedents.Keys) {
+        $existe = $false
+        foreach ($e in $liste) { if ($e.chemin -eq $chemin) { $existe = $true } }
+        if (-not $existe) { $changement += $chemin }
+    }
+
+    $exe = Join-Path $StageDir "$AppName.exe"
+    $manifeste = [ordered]@{
+        version = (Get-Version)
+        runtime = $script:NwjsVersion
+        exe = [ordered]@{
+            taille = (Get-Item -LiteralPath $exe).Length
+            sha256 = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLower()
+        }
+        runtimePrecedent = $runtimePrecedent
+        exePrecedent = $exePrecedent
+        fichiers = $liste
+        precedents = $precedents
+    }
+
+    #  Le manifeste est ecrit dans l application : le launcher s en sert
+    #  pour savoir ce qu il a reellement sur le disque.
+    $manifesteChemin = Join-Path $StageDir 'tools\manifest.json'
+    [IO.File]::WriteAllText($manifesteChemin, ($manifeste | ConvertTo-Json -Depth 6), (New-Object Text.UTF8Encoding $false))
+    [IO.File]::WriteAllText($manifestePrec, ($manifeste | ConvertTo-Json -Depth 6), (New-Object Text.UTF8Encoding $false))
+
+    #  Le patch : seulement les fichiers qui ont change.
+    $patchDir = Join-Path $DistDir 'patch'
+    if (Test-Path -LiteralPath $patchDir) { Remove-Item -LiteralPath $patchDir -Recurse -Force }
+    $racine = Join-Path $patchDir 'patch'
+    New-Item -ItemType Directory -Path $racine -Force | Out-Null
+    foreach ($rel in $changement) {
+        $src = Join-Path $StageDir ($rel -replace '/','\')
+        if (-not (Test-Path -LiteralPath $src)) { continue }
+        $dest = Join-Path $racine ($rel -replace '/','\')
+        $dossierDest = Split-Path -Parent $dest
+        if (-not (Test-Path -LiteralPath $dossierDest)) { New-Item -ItemType Directory -Path $dossierDest -Force | Out-Null }
+        Copy-Item -LiteralPath $src -Destination $dest -Force
+    }
+    $zipPatch = Join-Path $DistDir 'XRNLauncher-patch.zip'
+    if (Test-Path -LiteralPath $zipPatch) { Remove-Item -LiteralPath $zipPatch -Force }
+    Compress-Archive -Path $racine -DestinationPath $zipPatch -Force
+    Remove-Item -LiteralPath $patchDir -Recurse -Force -ErrorAction SilentlyContinue
+
+    $taillePatch = [math]::Round((Get-Item -LiteralPath $zipPatch).Length / 1KB, 1)
+    Ok ("Patch : $taillePatch Ko, $($changement.Count) fichier(s) sur $($liste.Count).")
+    Ok ("Manifeste : $manifestePrec")
+}
+
 function Compress-Dist {
     Step 'Compression en .zip'
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -552,6 +675,7 @@ try {
     Build-App
     New-Readme
 
+    Build-Patch
     if (-not $SkipZip) { Compress-Dist }
 
     #  Installeur : un petit script qui telecharge l application
