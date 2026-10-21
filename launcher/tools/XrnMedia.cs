@@ -1,9 +1,9 @@
 using System;
-using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.IO;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading;
+using Windows.Foundation;
 using Windows.Media.Control;
 using Windows.Storage.Streams;
 
@@ -44,8 +44,7 @@ static class XrnMedia
 
     static void Ecrire()
     {
-        var manager = GlobalSystemMediaTransportControlsSessionManager
-                .RequestAsync().AsTask().GetAwaiter().GetResult();
+        var manager = GlobalSystemMediaTransportControlsSessionManager.RequestAsync().AsTask().GetAwaiter().GetResult();
         var sessions = manager.GetSessions();
 
         GlobalSystemMediaTransportControlsSession choisi = null;
@@ -110,21 +109,16 @@ static class XrnMedia
             if (medias.Thumbnail == null) return "";
             using (var flux = medias.Thumbnail.OpenReadAsync().AsTask().GetAwaiter().GetResult())
             using (var entre = flux.AsStreamForRead())
-            using (var entree = new MemoryStream())
             {
-                entre.CopyTo(entree);
-                byte[] octets = entree.ToArray();
-
-                /*  Windows livre une pochette de 150 a 256 pixels. Le jeu
-                    l'affiche en 32, et il dessine en nearest : on
-                    reduit donc nous-memes, sinon l'image devient un
-                    bruit de pixels.                                      */
-                using (var source = Image.FromStream(new MemoryStream(octets)))
-                using (var cible = new Bitmap(64, 64))
-                using (var dessin = Graphics.FromImage(cible))
+                var memoire = new MemoryStream();
+                entre.CopyTo(memoire);
+                byte[] octets = memoire.ToArray();
+                using (var source = System.Drawing.Image.FromStream(new MemoryStream(octets)))
+                using (var cible = new System.Drawing.Bitmap(64, 64))
+                using (var dessin = System.Drawing.Graphics.FromImage(cible))
                 {
-                    dessin.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    dessin.DrawImage(source, new Rectangle(0, 0, 64, 64));
+                    dessin.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    dessin.DrawImage(source, new System.Drawing.Rectangle(0, 0, 64, 64));
                     cible.Save(pochette, System.Drawing.Imaging.ImageFormat.Png);
                 }
             }

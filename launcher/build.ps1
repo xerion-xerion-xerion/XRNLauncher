@@ -62,6 +62,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference    = 'SilentlyContinue'
 
+#  Le manifeste : la liste des fichiers de l'application, avec leurs
+#  empreintes. Il est partage entre le build et les scripts annexes.
+. (Join-Path $PSScriptRoot 'tools\manifeste.ps1')
+
 # ---------------------------------------------------------------------------
 # Chemins
 # ---------------------------------------------------------------------------
@@ -522,11 +526,12 @@ function Get-Version {
 function Build-Patch {
     Step 'Mise a jour incrementale'
 
-    $fichiersApp = @('index.html','style.css','ui.js','main.js','notification.json','package.json')
-    $dossiersApp = @('lib','assets','tools','mods-integres')
-
     #  Le manifeste precedent sert a savoir quels fichiers ont change.
-    $manifestePrec = Join-Path $DistDir 'XRNLauncher-manifest.json'
+    #  C'est celui de la derniere version PUBLIEE : c'est elle que les
+    #  joueurs ont sur le disque. Il est donc mis a jour au moment de
+    #  la publication, et pas a chaque build : deux builds d'affilee
+    #  sans publication ne doivent pas derouter le patch.
+    $manifestePrec = Join-Path $DistDir 'manifeste-precedent.json'
     $precedents = @{}
     $exePrecedent = ''
     $runtimePrecedent = ''
@@ -539,29 +544,10 @@ function Build-Patch {
         } catch { }
     }
 
-    #  Empreinte de chaque fichier de l application.
-    $liste = @()
-    foreach ($f in $fichiersApp) {
-        $abs = Join-Path $StageDir $f
-        if (-not (Test-Path -LiteralPath $abs)) { continue }
-        $liste += [ordered]@{
-            chemin = $f
-            taille = (Get-Item -LiteralPath $abs).Length
-            sha256 = (Get-FileHash -LiteralPath $abs -Algorithm SHA256).Hash.ToLower()
-        }
-    }
-    foreach ($d in $dossiersApp) {
-        $abs = Join-Path $StageDir $d
-        if (-not (Test-Path -LiteralPath $abs)) { continue }
-        foreach ($fichier in (Get-ChildItem -LiteralPath $abs -Recurse -File)) {
-            $rel = $d + '/' + ($fichier.FullName.Substring($abs.Length + 1) -replace '\\','/')
-            $liste += [ordered]@{
-                chemin = $rel
-                taille = $fichier.Length
-                sha256 = (Get-FileHash -LiteralPath $fichier.FullName -Algorithm SHA256).Hash.ToLower()
-            }
-        }
-    }
+    #  L'etat de cette version : la liste des fichiers de l'application
+    #  et leurs empreintes. Le calcul est partage avec les scripts
+    #  annexes, pour que tous parlent de la meme chose.
+    $liste = @(Get-FichiersApp -StageDir $StageDir)
 
     #  Ce qui a change par rapport a la version precedente.
     $changement = @()
@@ -576,17 +562,24 @@ function Build-Patch {
         $changement += "$AppName.exe"
     }
 
-    #  Les fichiers qui ont disparu doivent aussi etre effaces.
+    #  Les fichiers qui ont disparu doivent aussi etre effaces. On les
+    #  note a part : ils ne sont plus dans l'etat nouveau, ils ne
+    #  peuvent donc pas etre livres dans le patch.
+    $supprimes = @()
     foreach ($chemin in $precedents.Keys) {
         $existe = $false
         foreach ($e in $liste) { if ($e.chemin -eq $chemin) { $existe = $true } }
-        if (-not $existe) { $changement += $chemin }
+        if (-not $existe) { $supprimes += $chemin }
     }
 
     $exe = Join-Path $StageDir "$AppName.exe"
+    #  La version du runtime est lue dans nw.dll : c'est la version reelle
+    #  installee, pas celle annoncee par le script de build.
+    $runtime = Get-VersionRuntime -StageDir $StageDir
+    if (-not $runtime) { $runtime = $script:NwjsVersion }
     $manifeste = [ordered]@{
         version = (Get-Version)
-        runtime = $script:NwjsVersion
+        runtime = $runtime
         exe = [ordered]@{
             taille = (Get-Item -LiteralPath $exe).Length
             sha256 = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLower()
@@ -595,13 +588,16 @@ function Build-Patch {
         exePrecedent = $exePrecedent
         fichiers = $liste
         precedents = $precedents
+        supprimes = $supprimes
     }
 
     #  Le manifeste est ecrit dans l application : le launcher s en sert
     #  pour savoir ce qu il a reellement sur le disque.
     $manifesteChemin = Join-Path $StageDir 'tools\manifest.json'
-    [IO.File]::WriteAllText($manifesteChemin, ($manifeste | ConvertTo-Json -Depth 6), (New-Object Text.UTF8Encoding $false))
-    [IO.File]::WriteAllText($manifestePrec, ($manifeste | ConvertTo-Json -Depth 6), (New-Object Text.UTF8Encoding $false))
+    $jsonManifeste = $manifeste | ConvertTo-Json -Depth 6
+    [IO.File]::WriteAllText($manifesteChemin, $jsonManifeste, (New-Object Text.UTF8Encoding $false))
+    #  Et dans dist : c'est l'asset publie avec la release.
+    [IO.File]::WriteAllText((Join-Path $DistDir 'XRNLauncher-manifest.json'), $jsonManifeste, (New-Object Text.UTF8Encoding $false))
 
     #  Le patch : seulement les fichiers qui ont change.
     $patchDir = Join-Path $DistDir 'patch'
@@ -616,6 +612,19 @@ function Build-Patch {
         if (-not (Test-Path -LiteralPath $dossierDest)) { New-Item -ItemType Directory -Path $dossierDest -Force | Out-Null }
         Copy-Item -LiteralPath $src -Destination $dest -Force
     }
+    #  Le manifeste local fait partie du patch : sans lui, le launcher
+    #  installé ne sait plus ce qu'il a sur le disque, et la mise a
+    #  jour suivante retomberait sur l'archive complete.
+    $destManifeste = Join-Path $racine 'tools\manifest.json'
+    $dossierDest = Split-Path -Parent $destManifeste
+    if (-not (Test-Path -LiteralPath $dossierDest)) { New-Item -ItemType Directory -Path $dossierDest -Force | Out-Null }
+    Copy-Item -LiteralPath (Join-Path $StageDir 'tools\manifest.json') -Destination $destManifeste -Force
+    #  La liste des fichiers a effacer, pour que le patch laisse la
+    #  meme arborescence que l'archive complete.
+    if ($supprimes.Count) {
+        [IO.File]::WriteAllText((Join-Path $racine '_supprimes.txt'),
+            (($supprimes | Sort-Object) -join "`n"), (New-Object Text.UTF8Encoding $false))
+    }
     $zipPatch = Join-Path $DistDir 'XRNLauncher-patch.zip'
     if (Test-Path -LiteralPath $zipPatch) { Remove-Item -LiteralPath $zipPatch -Force }
     Compress-Archive -Path $racine -DestinationPath $zipPatch -Force
@@ -623,7 +632,12 @@ function Build-Patch {
 
     $taillePatch = [math]::Round((Get-Item -LiteralPath $zipPatch).Length / 1KB, 1)
     Ok ("Patch : $taillePatch Ko, $($changement.Count) fichier(s) sur $($liste.Count).")
-    Ok ("Manifeste : $manifestePrec")
+    Ok ("Manifeste : " + (Join-Path $DistDir 'XRNLauncher-manifest.json'))
+    if ($precedents.Count) {
+        Ok ("Reference : " + $manifestePrec + " (version publiee precedente)")
+    } else {
+        Warn "Aucun manifeste precedent : le patch ne sera pas propose, la mise a jourIRA par l archive complete."
+    }
 }
 
 function Compress-Dist {

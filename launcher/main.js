@@ -22,6 +22,7 @@ const mods   = require('./lib/mods');
 const skins  = require('./lib/skins');
 const notif  = require('./lib/notification');
 const media  = require('./lib/media');
+const manif  = require('./lib/manifeste');
 
 util.ensureDir(util.appRoot());
 
@@ -32,6 +33,14 @@ function appDir() {
   return '.';
 }
 const pkg = util.readJSON(path.join(appDir(), 'package.json'), { version: '0.0.0' });
+
+/*  Dossier d'installation de l'application (la ou sont poses les
+    fichiers du launcher). C'est distinct du dossier de donnees
+    utilisateur (%APPDATA%\XRNLauncher) : une installation et ses
+    reglages ne bougent pas ensemble.                                */
+function dossierInstall() {
+  return manif.dossierInstall();
+}
 const bus = new EventEmitter();
 bus.setMaxListeners(64);
 
@@ -265,6 +274,7 @@ const XRN = {
           + ' -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass'
           + ' -File "' + script + '"'
           + ' -IdLauncher ' + process.pid
+          + ' -Mode ' + (mode === 'patch' ? 'patch' : 'complet')
           + ' -Zip "' + zip + '"'
           + ' -Dossier "' + dossierApp + '"'
           + ' -Exe "' + exe + '"';
@@ -320,6 +330,34 @@ const XRN = {
       }
     },
     marquerNotificationVue(id) { notif.marquerVue(id); },
+
+    /*  Empreinte SHA-256 d'un fichier : c'est le module manifeste qui
+        s en charge, il sait aussi lire la version du runtime.        */
+    sha256Fichier(f) { return manif.sha256Fichier(f); },
+
+    /*  Version du runtime NW.js installe. */
+    versionRuntime() { return manif.versionRuntime(dossierInstall()); },
+
+    /*  Le manifeste de l'installation locale : il dit ce que le
+        launcher a reellement sur le disque. Il ne sert qu'au
+        diagnostic : la compatibilite du patch se verifie sur les
+        fichiers eux-memes, pour que les installations anterieures a
+        cette notion restent compatibles.                                 */
+    manifesteLocal() { return manif.manifesteLocal(dossierInstall()); },
+
+    /*  Le patch est-il applicable a cette installation ?
+
+        Le manifeste publie contient "precedents" : l'etat de la
+        version installee, fichier par fichier, avec les empreintes. Si
+        le disque correspond exactement, et que le runtime n'a pas
+        change, on ne telecharge que les fichiers modifies. Sinon on
+        reprend l'archive complete : mieux vaut retelecharger que
+        laisser un melange de deux versions.                              */
+    etatLocalCompatible(m) {
+      const r = manif.etatLocalCompatible(m, dossierInstall());
+      if (!r.ok) writeLog('MAJ', 'patch refuse : ' + r.raison);
+      return r.ok;
+    },
 
     /*  Cherche si une version plus recente du launcher est publiee.
 
