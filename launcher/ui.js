@@ -152,6 +152,51 @@
       seulement une mise a jour. Le message porte un identifiant : on
       ne le montre qu une fois, et seulement s il change.            */
   let notificationVue = false;
+
+  /*  Cherche une version plus recente du launcher, une seule fois par
+      session. Le resultat est partage entre la notification et la barre
+      de mise a jour : une seule requete a GitHub, et les deux
+      affichages racontent la meme histoire.                           */
+  let miseAJourInfo = null;
+  async function infoMiseAJour() {
+    if (miseAJourInfo) return miseAJourInfo;
+    try { miseAJourInfo = await X.env.chercherMiseAJour(); }
+    catch (e) { miseAJourInfo = { ok: false }; }
+    return miseAJourInfo;
+  }
+
+  /*  Un poids lisible : 81 Ko, 1,4 Mo. */
+  function poids(octets) {
+    const n = Number(octets) || 0;
+    if (!n) return 'quelques kilo-octets';
+    if (n < 1024 * 1024) return Math.round(n / 1024) + ' Ko';
+    return (n / 1048576).toFixed(1).replace('.', ',') + ' Mo';
+  }
+
+  /*  Applique la mise a jour sur place : le launcher se telecharge,
+      se remplace, et se relance. Le joueur n a rien a decompresser et
+      rien a installer. C est ce qu on attend d un vrai launcher.    */
+  async function demarrerMiseAJour(r) {
+    const cible = (r && r.mode === 'patch') ? r.patch : (r && r.telecharger);
+    if (!cible) {
+      maj.fermer();
+      Toast.show('Mise a jour', 'Le fichier de mise a jour est introuvable sur le serveur.', 'err', 8000);
+      return false;
+    }
+    maj.ouvrir(r.version);
+    const r2 = await api(x => x.env.appliquerMiseAJour(cible, r.taille, r.mode));
+    if (r2 && r2.ok) {
+      const t = $('#majTexte');
+      if (t) t.textContent = 'Installation... le launcher va se relancer.';
+      Toast.show('Mise a jour', 'Le launcher se relance tout seul.', 'ok', 6000);
+      return true;
+    }
+    maj.fermer();
+    const detail = (r2 && r2.detail) ? ' : ' + r2.detail : '';
+    Toast.show('Mise a jour impossible', 'Le telechargement a echoue' + detail, 'err', 9000);
+    return false;
+  }
+
   async function verifierNotification() {
     if (notificationVue) return;
     notificationVue = true;
@@ -159,6 +204,25 @@
     try { r = await X.env.notification(); } catch (e) { return; }
     if (!r || !r.id) return;
     try { X.env.marquerNotificationVue(r.id); } catch (e) {}
+
+    /*  Un message qui porte une version annonce une mise a jour du
+        launcher. Dans ce cas, on n ouvre surtout pas le navigateur : le
+        joueur a deja le launcher installe, il veut qu il se mette a jour
+        tout seul. Le bouton applique donc la mise a jour sur place.  */
+    const annonceVersion = !!(r.version || (r.lien && /\.zip(\?|$)/i.test(r.lien)));
+    if (annonceVersion) {
+      const info = await infoMiseAJour();
+      if (info && info.ok && info.telecharger) {
+        Toast.show(r.titre || 'XRNLauncher', r.texte || '', r.niveau || 'info', 24000,
+          { label: 'Mettre a jour', run: () => demarrerMiseAJour(info) });
+      } else {
+        /*  Deja a jour : le message reste informatif, sans bouton qui
+            renverrait vers un telechargement manuel.                  */
+        Toast.show(r.titre || 'XRNLauncher', r.texte || '', r.niveau || 'info', 24000);
+      }
+      return;
+    }
+
     Toast.show(r.titre || 'XRNLauncher', r.texte || '', r.niveau || 'info', 24000,
       r.lien ? { label: r.bouton || 'Ouvrir', run: () => { X.env.openUrl(r.lien); } } : null);
   }
@@ -171,9 +235,11 @@
   async function verifierMiseAJour() {
     if (miseAJourVue) return;
     miseAJourVue = true;
-    let r = null;
-    try { r = await X.env.chercherMiseAJour(); } catch (e) { return; }
-    if (!r || !r.ok || !r.url) return;
+    const r = await infoMiseAJour();
+    if (!r || !r.ok) return;
+    /*  Sans fichier a telecharger, on ne propose rien : on ne
+        telechargera pas une page web en la prenant pour une archive. */
+    if (!r.patch && !r.telecharger) return;
     /*  La notification devient une BARRE, visible en permanence sur
         l accueil : on ne peut pas la manquer comme un message qui
         disparait.                                                       */
@@ -184,25 +250,15 @@
       const bouton = $('#barreMajBtn');
       if (titre) titre.textContent = 'XRNLauncher v' + r.version + ' est disponible';
       if (texte) texte.textContent = r.mode === 'patch'
-        ? 'Vous utilisez la v' + r.courant + ' - seuls les fichiers modifies seront telecharges.'
-        : 'Vous utilisez la v' + r.courant + ' - la mise a jour se fait toute seule.';
+        ? 'Vous utilisez la v' + r.courant + ' - ' + poids(r.taille) + ' a telecharger, et rien d autre.'
+        : 'Vous utilisez la v' + r.courant + ' - ' + poids(r.taille) + ' a telecharger, et rien d installer.';
       if (bouton) {
         bouton.textContent = 'Mettre a jour';
         bouton.onclick = async () => {
           bouton.disabled = true;
           bouton.textContent = 'Telechargement...';
-          maj.ouvrir(r.version);
-          try {
-            const cible = r.mode === 'patch' ? r.patch : (r.telecharger || r.url);
-            const r2 = await api(x => x.env.appliquerMiseAJour(cible, r.taille, r.mode));
-            if (r2 && r2.ok) {
-              bouton.textContent = 'Redemarrage...';
-              Toast.show('Mise a jour', 'Le launcher va se redemarrer tout seul.', 'ok', 6000);
-            } else {
-              bouton.disabled = false;
-              bouton.textContent = 'Mettre a jour';
-            }
-          } catch (err) {
+          const ok = await demarrerMiseAJour(r);
+          if (!ok) {
             bouton.disabled = false;
             bouton.textContent = 'Mettre a jour';
           }
@@ -212,24 +268,14 @@
       const fermer = $('#barreMajFermer');
       if (fermer) fermer.onclick = () => { barre.hidden = true; };
     }
-    /*  Le message reste, pour ceux qui ferment la barre. */
+    /*  Le message reste, pour ceux qui ferment la barre. Le bouton
+        applique la mise a jour sur place, comme la barre : envoyer vers
+        un navigateur pour retelecharger 188 Mo n a jamais ete utile. */
     Toast.show('Nouvelle mise a jour',
       'XRNLauncher v' + r.version + ' est en ligne. Vous avez la v' + r.courant + '.',
       'info', 24000,
-      { label: r.telecharger ? 'Mettre a jour' : 'Voir',
-        run: () => {
-          /*  On applique la mise a jour nous-memes quand le message
-              pointe vers une archive : le joueur ne telecharge rien et
-              ne decompresse rien. Un autre lien s ouvre simplement.   */
-          const archive = r.telecharger || (/\.zip(\?|$)/i.test(r.lien || '') ? r.lien : '');
-          if (archive) {
-            maj.ouvrir(r.version);
-            api(x => x.env.appliquerMiseAJourAuto())
-              .then(rr => { if (rr && rr.ok) Toast.show('Mise a jour', 'Le launcher redemarre tout seul.', 'ok', 6000); });
-          } else {
-            X.env.openUrl(r.lien || r.url);
-          }
-        } });
+      { label: 'Mettre a jour',
+        run: () => demarrerMiseAJour(r) });
   }
 
   /* ================================================================== *
