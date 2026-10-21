@@ -68,7 +68,10 @@ rmdir /s /q "%TMP%" >nul 2>&1
 echo.
 echo   Installation terminee. Le launcher se lance.
 echo.
-start "" "%APP%\XRNLauncher.exe"
+rem  Le launcher est lance sans la console de l installeur : sinon il
+rem  lui reste accroche, et la fenetre noire ne se ferme qu'a la
+rem  fermeture du launcher.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%APP%\XRNLauncher.exe'"
 exit /b 0
 
 :echec
