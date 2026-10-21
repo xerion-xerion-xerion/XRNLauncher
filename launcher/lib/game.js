@@ -1002,6 +1002,10 @@ function buildArgs(plan, opts) {
       On la lui passe donc ici : sinon il ne pourrait afficher que la
       sienne, qui n est pas la meme numerotation.                      */
   jvm.push('-DXRNLauncherVersion=' + pkgVersion());
+  /*  Le mod XRN HUD affiche la musique en cours. Le launcher detecte
+  ce que jouent Deezer ou Spotify et l'ecrit dans un fichier : on lui
+  passe le chemin, sinon il n'a aucun moyen de le trouver.            */
+  jvm.push('-DXRNMediaFile=' + require('./media').fichierMedia());
 
   const jeu = [];
   const mainClass = plan.mainClass || 'net.minecraft.client.main.Main';
@@ -1139,6 +1143,10 @@ async function launch(opts, bus) {
   const built = buildArgs(plan, opts);
   const args = built.jvm.concat([built.mainClass], built.jeu);
   bus.emit('game:spawn', { exe, args: args.map(a => (a.length > 120 ? a.slice(0, 60) + '…' : a)) });
+
+  /*  Le mod affiche la musique en cours : on lance la detection au
+  moment ou le jeu demarre, et on l arrete avec le launcher.        */
+  try { require('./media').demarrer(); } catch (e) { }
 
   const child = spawn(exe, args, {
     cwd: plan.dir,

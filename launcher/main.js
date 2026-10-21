@@ -21,6 +21,7 @@ const alib   = require('./lib/authlib');
 const mods   = require('./lib/mods');
 const skins  = require('./lib/skins');
 const notif  = require('./lib/notification');
+const media  = require('./lib/media');
 
 util.ensureDir(util.appRoot());
 
@@ -1278,3 +1279,6 @@ process.on('unhandledRejection', e => {
   writeLog('REJET', (e && (e.stack || e.message)) || String(e));
 });
 process.on('exit', code => writeLog('EXIT', 'code=' + code));
+  /*  Le detecteur de musique est un processus a part : on le ferme
+  avec le launcher, sinon il continuerait d interroger Windows.     */
+  process.on('exit', () => { try { media.arreter(); } catch (e) { } });
