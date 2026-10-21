@@ -75,7 +75,7 @@ $g.FillPath($degradeFond, $formeFond)
 $degradeFond.Dispose()
 
 # --- liseré violet, tres discret --------------------------------------
-$liser = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(52, 0xA7, 0x8B, 0xFA), [single](0.42 * $U))
+$liser = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(70, 0xA7, 0x8B, 0xFA), [single](0.85 * $U))
 $g.DrawPath($liser, $formeFond)
 $liser.Dispose()
 
@@ -97,11 +97,11 @@ function Anneau([double]$rotation, [System.Drawing.Color]$couleur, [double]$larg
   $pinceau.Dispose()
   $g.Restore($st)
 }
-Anneau -22.0 ([System.Drawing.Color]::FromArgb(72, 0xE9, 0xEB, 0xF2)) (1.0 * $vue)
-Anneau  38.0 ([System.Drawing.Color]::FromArgb(115, 0xA7, 0x8B, 0xFA)) (1.0 * $vue)
+Anneau -22.0 ([System.Drawing.Color]::FromArgb(96, 0xE9, 0xEB, 0xF2)) (1.9 * $vue)
+Anneau  38.0 ([System.Drawing.Color]::FromArgb(140, 0xA7, 0x8B, 0xFA)) (1.9 * $vue)
 
 # --- la croix : violet plein, sans halo -------------------------------
-$largeurCroix = 3.0 * $vue
+$largeurCroix = 5.2 * $vue
 $ax = $decalage + 19.5 * $vue; $ay = $decalage + 16.0 * $vue
 $bx = $decalage + 44.5 * $vue; $by = $decalage + 48.0 * $vue
 $cx2 = $decalage + 44.5 * $vue; $cy2 = $decalage + 16.0 * $vue
@@ -116,8 +116,8 @@ $croix.Dispose()
 
 # --- l etoile : quatre branches fines, comme dans le hero et le site ---
 $etoile = @(
-  @(32.0, 24.5), @(33.7, 30.3), @(39.5, 32.0), @(33.7, 33.7),
-  @(32.0, 39.5), @(30.3, 33.7), @(24.5, 32.0), @(30.3, 30.3)
+  @(32.0, 25.2), @(33.4, 30.6), @(38.8, 32.0), @(33.4, 33.4),
+    @(32.0, 38.8), @(30.6, 33.4), @(25.2, 32.0), @(30.6, 30.6)
 )
 $points = New-Object 'System.Drawing.PointF[]' $etoile.Count
 for ($i = 0; $i -lt $etoile.Count; $i++) {
