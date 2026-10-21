@@ -72,25 +72,54 @@ try {
     }
 
     # --- creation de la release -----------------------------------------
+    #  Si la release existe deja (publication relancee), on la reutilise
+    #  plutot que d echouer : c'est le moyen de republier apres un
+    #  echec d'envoi.
     $corps = if ($Notes) { $Notes } else { "XRNLauncher $Version." }
-    $payload = @{
-        tag_name    = $Tag
-        name        = "XRNLauncher $Version"
-        body        = $corps
-        draft       = $false
-        prerelease  = $false
-    } | ConvertTo-Json -Depth 5
+    $release = $null
+    try {
+        $existantes = Invoke-RestMethod -Uri "$Api/releases" -Headers $headers
+        $release = $existantes | Where-Object { $_.tag_name -eq $Tag } | Select-Object -First 1
+    } catch { }
 
-    $release = Invoke-RestMethod -Method Post -Uri "$Api/releases" -Headers $headers `
-        -Body ([Text.Encoding]::UTF8.GetBytes($payload)) -ContentType 'application/json'
+    if ($release) {
+        Write-Host "  Release   : deja existante, on la met a jour" -ForegroundColor DarkGray
+        $release = Invoke-RestMethod -Method Patch -Uri "$Api/releases/$($release.id)" -Headers $headers `
+            -Body ([Text.Encoding]::UTF8.GetBytes((@{ name = "XRNLauncher $Version"; body = $corps } | ConvertTo-Json))) `
+            -ContentType 'application/json'
+    } else {
+        $payload = @{
+            tag_name    = $Tag
+            name        = "XRNLauncher $Version"
+            body        = $corps
+            draft       = $false
+            prerelease  = $false
+        } | ConvertTo-Json -Depth 5
+        $release = Invoke-RestMethod -Method Post -Uri "$Api/releases" -Headers $headers `
+            -Body ([Text.Encoding]::UTF8.GetBytes($payload)) -ContentType 'application/json'
+    }
     Write-Host "  Release   : $($release.html_url)" -ForegroundColor Green
+
+    #  L 'envoi se fait sur uploads.github.com : c'est l'hote du
+    #  televersement des assets, distinct de celui de l'API.
+    $uploadUrl = ([string]$release.upload_url) -replace '\{.*\}$',''
 
     # --- televersement ---------------------------------------------------
     foreach ($a in $assets) {
         $nom = Split-Path -Leaf $a
+        $deja = @($release.assets) | Where-Object { $_.name -eq $nom } | Select-Object -First 1
+        if ($deja) {
+            #  On remplace : le contenu a change depuis le dernier envoi.
+            Write-Host "  Remplacement: $nom" -ForegroundColor DarkGray
+            & curl.exe -sS -L --fail-with-body --max-time 300 `
+                -H "Authorization: Bearer $token" `
+                -H "Accept: application/vnd.github+json" `
+                -H "X-GitHub-Api-Version: 2022-11-28" `
+                -X DELETE "$Api/releases/assets/$($deja.id)" | Out-Null
+        }
         Write-Host "  Envoi     : $nom ..." -ForegroundColor DarkGray
-        $url = "$Api/releases/$($release.id)/assets?name=$([uri]::EscapeDataString($nom))"
-        & curl.exe -sS -L --fail --retry 3 --max-time 1800 `
+        $url = $uploadUrl + '?name=' + [uri]::EscapeDataString($nom)
+        & curl.exe -sS -L --fail-with-body --max-time 3600 `
             -H "Authorization: Bearer $token" `
             -H "Accept: application/vnd.github+json" `
             -H "X-GitHub-Api-Version: 2022-11-28" `

@@ -157,6 +157,18 @@ try {
   }
 
   if ($Exe -and (Test-Path -LiteralPath $Exe)) {
+    #  L'icone du .exe a peut-etre change. Windows garde les icones en
+    #  cache : sans cette commande, le Bureau continue d afficher
+    #  l'ancienne jusqu'au prochain redemarrage de l'explorateur.
+    try {
+        $ie4uinit = Join-Path $env:SystemRoot 'System32\ie4uinit.exe'
+        if (Test-Path -LiteralPath $ie4uinit) {
+            & $ie4uinit -show 2>$null | Out-Null
+            & $ie4uinit -ClearIconCache 2>$null | Out-Null
+            Ecrire 'cache des icones rafraichi'
+        }
+    } catch { }
+
     Ecrire ('relancement de ' + $Exe)
     Start-Process -FilePath $Exe
   } else {
