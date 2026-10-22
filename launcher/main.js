@@ -219,7 +219,10 @@ const XRN = {
         if (r.ok) XRN.report('COMMUNAUTE', r.total + ' pseudo(s) a l annuaire');
         return r;
       },
-      ajouter(pseudos) { return communaute.ajouter(pseudos); }
+      ajouter(pseudos) { return communaute.ajouter(pseudos); },
+      /*  Ce que le joueur porte : le mod l a enregistre, dans les
+          reglages du jeu. C'est ce que le launcher publie.            */
+      cosmetique() { return communaute.cosmetiquePorte(); }
     },
 
     /*  La boutique : le catalogue, les droits, l'activation d'un code,

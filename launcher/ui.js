@@ -1557,13 +1557,14 @@ const Splash = {
       const l = $('#btProduits');
       if (r && r.ok) {
         const produits = r.produits || [];
+        const droits = r.droits || [];
         if (!produits.length) {
           l.innerHTML = '<p class="empty">Le catalogue est vide pour le moment.</p>';
         } else {
-          const droits = r.droits || [];
           l.innerHTML = produits.map(p => {
             const possede = droits.indexOf(p.id) >= 0;
             const prix = Number(p.etoiles != null ? p.etoiles : p.diamants) || 0;
+            const offert = p.offert || prix === 0;
             return `<div class="boutique-row">
               <span class="boutique-ico" style="background:${esc(p.couleur || '#7b5cff')}22;color:${esc(p.couleur || '#b9a0ff')}">${ic('i-star', 18)}</span>
               <div style="flex:1;min-width:0">
@@ -1573,7 +1574,9 @@ const Splash = {
               <div style="text-align:right;white-space:nowrap">
                 ${possede
                   ? '<span class="badge good">Acquis</span>'
-                  : '<span class="badge">' + prix + ' etoiles</span>'}
+                  : (offert
+                      ? '<span class="badge good">Offert</span>'
+                      : '<span class="badge">' + prix + ' etoiles</span>')}
               </div>
             </div>`;
           }).join('');
@@ -1594,9 +1597,21 @@ const Splash = {
       const lp = $('#btPseudos');
       if (lp) {
         lp.innerHTML = pseudos.length
-          ? '<div class="boutique-pseudo">' + pseudos.map(p =>
-              '<span class="badge">' + esc(p) + '</span>').join('') + '</div>'
+          ? '<div class="boutique-pseudo">' + pseudos.map(p => {
+              const nom = (p && p.pseudo) ? p.pseudo : String(p);
+              const co = (p && p.cosmetique) ? p.cosmetique : '';
+              return '<span class="badge"' + (co ? ' title="' + esc(co) + '"' : '') + '>' + esc(nom) + '</span>';
+            }).join('') + '</div>'
           : '<p class="empty">Personne pour le moment. Connecte ton compte, ou ajoute un pseudo.</p>';
+      }
+
+      /*  Ce que le joueur porte : c est le mod qui l a enregistre. */
+      const eq = $('#btEquipe');
+      if (eq) {
+        const porte = await api(x => x.env.communaute.cosmetique(), { soft: true });
+        eq.innerHTML = porte
+          ? '<div class="boutique-pseudo"><span class="badge good">' + esc(porte) + '</span></div>'
+          : '<p class="empty">Tu ne portes aucun cosmetique. Equipe-en un dans le jeu (touche U).</p>';
       }
     },
 
