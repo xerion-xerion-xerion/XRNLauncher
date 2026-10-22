@@ -36,6 +36,12 @@ function appDir() {
 }
 const pkg = util.readJSON(path.join(appDir(), 'package.json'), { version: '0.0.0' });
 
+/*  L etat de la mise a jour : un seul telechargement a la fois.
+    Le jeton sert a annuler, le drapeau a refuser un second
+    demarrage pendant que le premier tourne.                     */
+let majEnCours = false;
+let jetonMaj = null;
+
 /*  Dossier d'installation de l'application (la ou sont poses les
     fichiers du launcher). C'est distinct du dossier de donnees
     utilisateur (%APPDATA%\XRNLauncher) : une installation et ses
@@ -276,6 +282,11 @@ const XRN = {
     async appliquerMiseAJour(url, total, mode) {
       try {
         if (!url) return { ok: false, detail: 'aucune adresse' };
+        /*  Une seule mise a jour a la fois : deux clics rapides sur
+            deux boutons lancaient deux telechargements complets en
+            parallele (vrai dans le journal). On refuse le second.    */
+        if (majEnCours) return { ok: false, detail: 'mise a jour deja en cours' };
+        majEnCours = true;
         const zip = path.join(require('os').tmpdir(), 'xrn-update-' + Date.now() + '.zip');
         XRN.report('MAJ', 'telechargement de ' + url);
 
@@ -317,7 +328,7 @@ const XRN = {
           + ' -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass'
           + ' -File "' + script + '"'
           + ' -IdLauncher ' + process.pid
-          + ' -Mode ' + (mode === 'patch' ? 'patch' : 'complet')
+          + ' -Mode ' + (mode === 'complet' ? 'complet' : 'patch')
           + ' -Zip "' + zip + '"'
           + ' -Dossier "' + dossierApp + '"'
           + ' -Exe "' + exe + '"';
@@ -343,6 +354,7 @@ const XRN = {
             demarre = (Date.now() - t) < 30000;
           } catch (e) { demarre = false; }
           if (!demarre) {
+            majEnCours = false;
             XRN.report('MAJ-ERREUR', 'le script de mise a jour n a pas demarre, le launcher reste ouvert');
             return;
           }
@@ -351,6 +363,7 @@ const XRN = {
         }, 4000);
         return { ok: true };
       } catch (e) {
+        majEnCours = false;
         XRN.report('MAJ-ERREUR', String(e && e.message ? e.message : e));
         return { ok: false, detail: String(e && e.message ? e.message : e) };
       }
@@ -421,9 +434,11 @@ const XRN = {
         const assets = (r && r.assets) || [];
         let telecharger = '';
         let patch = '';
+        let noyau = '';
         let manifesteUrl = '';
         let taille = 0;
         let taillePatch = 0;
+        let tailleNoyau = 0;
         for (const a of assets) {
           if (!a || !a.name || !a.browser_download_url) continue;
           const nom = String(a.name);
@@ -433,13 +448,21 @@ const XRN = {
           } else if (/^XRNLauncher-patch\.zip$/i.test(nom)) {
             patch = String(a.browser_download_url);
             taillePatch = Number(a.size) || 0;
+          } else if (/^XRNLauncher-noyau\.zip$/i.test(nom)) {
+            noyau = String(a.browser_download_url);
+            tailleNoyau = Number(a.size) || 0;
           } else if (/^XRNLauncher-manifest\.json$/i.test(nom)) {
             manifesteUrl = String(a.browser_download_url);
           }
         }
-        /*  Le manifeste dit si le patch suffit : on ne telecharge que
-            les fichiers qui ont change, quand le runtime est le meme.
-            Sinon on reprend l installation complete.                  */
+        /*  Le manifeste dit ce que l on peut reutiliser :
+            1. le patch, quand l installation correspond exactement a
+               la version precedente publiee ;
+            2. sinon le noyau, quand seul le runtime est inutile a
+               retelecharger (version sautee, fichier modifie chez un
+               joueur) : quelques Mo, pas 180 ;
+            3. sinon l installation complete, quand le runtime a
+               change.                                                   */
         let mode = 'complet';
         if (patch && manifesteUrl) {
           try {
@@ -447,10 +470,16 @@ const XRN = {
             if (m && this.etatLocalCompatible(m)) {
               mode = 'patch';
               taille = taillePatch;
+            } else if (noyau && m && m.runtime) {
+              const installe = manif.versionRuntime(dossierInstall());
+              if (installe && installe === String(m.runtime)) {
+                mode = 'noyau';
+                taille = tailleNoyau;
+              }
             }
           } catch (e) { }
         }
-        return { ok: true, version, courant, telecharger, patch, mode, taille,
+        return { ok: true, version, courant, telecharger, patch, noyau, mode, taille,
                  url: String((r && r.html_url) || '') };
       } catch (e) {
         return { ok: false, courant };

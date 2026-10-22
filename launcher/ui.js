@@ -177,7 +177,9 @@
       se remplace, et se relance. Le joueur n a rien a decompresser et
       rien a installer. C est ce qu on attend d un vrai launcher.    */
   async function demarrerMiseAJour(r) {
-    const cible = (r && r.mode === 'patch') ? r.patch : (r && r.telecharger);
+    const cible = (r && r.mode === 'patch') ? r.patch
+                : (r && r.mode === 'noyau') ? r.noyau
+                : (r && r.telecharger);
     if (!cible) {
       maj.fermer();
       Toast.show('Mise a jour', 'Le fichier de mise a jour est introuvable sur le serveur.', 'err', 8000);
@@ -239,7 +241,7 @@
     if (!r || !r.ok) return;
     /*  Sans fichier a telecharger, on ne propose rien : on ne
         telechargera pas une page web en la prenant pour une archive. */
-    if (!r.patch && !r.telecharger) return;
+    if (!r.patch && !r.noyau && !r.telecharger) return;
     /*  La notification devient une BARRE, visible en permanence sur
         l accueil : on ne peut pas la manquer comme un message qui
         disparait.                                                       */
@@ -249,9 +251,14 @@
       const texte = $('#barreMajTexte');
       const bouton = $('#barreMajBtn');
       if (titre) titre.textContent = 'XRNLauncher v' + r.version + ' est disponible';
-      if (texte) texte.textContent = r.mode === 'patch'
-        ? 'Vous utilisez la v' + r.courant + ' - ' + poids(r.taille) + ' a telecharger, et rien d autre.'
-        : 'Vous utilisez la v' + r.courant + ' - ' + poids(r.taille) + ' a telecharger, et rien d installer.';
+      if (texte) {
+        const quoi = r.mode === 'patch'
+          ? poids(r.taille) + ' a telecharger, et rien d autre.'
+          : r.mode === 'noyau'
+          ? 'l application seule, ' + poids(r.taille) + ', sans le runtime.'
+          : 'mise a jour complete, ' + poids(r.taille) + ' (le runtime change).';
+        texte.textContent = 'Vous utilisez la v' + r.courant + ' - ' + quoi;
+      }
       if (bouton) {
         bouton.textContent = 'Mettre a jour';
         bouton.onclick = async () => {

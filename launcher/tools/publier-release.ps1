@@ -57,7 +57,7 @@ try {
     $zip = Join-Path $prep 'XRNLauncher-win-x64.zip'
     Copy-Item -LiteralPath $zipVersionne -Destination $zip -Force
     $assets += $zip
-    foreach ($nom in @('XRNLauncher-patch.zip','XRNLauncher-manifest.json','XRN-Installer.cmd')) {
+    foreach ($nom in @('XRNLauncher-noyau.zip','XRNLauncher-patch.zip','XRNLauncher-manifest.json','XRN-Installer.cmd')) {
         $src = Join-Path $Dist $nom
         if (Test-Path -LiteralPath $src) {
             $dst = Join-Path $prep $nom

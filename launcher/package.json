@@ -1,21 +1,21 @@
 {
-    "name":  "xrn-launcher",
-    "version":  "4.3.18",
+    "name":  "xrnlauncher-v4.3.19",
+    "version":  "4.3.19",
     "description":  "XRNLauncher - launcher Minecraft personnel (theme violet/noir)",
     "main":  "index.html",
-    "chromium-args":  "--autoplay-policy=no-user-gesture-required --disable-features=CalculateNativeWinOcclusion",
     "window":  {
-                   "title":  "XRNLauncher",
-                   "icon":  "assets/icon.png",
                    "width":  1440,
                    "height":  860,
                    "min_width":  1100,
                    "min_height":  700,
                    "resizable":  true,
-                   "frame":  false,
                    "center":  true,
                    "background_color":  "#07050e",
                    "show":  true,
-                   "fullscreen":  false
-               }
+                   "fullscreen":  false,
+                   "icon":  "assets/icon.png",
+                   "title":  "XRNLauncher",
+                   "frame":  false
+               },
+    "chromium-args":  "--autoplay-policy=no-user-gesture-required --disable-features=CalculateNativeWinOcclusion"
 }
