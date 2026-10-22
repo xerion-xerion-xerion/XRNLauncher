@@ -1,6 +1,6 @@
 {
     "name":  "xrn-launcher",
-    "version":  "4.3.16",
+    "version":  "4.3.17",
     "description":  "XRNLauncher - launcher Minecraft personnel (theme violet/noir)",
     "main":  "index.html",
     "chromium-args":  "--autoplay-policy=no-user-gesture-required --disable-features=CalculateNativeWinOcclusion",
