@@ -288,6 +288,16 @@ function Build-App {
         Ok 'Icone generee automatiquement.'
     }
 
+    # Apercu des cosmetiques : la garde-robe du launcher affiche les
+    # capes, et ces Images voyagent avec l'application.
+    $capesSrc = Join-Path $Root 'assets\capes'
+    if (Test-Path -LiteralPath $capesSrc) {
+        $capesDst = Join-Path (Join-Path $StageDir 'assets') 'capes'
+        New-Item -ItemType Directory -Path $capesDst -Force | Out-Null
+        Copy-Item -Path (Join-Path $capesSrc '*') -Destination $capesDst -Recurse -Force
+        Ok 'Apercu des capes copie (assets\capes).'
+    }
+
     # Fichiers de l'application
     $payload = @('index.html','style.css','ui.js','main.js','notification.json')
     foreach ($f in $payload) {
@@ -644,6 +654,43 @@ function Build-Patch {
     } else {
         Warn "Aucun manifeste precedent : le patch ne sera pas propose, la mise a jourIRA par l archive complete."
     }
+
+    #  L archive "noyau" : tous les fichiers de l application, SANS le
+    #  runtime (300 Mo de nw.dll). Elle sert quand le patch ne s applique
+    #  pas — player qui a saute une version, fichier modifie chez lui —
+    #  alors que le runtime n a pas change : quelques Mo au lieu de 180.
+    #  Meme structure que le patch (dossier racine "patch" + liste des
+    #  fichiers a effacer), le meme script l applique.
+    $noyauDir = Join-Path $DistDir 'noyau'
+    if (Test-Path -LiteralPath $noyauDir) { Remove-Item -LiteralPath $noyauDir -Recurse -Force }
+    $racineNoyau = Join-Path $noyauDir 'patch'
+    New-Item -ItemType Directory -Path $racineNoyau -Force | Out-Null
+    foreach ($e in $liste) {
+        $src = Join-Path $StageDir ($e.chemin -replace '/','\')
+        if (-not (Test-Path -LiteralPath $src)) { continue }
+        $dest = Join-Path $racineNoyau ($e.chemin -replace '/','\')
+        $dossierDest = Split-Path -Parent $dest
+        if (-not (Test-Path -LiteralPath $dossierDest)) { New-Item -ItemType Directory -Path $dossierDest -Force | Out-Null }
+        Copy-Item -LiteralPath $src -Destination $dest -Force
+    }
+    #  L executable porte l icone : le noyau le livre toujours, pour
+    #  que les installations dont l exe differe se rattrapent sans
+    #  telecharger le runtime.
+    $destExe = Join-Path $racineNoyau "$AppName.exe"
+    Copy-Item -LiteralPath $exe -Destination $destExe -Force
+    $destManifesteNoyau = Join-Path $racineNoyau 'tools\manifest.json'
+    $dossierDest = Split-Path -Parent $destManifesteNoyau
+    if (-not (Test-Path -LiteralPath $dossierDest)) { New-Item -ItemType Directory -Path $dossierDest -Force | Out-Null }
+    Copy-Item -LiteralPath (Join-Path $StageDir 'tools\manifest.json') -Destination $destManifesteNoyau -Force
+    if ($supprimes.Count) {
+        [IO.File]::WriteAllText((Join-Path $racineNoyau '_supprimes.txt'),
+            (($supprimes | Sort-Object) -join "`n"), (New-Object Text.UTF8Encoding $false))
+    }
+    $zipNoyau = Join-Path $DistDir 'XRNLauncher-noyau.zip'
+    if (Test-Path -LiteralPath $zipNoyau) { Remove-Item -LiteralPath $zipNoyau -Force }
+    Compress-Archive -Path $racineNoyau -DestinationPath $zipNoyau -Force
+    Remove-Item -LiteralPath $noyauDir -Recurse -Force -ErrorAction SilentlyContinue
+    Ok ("Noyau : {0:N1} Mo, {1} fichiers, sans le runtime." -f ((Get-Item -LiteralPath $zipNoyau).Length / 1MB), ($liste.Count + 1))
 }
 
 function Compress-Dist {

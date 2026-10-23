@@ -57,7 +57,12 @@ async function catalogue(pseudo) {
     const q = pseudo ? '?pseudo=' + encodeURIComponent(String(pseudo).slice(0, 16)) : '';
     const r = await http.getJSON(url + '/boutique' + q);
     const produits = (r && Array.isArray(r.produits)) ? r.produits : [];
-    const droits = (r && Array.isArray(r.droits)) ? r.droits : [];
+    /*  Les cosmetiques marques « offert » sont pour tout le monde, sans
+        besoin d'activation : le catalogue les inscrit dans les droits,
+        sinon un nouveau joueur ne pourrait rien porter en jeu. Le
+        serveur reste la seule source pour ce qui se paie.               */
+    const offerts = produits.filter(p => p && p.id && p.offert === true).map(p => p.id);
+    const droits = Array.from(new Set((r && Array.isArray(r.droits) ? r.droits : []).concat(offerts)));
     const etoiles = (r && Number(r.etoiles)) || 0;
     const serie = (r && r.serie) ? r.serie : { jour: 0, streak: 0, prochainDans: 0 };
     if (droits.length || etoiles) ecrireDroits(droits, etoiles);

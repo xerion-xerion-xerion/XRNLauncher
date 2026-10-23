@@ -1612,13 +1612,56 @@ const Splash = {
           : '<p class="empty">Personne pour le moment. Connecte ton compte, ou ajoute un pseudo.</p>';
       }
 
-      /*  Ce que le joueur porte : c est le mod qui l a enregistre. */
-      const eq = $('#btEquipe');
-      if (eq) {
+      /*  La garde-robe : les cosmétiques du catalogue, avec leur
+          aperçu. Le statut vient des droits du serveur (les capes
+          offertes sont pour tout le monde) ; le portage lui-même se
+          choisit dans le jeu, avec la touche U.                      */
+      const grille = $('#garderobeGrid');
+      if (grille) {
+        const droits = (r && r.ok && Array.isArray(r.droits)) ? r.droits : (await api(x => x.env.boutique.droits(), { soft: true }) || []);
+        const cata = (r && r.ok && Array.isArray(r.produits)) ? r.produits : [];
         const porte = await api(x => x.env.communaute.cosmetique(), { soft: true });
-        eq.innerHTML = porte
-          ? '<div class="boutique-pseudo"><span class="badge good">' + esc(porte) + '</span></div>'
-          : '<p class="empty">Tu ne portes aucun cosmetique. Equipe-en un dans le jeu (touche U).</p>';
+        const capes = [
+          { id: 'cape_xrn', nom: 'Cape XRN', img: 'assets/capes/cape_xrn.png', desc: 'Le noir étoilé et le X de la maison. Offerte à tous.' },
+          { id: 'cape_aurore', nom: 'Cape Glacier', img: 'assets/capes/cape_glacier.png', desc: 'Un vallon de glace bleue, scintillant à la lumière.' },
+          { id: 'cape_braises', nom: 'Cape Comète', img: 'assets/capes/cape_comete.png', desc: 'Une comète qui file dans un ciel étoilé.' }
+        ];
+        grille.innerHTML = capes.map(c => {
+          const produit = cata.find(p => p && p.id === c.id);
+          const prix = produit ? (Number(produit.etoiles) || 0) : 0;
+          const offert = produit ? produit.offert === true : false;
+          const possede = offert || droits.indexOf(c.id) >= 0;
+          const equip = c.id === porte;
+          let badge = '', bouton = '';
+          if (equip) {
+            badge = '<span class="cape-badge">Portée</span>';
+            bouton = '<button class="cape-select equipe" disabled>Équipée (touche U)</button>';
+          } else if (possede) {
+            badge = offert ? '' : '<span class="cape-badge">Acquis</span>';
+            bouton = '<button class="cape-select cape-choix">Équipe en jeu</button>';
+          } else if (produit) {
+            badge = '<span class="cape-badge prix">' + prix + ' ★</span>';
+            bouton = '<button class="cape-select verrou">Gagner ' + prix + ' étoiles</button>';
+          } else {
+            bouton = '<button class="cape-select" disabled>Indisponible</button>';
+          }
+          return '<div class="cape-card' + (equip ? ' equipe' : '') + (possede ? '' : ' verrou') + '">' +
+            '<div class="cape-preview">' +
+              '<img src="' + c.img + '" alt="' + esc(c.nom) + '" onerror="this.style.display=\'none\'">' + badge +
+            '</div>' +
+            '<div class="cape-card-body">' +
+              '<h3>' + esc(c.nom) + '</h3>' +
+              '<p>' + esc(c.desc) + '</p>' + bouton +
+            '</div>' +
+          '</div>';
+        }).join('');
+        $$('.cape-choix').forEach(b => b.addEventListener('click', () => {
+          Toast.show('Garde-robe', 'Équipe le cosmétique dans le jeu avec la touche U.', 'info', 4000);
+        }));
+        $$('.cape-select.verrou').forEach(b => b.addEventListener('click', () => {
+          const zone = document.getElementById('btProduits');
+          if (zone && zone.scrollIntoView) zone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }));
       }
     },
 

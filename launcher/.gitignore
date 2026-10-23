@@ -12,8 +12,10 @@ logs/
 mods/
 
 # Sauvegardes : on garde les versions qui marchent, pas les sources
-sauvegardes/*.css
-sauvegardes/*.zip
+sauvegardes/
+
+# Sauvegardes de revert momentanees (n'entrent pas dans l'historique)
+*.bak-cape-rewrite
 
 # Journal des installations (runtime, pas une source)
 tools/registrations.log

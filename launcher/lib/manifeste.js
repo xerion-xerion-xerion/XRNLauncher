@@ -105,7 +105,12 @@ function etatLocalCompatible(manifeste, dossier) {
 
     /*  Les fichiers de l'application : ils doivent etre la, et
         inchanges. C'est le controle le plus utile, et le moins cher. */
+    /*  Les mods integres sont exclus : ce sont des livrables, pas
+        l etat du launcher. Le jar y est remplace par chaque mise a
+        jour qui le porte, et un refus ici bloquerait le patch pour
+        toujours.                                                                   */
     for (const chemin of Object.keys(manifeste.precedents)) {
+      if (/^mods-integres\//.test(chemin)) continue;
       const f = path.join(racine, chemin.replace(/\//g, path.sep));
       if (!fs.existsSync(f)) return { ok: false, raison: 'fichier absent : ' + chemin };
       if (sha256Fichier(f) !== String(manifeste.precedents[chemin])) {
