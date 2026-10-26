@@ -312,6 +312,20 @@
           </div>
         </div>
 
+        <!--  Le mod embarque : ce qu'il sait faire aujourd'hui. La
+              liste des modules vit avec le jar integre : a chaque mise
+              a jour du launcher, la liste suit. Rien a installer.      -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-h">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"/></svg>
+            <h4>Mod embarque — XRN HUD <span class="integre-ver" id="integreVersion"></span></h4>
+          </div>
+          <div class="panel-b">
+            <div class="integre-modules" id="integreModules"></div>
+            <p class="boutique-txt" style="margin:0">Tout est deja installe : <b class="touche">Maj droite</b> ouvre le menu dans le jeu, <b class="touche">Ctrl droit</b> deplace les blocs a la souris, <b class="touche">U</b> ouvre la garde-robe des capes.</p>
+          </div>
+        </div>
+
         <div class="panel">
           <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"/></svg><h4>Chargeur de mods</h4></div>
           <div class="panel-b" id="loaderBox"><p class="empty">Chargement…</p></div>
@@ -405,7 +419,7 @@
         </div>
 
         <div class="panel" style="margin-top:14px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-users"/></svg><h4>Annnuaire de la communaute</h4></div>
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-users"/></svg><h4>Annuaire de la communaute</h4></div>
           <div class="panel-b">
             <p class="boutique-txt">Les pseudos qui utilisent ce client. Leur logo apparait a cote de leur pseudo, en jeu et dans la liste des joueurs. Seuls des pseudos de jeu sont partages : ni identifiant, ni jeton, ni adresse.</p>
             <div class="panel-b" id="btPseudos" style="padding:0;margin-top:10px"><p class="empty">Chargement…</p></div>

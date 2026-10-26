@@ -1749,8 +1749,36 @@ const Splash = {
       if (!etat) return;
       const p = $('#modsPath');
       if (p) p.textContent = etat.dossier;
+      this.renderIntegre(etat.integres || []);
       this.renderList(etat.mods);
       this.renderLoader(etat);
+    },
+
+    /*  Le mod embarque : la version vient du nom du jar integre et la
+        liste des modules decrit ce qui existe dans le jeu aujourd'hui.
+        Rien a telecharger, rien a installer : c est dans le launcher.  */
+    renderIntegre(integres) {
+      const box = $('#integreModules');
+      const ver = $('#integreVersion');
+      const jar = (integres || []).find(n => /^xrn-hud-/i.test(n));
+      const v = jar ? (jar.match(/xrn-hud-([0-9]\.[0-9]+\.[0-9]+)/i) || [])[1] : '';
+      if (ver) ver.textContent = v ? 'v' + v : '';
+      if (!box) return;
+      const modules = [
+        { nom: 'Pave de touches', txt: 'Touches et clics, au coin oppose du bloc d informations.', nov: false },
+        { nom: 'Armure et outil', txt: 'Ce que tu portes, avec la barre d usure de chaque piece.', nov: true },
+        { nom: 'Duree des effets', txt: 'Les effets actifs, avec le temps qu il leur reste.', nov: true },
+        { nom: 'Boussole', txt: 'Le cardinal dans la ligne de coordonnees.', nov: true },
+        { nom: 'Ping du serveur', txt: 'La latence du serveur, quand tu joues en ligne.', nov: true },
+        { nom: 'Compteur de clics', txt: 'Clics par seconde, gauche et droite.', nov: false },
+        { nom: 'Minuterie de session', txt: 'Le temps passe dans le monde en cours.', nov: false },
+        { nom: 'Marqueur', txt: 'Pose un point, et le HUD montre la distance.', nov: false }
+      ];
+      box.innerHTML = modules.map(m =>
+        '<div class="integre-module">' +
+          '<div><b>' + esc(m.nom) + (m.nov ? ' <i class="integre-nov">nouveau</i>' : '') + '</b>' +
+          '<span>' + esc(m.txt) + '</span></div>' +
+        '</div>').join('');
     },
 
     renderList(mods) {

@@ -1249,31 +1249,85 @@ input[type=range]::-webkit-slider-thumb{background:#d8dce6;border:2px solid #121
 /* ============================== GARDE-ROBE ==============================
    Cartes de cosmetique : une preview vraie, le nom, et un etat
    " equipe " quand le cosmetique est porte en jeu.                     */
-.garderobe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
-.cape-card{position:relative;border-radius:var(--r-lg);border:1px solid var(--stroke);
-  background:linear-gradient(160deg,rgba(34,25,76,.5),rgba(10,7,26,.62));backdrop-filter:none;-webkit-backdrop-filter:none;
-  transition:transform var(--med),border-color var(--med),box-shadow var(--med);overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
-.cape-card:hover{transform:translateY(-5px);border-color:rgba(167,139,250,.5);box-shadow:0 10px 24px rgba(0,0,0,.55)}
-.cape-card.equipe{border-color:var(--ok);box-shadow:0 0 0 2px rgba(52,211,153,.25)}
-.cape-card.equipe:hover{border-color:var(--ok)}
-.cape-preview{position:relative;height:110px;display:grid;place-items:center;background:#0b0718;overflow:hidden}
-.cape-preview img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;filter:drop-shadow(0 4px 12px rgba(0,0,0,.6))}
-.cape-badge{position:absolute;top:8px;right:8px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  padding:3px 8px;border-radius:99px;background:rgba(52,211,153,.15);color:#8df0cb;border:1px solid rgba(52,211,153,.35)}
-.cape-card-body{padding:12px 14px 14px;flex:1;display:flex;flex-direction:column;gap:8px}
-.cape-card-body h3{font-size:13.5px;font-weight:700;color:var(--ink);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ============================== GARDE-ROBE ==============================
+   Une carte posee, pas un visuel de demo : le dessin entier de la cape
+   se voit (contain, jamais cover), sur un socle neutre ; l'etat est dit
+   par les couleurs de fonction, pas par des halos.                      */
+.garderobe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:16px}
+.cape-card{position:relative;display:flex;flex-direction:column;border-radius:12px;border:1px solid var(--stroke);
+  background:#12141a;overflow:hidden;cursor:pointer;
+  transition:border-color var(--fast),transform var(--fast),background var(--fast)}
+.cape-card:hover{border-color:#3d4351;transform:translateY(-2px)}
+.cape-card.equipe{border-color:rgba(52,211,153,.55)}
+.cape-card.equipe:hover{border-color:rgba(52,211,153,.7)}
+/*  Le cas "pas le droit" : le dessin s'eteint d'un cran, la carte
+    reste lisible ; le prix porte par la pastille de la carte.            */
+.cape-card.verrou .cape-preview img{filter:grayscale(.5) brightness(.7)}
+.cape-preview{position:relative;height:152px;margin:10px 10px 0;border-radius:9px;background:#0d0e13;
+  border:1px solid var(--stroke);display:grid;place-items:center;overflow:hidden}
+.cape-preview img{max-width:100%;max-height:100%;padding:4px;image-rendering:pixelated;
+  filter:drop-shadow(0 3px 10px rgba(0,0,0,.55))}
+.cape-badge{position:absolute;top:7px;right:7px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  padding:3px 8px;border-radius:99px;background:rgba(52,211,153,.14);color:#8df0cb;border:1px solid rgba(52,211,153,.32)}
+.cape-card-body{padding:12px 13px 13px;flex:1;display:flex;flex-direction:column;gap:6px}
+.cape-card-body h3{font-size:13px;font-weight:700;color:#e9ebf2;margin:0}
 .cape-card-body p{font-size:11px;color:var(--muted);margin:0;line-height:1.5}
-.cape-select{width:100%;height:32px;border-radius:8px;border:1px solid var(--stroke-2);background:rgba(255,255,255,.05);
-  color:var(--ink);font-size:11.5px;font-weight:600;cursor:pointer;transition:var(--fast)}
-.cape-select:hover{background:rgba(167,139,250,.14);border-color:rgba(167,139,250,.4)}
-.cape-select.equipe{background:rgba(52,211,153,.16);border-color:rgba(52,211,153,.4);color:#8df0cb}
+.cape-select{width:100%;height:30px;border-radius:8px;border:1px solid var(--stroke-2);background:#171a21;
+  color:#e9ebf2;font-size:11.5px;font-weight:600;cursor:pointer;transition:var(--fast)}
+.cape-select:hover{background:#1f232c;border-color:#3d4351}
+.cape-select.equipe{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.35);color:#8df0cb;cursor:default}
+.cape-select.equipe:hover{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.35)}
 .cape-empty{color:var(--dim);font-size:12.5px;padding:20px;text-align:center}
+.cape-badge.prix{background:#15171e;color:#ffd88a;border-color:rgba(251,191,36,.4)}
+.cape-select.verrou{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.35);color:#ffd88a}
+.cape-select.verrou:hover{background:rgba(251,191,36,.14);border-color:rgba(251,191,36,.5)}
+.cape-select:disabled{opacity:.5;cursor:default}
 
-/*  Le cas " pas le droit " : la carte reste identique, le voile signale
-    juste que le contenu est couteux, et la pastille montre le prix.     */
-.cape-card.verrou .cape-preview::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(165deg,rgba(10,8,20,.55),rgba(10,8,20,0) 70%)}
-.cape-badge.prix{background:#15171e;color:#ffd88a;border-color:rgba(251,191,36,.42)}
-.cape-select.verrou{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.4);color:#ffd88a}
-.cape-select.verrou:hover{background:rgba(251,191,36,.18);border-color:rgba(251,191,36,.55)}
-.cape-select:disabled{opacity:.55;cursor:default}
+/* =============================================================================
+   REWORK — moins « IA », plus atelier
+   Un client de jeu, pas une maquette. Trois cibles : le fond d'ecran qui
+   virevoltait trop, la police science-fiction posee sur tous les titres,
+   et les halos qui attiraient l'oeil sur la decoration plutot que sur
+   l'information.
+   ========================================================================== */
+
+/*  Le fond : les nebuloses retombent de trois crans, la grille du fond
+    s'efface presque. L'identite « etoiles » reste entiere (le canvas).  */
+.neb{filter:saturate(.74) brightness(.82)}
+.neb.n1{opacity:.32}
+.neb.n2{opacity:.2}
+.neb.n3{opacity:.2}
+.grid{opacity:.1}
+.vignette{background:radial-gradient(ellipse at 50% 45%,transparent 40%,rgba(4,5,8,.9) 100%)}
+
+/*  Les titres reprennent la police du systeme. Orbitron reste ou il a
+    un role de marque : logo du haut, ecran d'accueil, splash. Un titre
+    honnete et gros porte mieux qu'un titre decoratif de science-fiction. */
+.view-head h2,.panel-h h4,.clock,.t-val,.maj-boite h2,.hero h1{
+  font-family:var(--font);letter-spacing:0}
+.panel-h h4{font-size:11.5px;letter-spacing:.08em;font-weight:700;color:#cfd3de}
+.t-val{font-weight:600;letter-spacing:-.01em}
+.hero h1{font-weight:800;letter-spacing:-.02em}
+.eyebrow{letter-spacing:.16em}
+.eyebrow::before{width:16px;margin-top:-1px}
+
+/*  Le survol des cartes : se lever d'un cran, rien de plus. Les grosses
+    ombres aleatoires qui grossissaient chaque passe ont disparu.          */
+.tile:hover,.card:hover,.cape-card:hover{box-shadow:none;transform:translateY(-2px)}
+.tile::after{opacity:.4}
+
+/* ------------------------------ onglet Mods ------------------------------
+   La vitrine du mod embarque : les modules du HUD, vedette des quatre
+   arrives de cette version. Une carte = une phrase utile, pas trois.   */
+.integre-ver{font-weight:600;font-size:11px;color:var(--muted);letter-spacing:.04em;
+  border:1px solid var(--stroke-2);border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:1px}
+.integre-modules{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:9px;margin-bottom:12px}
+.integre-module{display:flex;align-items:flex-start;gap:10px;padding:10px 11px;border:1px solid var(--stroke);
+  border-radius:9px;background:#15171e}
+.integre-module b{display:block;font-size:12px;font-weight:600;color:#e9ebf2}
+.integre-module span{display:block;font-size:10.5px;color:var(--muted);line-height:1.5;margin-top:2px}
+.integre-nov{font-style:normal;font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:#cfc4f5;border:1px solid rgba(167,139,250,.4);background:#241d3d;border-radius:99px;padding:1px 6px;
+  margin-left:4px;vertical-align:1px}
+.boutique-txt .touche{font-family:var(--mono);font-size:11px;color:#e9ebf2;background:#1c1f28;
+  border:1px solid var(--stroke-2);border-radius:6px;padding:1px 6px;font-weight:500}

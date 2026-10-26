@@ -380,6 +380,7 @@ function etat() {
     dossier: modsDir(),
     mods: mods,
     total: mods.reduce((a, m) => a + m.size, 0),
+    integres: nomsIntegres(),
     profils: profilsMod()
   };
 }
