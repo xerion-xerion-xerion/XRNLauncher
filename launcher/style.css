@@ -1331,3 +1331,63 @@ input[type=range]::-webkit-slider-thumb{background:#d8dce6;border:2px solid #121
   margin-left:4px;vertical-align:1px}
 .boutique-txt .touche{font-family:var(--mono);font-size:11px;color:#e9ebf2;background:#1c1f28;
   border:1px solid var(--stroke-2);border-radius:6px;padding:1px 6px;font-weight:500}
+
+/* =============================================================================
+   REFAIT 4.3.22 — l'accueil quitte le poster publicitaire
+
+   Un outil se lit en haut a gauche, petit et dense. L'affiche a orbites,
+   titres geants et pastilles vertes jouait la maquette generee ; un
+   launcher se comporte comme une console : marque discrete, etats en
+   texte, donnees en bandeau, et une seule grande action.
+
+   1. La marque : une ligne. L'orbitation envolee, l'oeil retient la
+      version, pas un dessin.
+   2. Les etats : du texte a points colores, plus des pastilles pleines
+      qui crient "tout va bien" a chaque debut de session.
+   3. Les donnees : une bande partagee par des filets, plus quatre
+      boites clones.
+   4. Jouer : violet pour etre trouve, contenu pour ne pas tout
+      occuper.
+   ========================================================================== */
+
+/* --- 1. la marque tient dans une ligne --- */
+.hero-art{display:none}
+.eyebrow{display:none}
+.hero{padding:22px 26px 20px}
+.hero h1{font-size:23px;font-weight:800;letter-spacing:-.015em;margin:0}
+.hero h1 .hl{font-weight:800;opacity:1}
+.hero .sub{font-size:12px;margin-top:4px;color:var(--muted);letter-spacing:.02em;
+  text-transform:none;font-weight:500}
+.hero-top{gap:16px}
+
+/* --- 2. etat : du texte, des points --- */
+.badges{gap:15px;margin-top:11px}
+.badge{background:none;border:0;border-radius:0;padding:0;font-size:11.5px;font-weight:600;
+  color:#c3c8d4;display:inline-flex;align-items:center;gap:7px}
+.badge svg{display:none}
+.badge::before{content:'';width:6px;height:6px;border-radius:99px;background:var(--v2);
+  flex:0 0 auto}
+.badge.good{color:#9ce9c7}
+.badge.good::before{background:#34d399}
+.badge.warn-badge{color:#ffd88a}
+.badge.warn-badge::before{background:#fbbf24}
+.badge.bad-badge{color:#ffb0bd}
+.badge.bad-badge::before{background:#fb7185}
+
+/* --- 3. jouer : une action, pas un monument --- */
+.btn-play{min-width:168px;height:46px;padding:0 24px;gap:10px;border-radius:10px;
+  font-size:12.5px;letter-spacing:.14em}
+.btn-play svg{width:15px;height:15px}
+.btn-play:hover{transform:translateY(-1px)}
+
+/* --- 4. les donnees : une bande, des filets --- */
+.stats{gap:0;margin-top:16px}
+.tile{background:none;border:0;border-radius:0;box-shadow:none;overflow:visible;
+  padding:12px 20px 12px 0;border-right:1px solid var(--stroke)}
+.tile:last-child{border-right:0}
+.tile::after{display:none}
+.tile:hover{transform:none;box-shadow:none;border-color:var(--stroke)}
+.t-top{font-size:10.5px;letter-spacing:.1em}
+.t-top svg{display:none}
+.t-val{font-size:20px;margin-top:6px}
+.t-sub{margin-top:4px;font-size:10.5px}
