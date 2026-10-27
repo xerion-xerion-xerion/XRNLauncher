@@ -58,11 +58,10 @@ def main():
    with zipfile.ZipFile(out/'XRNLauncher-patch.zip','a',zipfile.ZIP_DEFLATED)as z:z.writestr('patch/_supprimes.txt','\n'.join(removed))
   (out/'XRNLauncher-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
   payload=out/'XRNLauncher-win-x64.zip';unpacked=sum(p.stat().st_size for p in full.values());sha=digest(payload)
-  (ROOT/'installer/payload.iss').write_text('#define PayloadHash "'+sha+'"\n#define PayloadBytes '+str(unpacked)+'\n',encoding='utf-8')
-  iss=ROOT/'installer/XRN-Setup.iss';script=iss.read_text(encoding='utf-8-sig');script=re.sub(r'#define AppVersion "[^"]+"','#define AppVersion "'+version+'"',script,count=1);iss.write_text(script,encoding='utf-8-sig')
-  if args.iscc:subprocess.run([str(args.iscc.resolve()),'/DOutputFolder='+str(out),str(iss)],check=True)
-  files=[p for p in out.iterdir()if p.is_file() and (p.name.startswith('XRNLauncher-') or p.name=='XRN-Setup.exe')]
+  if args.iscc:subprocess.run([__import__('sys').executable,str(ROOT/'scripts/build-installer.py'),'--payload',str(payload),'--iscc',str(args.iscc.resolve()),'--output',str(out)],check=True)
+  files=[p for p in out.iterdir()if p.is_file() and (p.name.startswith('XRNLauncher-') or p.name in {'XRN-Setup.exe','XRN-Setup-build.json'})]
   (out/'SHA256SUMS.txt').write_text(''.join(digest(p)+'  '+p.name+'\n'for p in sorted(files)),encoding='ascii')
+  if args.iscc:subprocess.run([__import__('sys').executable,str(ROOT/'scripts/verify-release.py'),'--directory',str(out)],check=True)
   print(json.dumps({'version':version,'fullBytes':payload.stat().st_size,'patchBytes':(out/'XRNLauncher-patch.zip').stat().st_size if old else None,'setupBytes':(out/'XRN-Setup.exe').stat().st_size if (out/'XRN-Setup.exe').exists()else None,'filesChanged':len(changed),'filesRemoved':len(removed)}))
  finally:temp.cleanup()
 if __name__=='__main__':main()

@@ -1,5 +1,11 @@
 ﻿#define AppVersion "4.7.3"
 #include "payload.iss"
+#ifndef SetupRevision
+  #define SetupRevision "1"
+#endif
+#ifndef SetupBaseName
+  #define SetupBaseName "XRN-Setup"
+#endif
 #ifndef PayloadUrl
   #define PayloadUrl "https://github.com/xerion-xerion-xerion/XRNLauncher/releases/download/v" + AppVersion + "/XRNLauncher-win-x64.zip"
 #endif
@@ -17,7 +23,7 @@ OutputBaseFilename=XRN-Setup-Test
 AppId={{C3D9E180-C14C-42F3-B71C-7B217837F374}
 AppName=XRN Launcher
 DefaultDirName={localappdata}\XRNLauncher
-OutputBaseFilename=XRN-Setup
+OutputBaseFilename={#SetupBaseName}
 #endif
 AppVersion={#AppVersion}
 AppVerName=XRN Launcher {#AppVersion}
@@ -47,7 +53,7 @@ ArchiveExtraction=full
 CloseApplications=yes
 RestartApplications=no
 SetupLogging=yes
-VersionInfoVersion={#AppVersion}.0
+VersionInfoVersion={#AppVersion}.{#SetupRevision}
 VersionInfoDescription=Installation de XRN Launcher
 VersionInfoProductName=XRN Launcher
 VersionInfoCompany=Xerion
