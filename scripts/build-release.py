@@ -43,6 +43,8 @@ def main():
   (stage/'tools').mkdir()
   for name in TOOLS:shutil.copy2(APP/'tools'/name,stage/'tools'/name)
   shutil.copy2(APP/'legal/LICENSE-NWJS.txt',stage/'LICENSE-NWJS.txt')
+  shutil.copy2(APP/'assets/icon.ico',stage/'assets'/('xrn-launcher-'+version+'.ico'))
+  subprocess.run(['powershell','-NoProfile','-ExecutionPolicy','Bypass','-File',str(APP/'tools/set-exe-icon.ps1'),'-Exe',str(stage/'XRNLauncher.exe'),'-Ico',str(APP/'assets/icon.ico')],check=True)
   full={p.relative_to(stage).as_posix():p for p in stage.rglob('*')if p.is_file()};new=managed(stage)
   archive(out/'XRNLauncher-win-x64.zip',full,'XRNLauncher/')
   archive(out/'XRNLauncher-noyau.zip',new,'XRNLauncher/')

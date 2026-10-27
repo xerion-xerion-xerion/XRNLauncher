@@ -64,10 +64,10 @@ Source: "{tmp}\payload\XRNLauncher\*"; DestDir: "{app}"; ExternalSize: {#Payload
 
 [Icons]
 #ifdef TestBuild
-Name: "{app}\shortcuts\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\XRNLauncher.exe"; Tasks: desktopicon
+Name: "{app}\shortcuts\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\xrn-launcher-{#AppVersion}.ico"; Tasks: desktopicon
 #else
-Name: "{autodesktop}\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\XRNLauncher.exe"; Tasks: desktopicon
-Name: "{autoprograms}\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\XRNLauncher.exe"
+Name: "{autodesktop}\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\xrn-launcher-{#AppVersion}.ico"; Tasks: desktopicon
+Name: "{autoprograms}\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\xrn-launcher-{#AppVersion}.ico"
 #endif
 
 [Run]
