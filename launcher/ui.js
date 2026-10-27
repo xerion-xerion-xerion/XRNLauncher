@@ -40,7 +40,7 @@
          ico.innerHTML = ic(opts.kind === 'warn' ? 'i-alert' : (opts.icon || 'i-info'), 25);
          $('#modalTitle').textContent = opts.title || '';
          const txt = $('#modalTxt');
-         txt.innerHTML = opts.text || '';
+         txt.textContent = opts.text || '';
          if (opts.html) txt.innerHTML = opts.html;
 
          const bar = $('#modalBar');
@@ -157,12 +157,11 @@
       session. Le resultat est partage entre la notification et la barre
       de mise a jour : une seule requete a GitHub, et les deux
       affichages racontent la meme histoire.                           */
-  let miseAJourInfo = null;
+  let miseAJourInfo = null, miseAJourPromise = null;
   async function infoMiseAJour() {
-    if (miseAJourInfo) return miseAJourInfo;
-    try { miseAJourInfo = await X.env.chercherMiseAJour(); }
-    catch (e) { miseAJourInfo = { ok: false }; }
-    return miseAJourInfo;
+    if(miseAJourInfo)return miseAJourInfo;
+    if(!miseAJourPromise)miseAJourPromise=Promise.resolve().then(()=>X.env.chercherMiseAJour()).then(r=>miseAJourInfo=r).catch(()=>miseAJourInfo={ok:false});
+    return miseAJourPromise;
   }
 
   /*  Un poids lisible : 81 Ko, 1,4 Mo. */
@@ -204,8 +203,7 @@
     notificationVue = true;
     let r = null;
     try { r = await X.env.notification(); } catch (e) { return; }
-    if (!r || !r.id) return;
-    try { X.env.marquerNotificationVue(r.id); } catch (e) {}
+    if (!r || !r.id || /^(capes|boutique|cosmetiques?)-/i.test(r.id)) return;
 
     /*  Un message qui porte une version annonce une mise a jour du
         launcher. Dans ce cas, on n ouvre surtout pas le navigateur : le
@@ -213,17 +211,13 @@
         tout seul. Le bouton applique donc la mise a jour sur place.  */
     const annonceVersion = !!(r.version || (r.lien && /\.zip(\?|$)/i.test(r.lien)));
     if (annonceVersion) {
-      const info = await infoMiseAJour();
-      if (info && info.ok && info.telecharger) {
-        Toast.show(r.titre || 'XRNLauncher', r.texte || '', r.niveau || 'info', 24000,
-          { label: 'Mettre a jour', run: () => demarrerMiseAJour(info) });
-      } else {
-        /*  Deja a jour : le message reste informatif, sans bouton qui
-            renverrait vers un telechargement manuel.                  */
-        Toast.show(r.titre || 'XRNLauncher', r.texte || '', r.niveau || 'info', 24000);
-      }
+      const info=await infoMiseAJour();
+      if(info?.ok){await verifierMiseAJour();try{X.env.marquerNotificationVue(r.id);}catch{}}
+      // An already installed release is acknowledged without another update notice.
+      else if(info?.version&&info?.courant){try{X.env.marquerNotificationVue(r.id);}catch{}}
       return;
     }
+    try{X.env.marquerNotificationVue(r.id);}catch{}
 
     Toast.show(r.titre || 'XRNLauncher', r.texte || '', r.niveau || 'info', 24000,
       r.lien ? { label: r.bouton || 'Ouvrir', run: () => { X.env.openUrl(r.lien); } } : null);
@@ -407,146 +401,37 @@
     /* ================================================================== *
    *  AMBIANCE — nappe sonore douce, entierement generee (aucun fichier)
    * ================================================================== */
-  const Ambience = {
-    ctx: null, master: null, on: false, timer: null, vol: 0.25,
-    boot(vol) {
-      if (this.ctx) { this.setVolume(vol); return; }
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      this.vol = vol == null ? 0.25 : vol;
-      const ctx = this.ctx = new AC();
-      this.master = ctx.createGain();
-      this.master.gain.value = 0;
-      this.master.connect(ctx.destination);
-
-      const lp = ctx.createBiquadFilter();
-      lp.type = 'lowpass'; lp.frequency.value = 620; lp.Q.value = 2.5;
-      lp.connect(this.master);
-      const lfo = ctx.createOscillator(); lfo.frequency.value = 0.035;
-      const lfoAmp = ctx.createGain(); lfoAmp.gain.value = 300;
-      lfo.connect(lfoAmp); lfoAmp.connect(lp.frequency); lfo.start();
-
-      [{ f: 55, g: 0.30, t: 'sine', d: 0 }, { f: 110, g: 0.14, t: 'sine', d: 5 }]
-        .forEach(v => {
-          const o = ctx.createOscillator();
-          o.type = v.t; o.frequency.value = v.f; o.detune.value = v.d;
-          const g = ctx.createGain(); g.gain.value = v.g;
-          const amp = ctx.createOscillator(); amp.frequency.value = 0.02 + Math.random() * 0.05;
-          const ampG = ctx.createGain(); ampG.gain.value = v.g * 0.5;
-          amp.connect(ampG); ampG.connect(g.gain); amp.start();
-          o.connect(g); g.connect(lp); o.start();
-        });
-
-      const len = ctx.sampleRate * 3;
-      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-      const d = buf.getChannelData(0);
-      let last = 0;
-      for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3; }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buf; noise.loop = true;
-      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 420; bp.Q.value = 0.8;
-      const ng = ctx.createGain(); ng.gain.value = 0.07;
-      const nlfo = ctx.createOscillator(); nlfo.frequency.value = 0.017;
-      const nlfoG = ctx.createGain(); nlfoG.gain.value = 210;
-      nlfo.connect(nlfoG); nlfoG.connect(bp.frequency); nlfo.start();
-      noise.connect(bp); bp.connect(ng); ng.connect(this.master); noise.start();
-
-      this.delay = ctx.createDelay(1.2); this.delay.delayTime.value = 0.42;
-      const fb = ctx.createGain(); fb.gain.value = 0.4;
-      const dw = ctx.createGain(); dw.gain.value = 0.3;
-      this.delay.connect(fb); fb.connect(this.delay); this.delay.connect(dw); dw.connect(this.master);
-
-      this.updateSoundBtn();
-    },
-    ping() {
-      clearTimeout(this.timer);
-      this.timer = setTimeout(() => {
-        if (!this.on || !this.ctx) return;
-        const ctx = this.ctx;
-        const scale = [220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33];
-        const f = scale[Math.floor(Math.random() * scale.length)] * (Math.random() < 0.25 ? 2 : 1);
-        const t0 = ctx.currentTime;
-        [1, 2.004].forEach((h, i) => {
-          const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f * h;
-          const g = ctx.createGain();
-          g.gain.setValueAtTime(0, t0);
-          g.gain.linearRampToValueAtTime(0.05 / (i + 1), t0 + 0.05);
-          g.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.4);
-          o.connect(g); g.connect(this.delay); g.connect(this.master);
-          o.start(t0); o.stop(t0 + 3.6);
-        });
-        this.ping();
-      }, 8000 + Math.random() * 12000);
-    },
-    toggle(force) {
-      if (!this.ctx) this.boot();
-      if (!this.ctx) { Toast.show('Audio indisponible', 'Ce navigateur ne gère pas Web Audio.', 'warn'); return; }
-      const want = force === undefined ? !this.on : force;
-      this.on = want;
-      if (want && this.ctx.state === 'suspended') this.ctx.resume();
-      const t = this.ctx.currentTime;
-      this.master.gain.cancelScheduledValues(t);
-      this.master.gain.setValueAtTime(this.master.gain.value, t);
-      this.master.gain.linearRampToValueAtTime(want ? this.vol : 0, t + (want ? 3 : 1));
-      if (want) this.ping(); else clearTimeout(this.timer);
-      this.updateSoundBtn();
-      try { localStorage.setItem('xrn.ambient', want ? '1' : '0'); } catch (e) {}
-    },
-    setVolume(v) {
-      this.vol = v;
-      if (this.ctx && this.on) {
-        const t = this.ctx.currentTime;
-        this.master.gain.cancelScheduledValues(t);
-        this.master.gain.linearRampToValueAtTime(v, t + 0.4);
-      }
-    },
-    updateSoundBtn() {
-      const b = $('#soundBtn');
-      if (!b) return;
-      b.classList.toggle('off', !this.on);
-      b.innerHTML = ic(this.on ? 'i-volume' : 'i-mute', 17);
-      b.setAttribute('data-tip', this.on ? 'Couper la nappe' : 'Activer la nappe');
-    }
-  };
-
-  const kickAmbience = () => {
-    if (!Ambience.ctx) {
-      let pref = null;
-      try { pref = localStorage.getItem('xrn.ambient'); } catch (e) {}
-      if (pref !== '0') Ambience.toggle(true);
-    }
-    removeEventListener('pointerdown', kickAmbience);
-    removeEventListener('keydown', kickAmbience);
-  };
-  addEventListener('pointerdown', kickAmbience);
-  addEventListener('keydown', kickAmbience);
-
-  /* ================================================================== *
-   *  TETE DE SKIN — texture Minecraft officielle (hors-ligne apres cache)
-   * ================================================================== */
   const SkinHead = {
-    cache: new Map(),
-    load(url) {
-      return new Promise(resolve => {
-        if (!url) return resolve(null);
-        if (this.cache.has(url)) return resolve(this.cache.get(url));
-        const img = new Image();
-        img.onload = () => { this.cache.set(url, img); resolve(img); };
-        img.onerror = () => resolve(null);
-        img.src = url;
-      });
+    cache: new Map(), pending:new Map(),jobs:new WeakMap(),
+    load(value) {
+      if(!value)return Promise.resolve(null);
+      const url=String(value).replace(/^http:\/\/textures\.minecraft\.net\//,'https://textures.minecraft.net/');
+      if(!/^https:\/\//i.test(url)&&!/^lib\/assets\/head-(alex|steve)\.png$/.test(url))return Promise.resolve(null);
+      if(this.cache.has(url))return Promise.resolve(this.cache.get(url));
+      if(this.pending.has(url))return this.pending.get(url);
+      const task=new Promise(resolve=>{
+        const img=new Image();let finished=false;
+        const finish=value=>{if(finished)return;finished=true;clearTimeout(timer);if(value){this.cache.set(url,value);if(this.cache.size>48)this.cache.delete(this.cache.keys().next().value);}resolve(value);};
+        const timer=setTimeout(()=>{finish(null);img.src='';},5000);
+        img.onload=()=>finish(img);img.onerror=()=>finish(null);img.src=url;
+      }).finally(()=>this.pending.delete(url));this.pending.set(url,task);return task;
     },
     async draw(canvas, url, letter, avatarUrl) {
       if (!canvas || typeof canvas.getContext !== 'function') return;
+      const ticket=Symbol();this.jobs.set(canvas,ticket);
       const px = canvas.width / 8;
       const g = canvas.getContext('2d');
       g.imageSmoothingEnabled = false;
       g.clearRect(0, 0, canvas.width, canvas.height);
+      const fallback=await this.load(this.textureTete(letter||'?'));
+      if(this.jobs.get(canvas)!==ticket)return;
+      if(fallback)this.face3d(g,fallback,canvas.width,canvas.height);
 
       /*  Un compte Xbox n'a pas d'image Minecraft, mais bien une image de
           profil : on l'affiche en carre, en entier.                    */
       if (!url && avatarUrl) {
         const av = await this.load(avatarUrl);
+        if(this.jobs.get(canvas)!==ticket)return;
         if (av) {
           g.imageSmoothingEnabled = true;
           const c = Math.min(canvas.width, canvas.height);
@@ -564,16 +449,18 @@
             3. Steve ou Alex, en dernier recours.                       */
       const nom = String(letter || '');
       let img = await this.load(url);
-      if (!img && nom && DESKTOP && X && X.skin) {
+      if (!img && /^[A-Za-z0-9_]{3,16}$/.test(nom) && DESKTOP && X && X.skin) {
         try {
           const trouve = await X.skin.parNom(nom);
           if (trouve) img = await this.load(trouve);
         } catch (e) { /* pas de reseau : on continue */ }
       }
+      if(this.jobs.get(canvas)!==ticket)return;
       if (img) {
+        g.clearRect(0,0,canvas.width,canvas.height);
         /*  La region de la tete est identique dans une skin 64x64 et
             dans une 64x32 : le rendu 3D marche dans les deux cas.    */
-        if (img.width >= 8 && img.height >= 16) { this.face3d(g, img, canvas.width, canvas.height); return; }
+        if (img.width >= 64 && img.height >= 32) { this.face3d(g, img, canvas.width, canvas.height); return; }
         g.drawImage(img, 8, 8, 8, 8, 0, 0, 8 * px, 8 * px);
         return;
       }
@@ -582,9 +469,11 @@
           presente dans le launcher, choisie comme le fait le jeu.       */
       if (nom) {
         const tete = await this.load(this.textureTete(nom));
+        if(this.jobs.get(canvas)!==ticket)return;
         if (tete) { this.face3d(g, tete, canvas.width, canvas.height); return; }
       }
 
+      if(fallback)return;
       const grad = g.createLinearGradient(0, 0, canvas.width, canvas.height);
       grad.addColorStop(0, '#2a2145'); grad.addColorStop(1, '#1b1630');
       g.fillStyle = grad; g.fillRect(0, 0, canvas.width, canvas.height);
@@ -602,7 +491,7 @@
       return 'lib/assets/head-' + ((h & 1) === 0 ? 'steve' : 'alex') + '.png';
     },
 
-    /*  Cube en perspective : dessus, face avant, flanc. Chaque face est
+    /*  Ancien rendu 3D remplacé par une face 2D. Chaque face est
         un carre 8x8 de la texture, pose par une matrice qui le deforme
         en parallélogramme.
 
@@ -613,74 +502,16 @@
         - la hauteur utile du cube vaut 2*h + d. Il faut donc remonter le
           centre de d/2, sinon la tete deborde par le bas.            */
     face3d(g, img, largeur, hauteur) {
-      const S = Math.min(largeur, hauteur) * 0.82;
-      const u = S / 2, h = S / 4, d = S / 2;   // demi-largeur, hauteur, profondeur
-
-      g.save();
-      g.translate(largeur / 2, hauteur / 2 - d / 2);
-
-      const face = (sx, sy, m, ombre) => {
-        g.save();
-        g.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
-        if (ombre) g.globalAlpha = 0.82;
-        g.drawImage(img, sx, sy, 8, 8, 0, 0, S, S);
-        g.restore();
-      };
-
-      /*  dessus : losange, de la pointe gauche vers la pointe haute */
-      face(8, 0, [u / S, -h / S, u / S, h / S, -u, 0], 0);
-      /*  face avant, vue de trois quarts                          */
-      face(8, 8, [u / S, h / S, 0, d / S, -u, 0], 0);
-      /*  flanc gauche                                               */
-      face(16, 8, [u / S, -h / S, 0, d / S, 0, h], 1);
-
-      g.restore();
+      const unit=img.width/64;
+      const size=Math.floor(Math.min(largeur,hauteur)/8)*8;
+      const x=Math.floor((largeur-size)/2),y=Math.floor((hauteur-size)/2);
+      g.imageSmoothingEnabled=false;
+      g.drawImage(img,8*unit,8*unit,8*unit,8*unit,x,y,size,size);
+      g.drawImage(img,40*unit,8*unit,8*unit,8*unit,x,y,size,size);
     }
+
   };
 /* SFX - effet sonore court de demarrage (~1,1 s), genere localement */
-  const Sfx = {
-    play() {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      try {
-        const ctx = Sfx._ctx || (Sfx._ctx = new AC());
-        if (ctx.state === 'suspended') ctx.resume();
-        const t0 = ctx.currentTime + 0.02;
-        const out = ctx.createGain();
-        out.gain.value = 0.34;
-        out.connect(ctx.destination);
-
-        [523.25, 659.25, 987.77].forEach((f, i) => {
-          const t = t0 + i * 0.11;
-          [1, 2.01].forEach((h, k) => {
-            const o = ctx.createOscillator();
-            o.type = 'sine'; o.frequency.value = f * h;
-            const g = ctx.createGain();
-            g.gain.setValueAtTime(0.0001, t);
-            g.gain.exponentialRampToValueAtTime(0.22 / (k + 1), t + 0.012);
-            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.75);
-            o.connect(g); g.connect(out);
-            o.start(t); o.stop(t + 0.8);
-          });
-        });
-
-        const len = Math.floor(ctx.sampleRate * 0.55);
-        const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-        const d = buf.getChannelData(0);
-        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
-        const n = ctx.createBufferSource(); n.buffer = buf;
-        const bp = ctx.createBiquadFilter();
-        bp.type = 'bandpass'; bp.Q.value = 1.6;
-        bp.frequency.setValueAtTime(320, t0);
-        bp.frequency.exponentialRampToValueAtTime(2600, t0 + 0.5);
-        const ng = ctx.createGain();
-        ng.gain.setValueAtTime(0.09, t0);
-        ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.55);
-        n.connect(bp); bp.connect(ng); ng.connect(out);
-        n.start(t0); n.stop(t0 + 0.6);
-      } catch (e) { /* audio indisponible */ }
-    }
-  };
 const Splash = {
     shown: true, t0: 0, minuterie: null, tape: null,
     /* Sentence choisie au hasard a chaque lancement */
@@ -702,70 +533,13 @@ const Splash = {
       return this.line;
     },
 
-    boot() {
-      const el = $('#splash');
-      this.t0 = Date.now();
-      if (!el) { this.done(); return; }
-      this.pick();
-      this.particles();
-      setTimeout(() => Sfx.play(), 900);
-      $('#spSkip').addEventListener('click', () => this.done());
-      addEventListener('keydown', e => { if (e.key === 'Escape') this.done(); }, { once: true });
-
-      /*  Le splash se ferme 2300 ms apres le boot (voir ready()).
-          Ces delais sont donc volontairement courts : la derniere
-          etape doit avoir lieu avant la fermeture, sinon la barre
-          reste bloquee a mi-parcours — c'etait exactement le symptome
-          avant que la chronologie soit alignee sur celle du splash.  */
-      const steps = [
-        [ 12, 'Initialisation du moteur…',        180],
-        [ 32, 'Chargement des sous-systèmes…',    560],
-        [ 55, 'Vérification de l\'intégrité…',    960],
-        [ 78, 'Connexion au launcher…',          1400],
-        [100, 'Prêt.',                           1780]
-      ];
-      let done = false;
-      steps.forEach(([p, label, ms]) => setTimeout(() => {
-        if (done) return;
-        $('#spBar').style.width = p + '%';
-        $('#spStatus').textContent = label;
-      }, ms));
-
-      // sous-titre mot a mot
-      const quote = this.line.t;
-      const words = quote.split(' ');
-      const sub = $('#spSubtitle');
-      let wi = 0;
-      /*  Le pas est calcule sur la longueur de la citation pour qu'elle
-          soit entierement ecrite avant la fermeture du splash. Avec un
-          pas fixe de 340 ms, les citations longues etaient coupees en
-          plein mot.                                                      */
-      const pas = Math.max(70, Math.floor(1700 / Math.max(1, words.length)));
-      this.tape = setInterval(() => {
-        if (done || !this.shown) return;
-        if (wi < words.length) {
-          sub.classList.add('on');
-          sub.innerHTML = esc(words.slice(0, wi + 1).join(' ')) + '<span class="cur"></span>';
-          wi++;
-        } else {
-          /*  Derniere frappe : on retire le curseur et on affiche enfin
-              l'auteur. Avant, cet affichage etait programme separement
-              et tombait apres la fermeture du splash, donc jamais vu.  */
-          clearInterval(this.tape); this.tape = null;
-          sub.innerHTML = esc(quote) + '<br><span class="sp-author">' + esc(this.line.a) + '</span>';
-        }
-      }, pas);
-
-
-      // filet de securite
-      this.minuterie = setTimeout(() => { if (!done) this.done(); }, 12000);
-    },
+    boot() { this.t0 = Date.now(); this.done(); },
 
     /*  Appele quand l'interface est prete. Le splash disparait alors,
         sans attendre le filet de securite de 12 secondes : on laisse
         juste le temps de voir le X et l'etoile se dessiner.          */
     ready() {
-      const minimum = 2300;
+      const minimum = 0;
       const restant = Math.max(0, minimum - (Date.now() - this.t0));
       clearTimeout(this.minuterie);
       this.minuterie = setTimeout(() => this.done(), restant);
@@ -811,6 +585,8 @@ const Splash = {
   const Nav = {
     items: $$('.nav-item'), views: $$('.view'),
     go(name) {
+      if (name === 'boutique') name = 'mods';
+      if (name === 'videos') name = 'home';
       const el = document.getElementById('view-' + name);
       if (!el) return;
       this.items.forEach(b => b.classList.toggle('active', b.dataset.view === name));
@@ -822,12 +598,14 @@ const Splash = {
     onEnter(name) {
       if (name === 'versions') Versions.refresh();
       if (name === 'saves') Saves.refresh();
-      if (name === 'files') Files.refresh();
+      if (name === 'shots') window.XrnGallery?.refresh();
+      if (name === 'files') { $('#fsBody').innerHTML = '<p class="empty">Lecture du dossier…</p>'; setTimeout(() => Files.refresh(), 0); }
       if (name === 'servers') Servers.refresh();
+      if (name === 'downloads') refreshDownloadedVersions();
       if (name === 'login') Login.refresh();
       if (name === 'home') Home.refresh();
-      if (name === 'mods') Mods.refresh();
-      if (name === 'boutique') Boutique.refresh();
+      if (name === 'mods') setTimeout(() => Mods.refresh(), 0);
+
     }
   };
   Nav.items.forEach(b => b.addEventListener('click', () => Nav.go(b.dataset.view)));
@@ -861,6 +639,7 @@ const Splash = {
 
     const cle = String(b.dataset.open || '').toLowerCase();
     if (!ACCES_RAPIDES[cle]) return;
+    if(cle==='screenshots'){Nav.go('shots');return;}
     if (DESKTOP) X.report('UI', 'acces rapide : ' + cle);
 
     /*  Le dossier peut ne pas encore exister : on le cree d'abord,
@@ -1002,14 +781,6 @@ const Splash = {
       $('#stSaves').textContent = saves.length;
       $('#stSavesSub').textContent = saves.length ? 'dernière : ' + relative(saves[0].lastPlayed) : 'dans le dossier du jeu';
 
-      const disk = await api(x => x.files.disk(), { soft: true });
-      if (disk) {
-        $('#stSize').textContent = human(disk.total);
-        $('#stSizeSub').textContent = disk.free != null ? 'libre : ' + human(disk.free) : 'dossier du jeu';
-        $('#diskMini').textContent = human(disk.total);
-        renderRailDisk(disk);
-      }
-
       // version par défaut
       if (!STATE.selected) {
         const cfg = await api(x => x.env.config(), { soft: true });
@@ -1026,7 +797,7 @@ const Splash = {
         mini-compteur du bandeau restait sur "detection…".              */
     async updateJavaBadge() {
       if (!DESKTOP) return;
-      const j = await api(x => x.game.javaFor(17), { soft: true });
+      const j = await api(x => x.game.javaFor(0), { soft: true });
       const ok = !!(j && j.found);
       const b = $('#badgeJava');
       if (b) {
@@ -1217,7 +988,8 @@ const Splash = {
     renderCatalog() {
       const cat = STATE.catalog;
       const q = ($('#versionSearch').value || '').trim().toLowerCase();
-      let rows = cat.versions.filter(v => !q || v.id.toLowerCase().includes(q)).slice(0, 150);
+      if (!cat) return;
+      let rows = cat.versions.filter(v => q ? v.id.toLowerCase().includes(q) : v.type === 'release').slice(0, 150);
       $('#catalogList').innerHTML = rows.map(v => {
         const isInst = STATE.installed.find(i => i.id === v.id);
         return `<div class="row"><span class="nm">${esc(v.id)} <span style="color:var(--dim)">· ${esc(relative(new Date(v.releaseTime).getTime()))}</span></span>
@@ -1229,6 +1001,7 @@ const Splash = {
       $$('[data-ins]').forEach(b => b.addEventListener('click', () => startInstall(b.dataset.ins)));
     }
   };
+  $$('[data-version-preset]').forEach(b=>b.onclick=()=>{$('#versionSearch').value=b.dataset.versionPreset;Versions.renderCatalog();});
   $('#versionSearch').addEventListener('input', () => Versions.renderCatalog());
   $('#btnRefreshVersions').addEventListener('click', () => { STATE.catalog = null; Versions.refresh(true); });
 
@@ -1285,8 +1058,8 @@ const Splash = {
       kind: 'warn',
       icon: 'i-alert',
       title: 'Java est requis pour jouer',
-      html: 'Pour lancer Minecraft, il faut <b>Java 17</b> (ou Java 21 pour les versions les plus récentes).' +
-            '<br><br>Aucun Java n\'a été détecté sur cette machine. Le launcher peut télécharger ' +
+      html: 'Cette installation de Minecraft nécessite <b>Java ' + need + '</b>.' +
+            '<br><br>Aucun Java compatible n\'a été trouvé pour cette version. Le launcher peut télécharger ' +
             '<b>Temurin</b> (la version libre de Java) directement dans son dossier : ' +
             'aucune installation système, aucun droit administrateur, environ 190 Mo.' +
             '<br><br>Tu peux aussi l\'installer toi-même plus tard, ou l\'ignorer pour l\'instant.',
@@ -1303,7 +1076,7 @@ const Splash = {
       hideOk: true
     });
     try {
-      const res = await X.game.installJava(21);
+      const res = await X.game.installJava(need);
       Dialog.close(true);
       Toast.show('Java installé', 'Temurin ' + res.version + ' est prêt. Le launcher l\'utilisera automatiquement.', 'ok', 6000);
       await Home.refresh();
@@ -1323,7 +1096,6 @@ const Splash = {
   async function startInstall(id) {
     if (!DESKTOP) return api(null);
     if (STATE.token) { Toast.show('Téléchargement en cours', 'Attendez la fin ou annulez.', 'warn'); return; }
-    await verifierJava(17);
     const cat = await Version.loadCatalog();
     const entry = cat && cat.versions.find(v => v.id === id);
     if (!entry) { Toast.show('Version inconnue', id, 'err'); return; }
@@ -1333,12 +1105,16 @@ const Splash = {
     $('#dlBadge').hidden = false; $('#dlBadge').textContent = '…';
     $('#dlStrip').hidden = false;
     $('#dlLive').hidden = false;
+    $('#btnPause').disabled=false;$('#btnCancelDl').disabled=false;
+    $('#btnPause').innerHTML=ic('i-mute',16)+'Pause';
     Nav.go('downloads');
     Toast.show('Téléchargement', 'Installation de Minecraft ' + id + '…', 'info', 5000);
 
     const res = await api(x => x.game.install(entry, STATE.token));
     STATE.token = null;
     $('#dlLive').hidden = true;
+    $('#btnPause').disabled=true;$('#btnCancelDl').disabled=true;
+    refreshDownloadedVersions();
     /*  La barre de progression sous le bouton JOUER doit disparaitre
         une fois le telechargement termine : elle restait affichee en
         permanence, avec son dernier pourcentage, meme des heures
@@ -1403,7 +1179,8 @@ const Splash = {
     }
     X.on('dl:progress', d => { STATE.lastProgress = d; queueDlRender(); updateStrip(d); });
     X.on('dl:file', d => pushFileRow(d));
-    X.on('dl:start', d => { STATE.lastProgress = { version: d.version, total: Number(d.total) || 0, doneBytes: 0, files: d.files || 0, filesDone: 0, speed: 0, current: '' }; $('#dlFiles').innerHTML = ''; const t = $('#dlPanelTitle'); if (t) t.textContent = 'Fichier en cours'; Downloads.render(); });
+    X.on('mods:notice',d=>Toast.show('Module XRN',d.text,'info',6500));
+    X.on('dl:start', d => { STATE.lastProgress = { version: d.version, total: Number(d.total) || 0, doneBytes: 0, files: d.files || 0, filesDone: 0, speed: 0, current: '' }; $('#dlFiles').innerHTML = ''; const t = $('#dlPanelTitle'); if (t) t.textContent = 'Installation en cours'; Downloads.render(); });
     X.on('dl:done', d => { const t = $('#dlPanelTitle'); if (t) t.textContent = 'Dernière installation'; Downloads.render(); logGame('ok', 'Installation ' + d.version + ' terminée.'); });
     X.on('dl:error', d => logGame('err', d.name + ' : ' + d.message));
     X.on('dl:stage', d => logGame('', d.text));
@@ -1468,8 +1245,10 @@ const Splash = {
         n'est pas un profil de chargeur : le jeu demarrerait, mais les
         mods seraient purement et simplement ignores. C'est le piege le
         plus courant, on propose donc de le corriger sur-le-champ.   */
+    const clientBuilds = await api(x => x.game.clientBuilds(), {soft:true}) || [];
+    const preparesClient = cfg && cfg.clientEnabled !== false && clientBuilds.some(b=>b.minecraft===id);
     const modState = await api(x => x.mods.etat(), { soft: true });
-    if (modState && (modState.mods || []).length) {
+    if (!preparesClient && modState && (modState.mods || []).some(m => !m.disabled)) {
       const estChargeur = (modState.profils || []).some(p => p.version === id);
       if (!estChargeur) {
         const r = await Dialog.confirm({
@@ -1518,208 +1297,13 @@ const Splash = {
   /*  Le catalogue vient du serveur, les droits aussi. Le client ne
       decide rien : il montre ce que le serveur a accorde, et il
       demande un code quand le joueur en a un.                         */
-  const Boutique = {
-    /*  Les sept jours de la serie : plus la serie est longue, plus la
-        recompense est grande. C'est le serveur qui compte, et qui
-        garde la date du dernier retrait.                                */
-    _serie(etat) {
-        const gains = [10, 15, 20, 25, 30, 40, 50];
-        const jour = (etat && etat.jour) ? etat.jour : 0;
-        const box = $('#btSerie');
-        if (!box) return;
-        let html = '';
-        for (let i = 0; i < 7; i++) {
-          const classe = (i + 1) < jour ? ' fait' : (i + 1) === jour ? ' reclasse' : '';
-          const etoile = (i + 1) === jour ? '★' : '☆';
-          html += '<div class="serie-jour' + classe + '"><b>Jour ' + (i + 1) + '</b><i>' + etoile + '</i><span>' + gains[i] + ' etoiles</span></div>';
-        }
-        box.innerHTML = html;
-        const badge = $('#btSerieBadge');
-        if (badge) badge.hidden = !jour;
-        const j = $('#btSerieJour');
-        if (j) j.textContent = String(jour);
-        const txt = $('#btSerieTexte');
-        if (txt) {
-          if (!jour) {
-            txt.textContent = 'Reviens chaque jour : la serie de recompenses ne s interrompt pas.';
-          } else if (etat.prochainDans > 0) {
-            const h = Math.floor(etat.prochainDans / 3600);
-            const m = Math.floor((etat.prochainDans % 3600) / 60);
-            txt.textContent = 'Serie de ' + jour + ' jour(s). Prochaine recompense dans ' + h + ' h ' + m + ' min.';
-          } else {
-            txt.textContent = 'Serie de ' + jour + ' jour(s). Ta recompense du jour est disponible.';
-          }
-        }
-        const btn = $('#btRecompense');
-        if (btn) btn.disabled = !!(etat.prochainDans > 0);
-      },
-
-    async refresh() {
-      if (!DESKTOP) {
-        const l = $('#btProduits');
-        if (l) l.innerHTML = '<p class="empty">La boutique est disponible uniquement dans l\'application Windows.</p>';
-        return;
-      }
-      const r = await api(x => x.env.boutique.catalogue(), { soft: true });
-      const l = $('#btProduits');
-      if (r && r.ok) {
-        const produits = r.produits || [];
-        const droits = r.droits || [];
-        if (!produits.length) {
-          l.innerHTML = '<p class="empty">Le catalogue est vide pour le moment.</p>';
-        } else {
-          l.innerHTML = produits.map(p => {
-            const possede = droits.indexOf(p.id) >= 0;
-            const prix = Number(p.etoiles != null ? p.etoiles : p.diamants) || 0;
-            const offert = p.offert || prix === 0;
-            return `<div class="boutique-row">
-              <span class="boutique-ico" style="background:${esc(p.couleur || '#7b5cff')}22;color:${esc(p.couleur || '#b9a0ff')}">${ic('i-star', 18)}</span>
-              <div style="flex:1;min-width:0">
-                <div class="boutique-nom">${esc(p.nom || p.id)}</div>
-                <div class="boutique-txt" style="margin:2px 0 0">${esc(p.description || '')}</div>
-              </div>
-              <div style="text-align:right;white-space:nowrap">
-                ${possede
-                  ? '<span class="badge good">Acquis</span>'
-                  : (offert
-                      ? '<span class="badge good">Offert</span>'
-                      : '<span class="badge">' + prix + ' etoiles</span>')}
-              </div>
-            </div>`;
-          }).join('');
-        }
-        const d = $('#btEtoiles');
-        if (d) d.innerHTML = (Number(r.etoiles) || 0) + '<small>etoiles</small>';
-        const n = $('#btDroits');
-        if (n) n.textContent = String((r.droits || []).length);
-        Boutique._serie(r.serie || { jour: 0, streak: 0, prochainDans: 0 });
-      } else if (l) {
-        l.innerHTML = '<p class="empty">Le catalogue n a pas repondu. Reessayez dans un instant.</p>';
-      }
-
-      const c = await api(x => x.env.communaute.liste(), { soft: true });
-      const pseudos = c || [];
-      const nc = $('#btCommunaute');
-      if (nc) nc.textContent = String(pseudos.length);
-      const lp = $('#btPseudos');
-      if (lp) {
-        lp.innerHTML = pseudos.length
-          ? '<div class="boutique-pseudo">' + pseudos.map(p => {
-              const nom = (p && p.pseudo) ? p.pseudo : String(p);
-              const co = (p && p.cosmetique) ? p.cosmetique : '';
-              return '<span class="badge"' + (co ? ' title="' + esc(co) + '"' : '') + '>' + esc(nom) + '</span>';
-            }).join('') + '</div>'
-          : '<p class="empty">Personne pour le moment. Connecte ton compte, ou ajoute un pseudo.</p>';
-      }
-
-      /*  La garde-robe : les cosmétiques du catalogue, avec leur
-          aperçu. Le statut vient des droits du serveur (les capes
-          offertes sont pour tout le monde) ; le portage lui-même se
-          choisit dans le jeu, avec la touche U.                      */
-      const grille = $('#garderobeGrid');
-      if (grille) {
-        const droits = (r && r.ok && Array.isArray(r.droits)) ? r.droits : (await api(x => x.env.boutique.droits(), { soft: true }) || []);
-        const cata = (r && r.ok && Array.isArray(r.produits)) ? r.produits : [];
-        const porte = await api(x => x.env.communaute.cosmetique(), { soft: true });
-        const capes = [
-          { id: 'cape_xrn', nom: 'Cape XRN', img: 'assets/capes/cape_xrn.png', desc: 'Le noir étoilé et le X de la maison. Offerte à tous.' },
-          { id: 'cape_aurore', nom: 'Cape Glacier', img: 'assets/capes/cape_glacier.png', desc: 'Un vallon de glace bleue, scintillant à la lumière.' },
-          { id: 'cape_braises', nom: 'Cape Comète', img: 'assets/capes/cape_comete.png', desc: 'Une comète qui file dans un ciel étoilé.' }
-        ];
-        grille.innerHTML = capes.map(c => {
-          const produit = cata.find(p => p && p.id === c.id);
-          const prix = produit ? (Number(produit.etoiles) || 0) : 0;
-          const offert = produit ? produit.offert === true : false;
-          const possede = offert || droits.indexOf(c.id) >= 0;
-          const equip = c.id === porte;
-          let badge = '', bouton = '';
-          if (equip) {
-            badge = '<span class="cape-badge">Portée</span>';
-            bouton = '<button class="cape-select equipe" disabled>Équipée (touche U)</button>';
-          } else if (possede) {
-            badge = offert ? '' : '<span class="cape-badge">Acquis</span>';
-            bouton = '<button class="cape-select cape-choix">Équipe en jeu</button>';
-          } else if (produit) {
-            badge = '<span class="cape-badge prix">' + prix + ' ★</span>';
-            bouton = '<button class="cape-select verrou">Gagner ' + prix + ' étoiles</button>';
-          } else {
-            bouton = '<button class="cape-select" disabled>Indisponible</button>';
-          }
-          return '<div class="cape-card' + (equip ? ' equipe' : '') + (possede ? '' : ' verrou') + '">' +
-            '<div class="cape-preview">' +
-              '<img src="' + c.img + '" alt="' + esc(c.nom) + '" onerror="this.style.display=\'none\'">' + badge +
-            '</div>' +
-            '<div class="cape-card-body">' +
-              '<h3>' + esc(c.nom) + '</h3>' +
-              '<p>' + esc(c.desc) + '</p>' + bouton +
-            '</div>' +
-          '</div>';
-        }).join('');
-        $$('.cape-choix').forEach(b => b.addEventListener('click', () => {
-          Toast.show('Garde-robe', 'Équipe le cosmétique dans le jeu avec la touche U.', 'info', 4000);
-        }));
-        $$('.cape-select.verrou').forEach(b => b.addEventListener('click', () => {
-          const zone = document.getElementById('btProduits');
-          if (zone && zone.scrollIntoView) zone.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }));
-      }
-    },
-
-    async recompense() {
-      const r = await api(x => x.env.boutique.recompense());
-      if (r && r.ok) {
-        if (r.gagne) {
-          Toast.show('Recompense', '+' + r.gagne + ' etoiles. Serie de ' + r.jour + ' jour(s).', 'ok', 6000);
-        } else {
-          Toast.show('Deja reclame', 'Reviens dans ' + Math.ceil((r.prochainDans || 0) / 3600) + ' h.', 'info', 5000);
-        }
-        Boutique.refresh();
-      } else {
-        Toast.show('Recompense indisponible', (r && r.detail) ? r.detail : 'Reessayez plus tard.', 'err', 6000);
-      }
-    },
-
-    async activer() {
-      const champ = $('#btCode');
-      const code = champ ? String(champ.value || '').trim() : '';
-      if (!code) { Toast.show('Code manquant', 'Entre un code d activation.', 'warn', 4000); return; }
-      const r = await api(x => x.env.boutique.activer(code));
-      if (r && r.ok) {
-        Toast.show('Actif', 'Le cosmetique est desormais a toi.', 'ok', 5000);
-        if (champ) champ.value = '';
-        Boutique.refresh();
-      } else {
-        Toast.show('Activation refusee', (r && r.detail) ? r.detail : 'Code inconnu.', 'err', 6000);
-      }
-    },
-
-    async ajouterPseudo() {
-      const champ = $('#btPseudoAjout');
-      const nom = champ ? String(champ.value || '').trim() : '';
-      if (!nom) return;
-      const r = await api(x => x.env.communaute.ajouter([nom]));
-      if (r && r.ok) {
-        if (champ) champ.value = '';
-        Toast.show('Ajoute', nom + ' desormais fait partie de la liste.', 'ok', 4000);
-        Boutique.refresh();
-      }
-    }
-  };
-  $('#btCodeOk').addEventListener('click', () => Boutique.activer());
-  $('#btPseudoOk').addEventListener('click', () => Boutique.ajouterPseudo());
-  $('#btnBoutiqueRefresh').addEventListener('click', () => Boutique.refresh());
-  $('#btRecompense').addEventListener('click', () => Boutique.recompense());
-
-  /*  Le mode Boost FPS : il se decide ici, et il s'applique au
-      lancement suivant. Le mod lit la meme preference, et sait
-      revenir en arriere si le joueur le desactive en jeu.               */
   function majEtatBoost(cfg) {
     const actif = !!(cfg && cfg.boostFps);
     const badge = $('#boostBadge');
     if (badge) badge.hidden = !actif;
     const btn = $('#boostBtn');
     if (btn) {
-      btn.textContent = actif ? 'Desactiver le mode Boost FPS' : 'Activer le mode Boost FPS';
+      btn.textContent = actif ? 'Desactiver le mode Profil FPS Plus' : 'Activer le mode Profil FPS Plus';
       btn.classList.toggle('danger', actif);
     }
   }
@@ -1728,7 +1312,7 @@ const Splash = {
     const actif = !!(cfg && cfg.boostFps);
     const r = await api(x => x.env.saveConfig({ boostFps: !actif }));
     majEtatBoost(r);
-    Toast.show('Boost FPS', !actif
+    Toast.show('Profil FPS Plus', !actif
       ? 'Le profil de performance sera applique au prochain lancement.'
       : 'Le jeu retrouvera tes reglages au prochain lancement.', 'ok', 5000);
   });
@@ -1765,14 +1349,15 @@ const Splash = {
       if (ver) ver.textContent = v ? 'v' + v : '';
       if (!box) return;
       const modules = [
-        { nom: 'Pave de touches', txt: 'Touches et clics, au coin oppose du bloc d informations.', nov: false },
-        { nom: 'Armure et outil', txt: 'Ce que tu portes, avec la barre d usure de chaque piece.', nov: true },
-        { nom: 'Duree des effets', txt: 'Les effets actifs, avec le temps qu il leur reste.', nov: true },
-        { nom: 'Boussole', txt: 'Le cardinal dans la ligne de coordonnees.', nov: true },
-        { nom: 'Ping du serveur', txt: 'La latence du serveur, quand tu joues en ligne.', nov: true },
-        { nom: 'Compteur de clics', txt: 'Clics par seconde, gauche et droite.', nov: false },
-        { nom: 'Minuterie de session', txt: 'Le temps passe dans le monde en cours.', nov: false },
-        { nom: 'Marqueur', txt: 'Pose un point, et le HUD montre la distance.', nov: false }
+        {nom:'Balises',txt:'Points nommés par monde, serveur et dimension, avec distance en jeu.'},
+        {nom:'Inventaire et totems',txt:'Grille des 27 cases, places libres et compteur de totems.'},
+        {nom:'Informations de jeu',txt:'FPS, coordonnées, ping, jour, mémoire, vitesse et session.'},
+        {nom:'Touches et CPS',txt:'Clavier, souris et clics sur une seconde glissante.'},
+        {nom:'Armure et effets',txt:'Équipement, durabilité, potions et durées.'},
+        {nom:'Contours et hitboxes',txt:'Couleurs et épaisseur de l’affichage personnalisables.'},
+        {nom:'Auto Text et Auto Connect',txt:'Texte sur une touche et serveur au démarrage, désactivés par défaut.'},
+        {nom:'Musique et Shader Monitor',txt:'Lecture Windows et état des shaders Iris si installé.'},
+        {nom:'Éditeur HUD',txt:'Déplacer, redimensionner par les bords et masquer au survol.'}
       ];
       box.innerHTML = modules.map(m =>
         '<div class="integre-module">' +
@@ -1782,21 +1367,30 @@ const Splash = {
     },
 
     renderList(mods) {
+      if (mods) this.items = mods;
+      const items = this.items || [];
+      const query = ($('#modFilter').value || '').trim().toLocaleLowerCase();
+      const filtered = items.filter(m => m.name.toLocaleLowerCase().includes(query));
+      $('#modCount').textContent = items.filter(m => !m.disabled).length + ' actifs / ' + items.length;
       const box = $('#modsList');
-      if (!box) return;
-      if (!mods || !mods.length) { box.innerHTML = '<p class="empty">Aucun mod installé.</p>'; return; }
-      box.innerHTML = mods.map(m => `
-        <div class="modrow">
+      if (!filtered.length) { box.innerHTML = '<p class="empty">' + (query ? 'Aucun mod ne correspond à ce nom.' : 'Aucun fichier importé. Ajoutez vos mods au format .jar.') + '</p>'; return; }
+      box.innerHTML = filtered.map(m => `
+        <div class="modrow ${m.disabled ? 'mod-disabled' : ''}">
           <div class="mod-ico">${ic('i-package', 15)}</div>
-          <div class="mod-main">
-            <div class="mod-name" title="${esc(m.name)}">${esc(m.name)}</div>
-            <div class="mod-sub">${human(m.size)} · ${relative(m.mtime)}</div>
-          </div>
-          <div class="mod-side">
-            <button class="iconbtn danger" data-delmod="${esc(m.name)}" title="Supprimer ce mod">${ic('i-trash', 15)}</button>
-          </div>
+          <div class="mod-main"><div class="mod-name" title="${esc(m.name)}">${esc(m.name.replace(/\.disabled$/i, ''))}</div>
+          <div class="mod-sub">${human(m.size)} · ${m.disabled ? 'Désactivé' : 'Actif'} · ${relative(m.mtime)}</div></div>
+          <div class="mod-side"><button class="mod-toggle" role="switch" aria-checked="${!m.disabled}" aria-label="Activer ${esc(m.name)}" data-togglemod="${esc(m.name)}"><span aria-hidden="true"></span></button>
+          <button class="iconbtn danger" data-delmod="${esc(m.name)}" title="Supprimer ce mod" aria-label="Supprimer ${esc(m.name)}">${ic('i-trash', 15)}</button></div>
         </div>`).join('');
+      $$('[data-togglemod]', box).forEach(b => b.addEventListener('click', async () => {
+        b.disabled = true;
+        const r = await api(x => x.mods.setEnabled(b.dataset.togglemod, /\.disabled$/i.test(b.dataset.togglemod)), { soft: true });
+        if (r && r.ok) { this.renderList(r.mods); Toast.show('Mod mis à jour', 'Le changement prendra effet au prochain lancement du jeu.', 'ok', 4000); }
+        else { b.disabled = false; Toast.show('Modification impossible', r && r.message || 'Le fichier est indisponible.', 'warn', 5000); }
+      }));
       $$('[data-delmod]', box).forEach(b => b.addEventListener('click', async () => {
+        const ok = await Dialog.open({title: 'Supprimer ce mod ?', text: b.dataset.delmod, ok: 'Supprimer', cancel: 'Annuler', kind: 'warn'});
+        if (!ok) return;
         const r = await api(x => x.mods.remove(b.dataset.delmod), { soft: true });
         if (r && r.ok) { Toast.show('Mod supprimé', b.dataset.delmod, 'ok', 2400); this.renderList(r.mods); }
       }));
@@ -1816,7 +1410,7 @@ const Splash = {
       /*  Le cas le plus frequent : des mods sont deposes mais aucun
           chargeur n'est installe. Sans chargeur, Minecraft ignore
           completement le dossier mods : mieux vaut le dire.         */
-      const modsPresents = (etat.mods || []).length;
+      const modsPresents = (etat.mods || []).filter(m => !m.disabled).length;
       const baseCible = cible;
       const aUnChargeur = profils.some(p => p.base === baseCible || p.version === baseCible);
       if (modsPresents && baseCible && !aUnChargeur) {
@@ -1935,6 +1529,7 @@ const Splash = {
     });
   }
 
+  $('#modFilter').addEventListener('input', () => Mods.renderList());
   const btnModsFolder = $('#btnModsFolder');
   if (btnModsFolder) btnModsFolder.addEventListener('click', () => api(x => x.mods.openFolder()));
   const btnModsPlay = $('#btnModsPlay');
@@ -1993,6 +1588,7 @@ const Splash = {
     async refresh(dir) {
       const data = await api(x => x.files.browse(dir, 0), { soft: true });
       if (!data) { $('#fsBody').innerHTML = '<p class="empty">Explorateur indisponible hors application.</p>'; return; }
+      if (STATE.fsPath !== data.path) this.limit = 100;
       STATE.fsPath = data.path;
       STATE.fsParent = data.parent;
       const crumbs = $('#fsCrumbs');
@@ -2006,7 +1602,7 @@ const Splash = {
 
       const body = $('#fsBody');
       body.innerHTML = data.missing ? '<p class="empty">Dossier introuvable : ' + esc(data.path) + '</p>' :
-        (data.entries.length ? '<div class="fs-grid">' + data.entries.map(e => {
+        (data.entries.length ? '<div class="fs-grid">' + data.entries.slice(0, this.limit || 100).map(e => {
           const ico = e.dir ? 'i-folder' : e.icon === 'zip' ? 'i-save' : e.icon === 'jar' ? 'i-cube' : e.icon === 'json' ? 'i-list' : e.icon === 'image' ? 'i-palette' : 'i-list';
           return `<div class="fs-item ${e.dir ? 'dir' : ''}">
             <span class="fs-ico">${ic(ico, 17)}</span>
@@ -2019,6 +1615,12 @@ const Splash = {
             </span></div>`;
         }).join('') + '</div>' : '<p class="empty">Dossier vide.</p>');
 
+      if (data.entries.length > (this.limit || 100)) {
+        const more = document.createElement('button'); more.className = 'btn';
+        more.textContent = 'Afficher 100 éléments de plus';
+        more.onclick = () => { this.limit = (this.limit || 100) + 100; this.refresh(data.path); };
+        body.appendChild(more);
+      }
       $$('[data-open-dir]', body).forEach(b => b.addEventListener('click', () => this.refresh(b.dataset.openDir)));
       $$('[data-show]', body).forEach(b => b.addEventListener('click', () => api(x => x.env.selectInExplorer(b.dataset.show))));
       $$('[data-rm]', body).forEach(b => b.addEventListener('click', () => {
@@ -2033,22 +1635,30 @@ const Splash = {
   /* ================================================================== *
    *  SERVEURS (ping reel)
    * ================================================================== */
+  async function refreshDownloadedVersions() {
+    const list = await api(x => x.game.installed(), {soft:true}) || [];
+    const box=$('#dlInstalled'); if(!box)return;
+    box.innerHTML=list.length ? list.map(v=>`<div class="row"><span class="nm">${esc(v.id)}<small style="display:block;color:var(--dim)">${v.loader ? esc(v.loader.nom) : 'Minecraft'} · ${human(v.size)}</small></span><span class="tag inst">Téléchargée</span><button class="btn sm" data-dl-select="${esc(v.id)}">Sélectionner</button></div>`).join('') : '<p class="empty">Aucune version téléchargée. Choisis une version dans Installations.</p>';
+    $$('[data-dl-select]',box).forEach(b=>b.onclick=()=>{Version.select(b.dataset.dlSelect);Nav.go('home');});
+  }
   const Servers = {
     async refresh() {
       const list = await api(x => x.servers.list(), { soft: true }) || [];
       const box = $('#serverList');
       box.innerHTML = list.length ? list.map(s => `
         <div class="srv" data-srv="${esc(s.host)}|${s.port}">
-          <span class="srv-ico">${ic('i-globe', 21)}</span>
+          <span class="srv-ico">${s.icon ? `<img alt="" src="${esc(s.icon)}">` : ic('i-globe', 21)}</span>
           <span class="srv-main"><span class="srv-name">${esc(s.name)}</span>
             <span class="srv-mot" data-mot>${esc(s.host)}:${s.port} — test de connexion…</span></span>
           <span class="srv-side"><span class="srv-ping" data-ping>…</span><span class="srv-count" data-count></span></span>
+          <button class="btn sm" data-copy-srv="${esc(s.host)}${s.port===25565?'':':'+s.port}">Copier l’IP</button>
           <button class="btn sm danger" data-del-srv="${esc(s.host)}|${s.port}">Retirer</button>
         </div>`).join('') : '<p class="empty">Aucun serveur enregistré. Ajoutez une adresse ci-dessus.</p>';
       $$('[data-del-srv]', box).forEach(b => b.addEventListener('click', () => {
         const [h, p] = b.dataset.delSrv.split('|');
         api(x => x.servers.remove(h, p)).then(() => this.refresh());
       }));
+      $$('[data-copy-srv]',box).forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copySrv);Toast.show('Adresse copiée',b.dataset.copySrv,'ok');}catch{Toast.show('Adresse du serveur',b.dataset.copySrv,'info',7000);}});
       list.forEach(s => this.ping(s));
     },
     async ping(s) {
@@ -2063,7 +1673,8 @@ const Splash = {
       }
       if (mot) mot.textContent = (st.description || 'Sans description') + (st.version ? ' · ' + st.version : '');
       if (ping) { ping.textContent = st.latency + ' ms'; ping.className = 'srv-ping ok'; }
-      if (cnt) cnt.textContent = st.players + ' / ' + st.maxPlayers + ' joueurs';
+      if (cnt) cnt.textContent = st.players + (st.maxPlayers>0 ? ' / '+st.maxPlayers : '') + ' joueurs';
+      if (st.favicon) { const img=document.createElement('img'); img.alt=''; img.src=st.favicon; row.querySelector('.srv-ico').replaceChildren(img); }
     }
   };
   $('#btnAddSrv').addEventListener('click', () => {
@@ -2099,6 +1710,10 @@ const Login = {
 
     /* --- Microsoft : code d'appareil -------------------------------- */
     async start() {
+      if(this.starting)return;
+      this.starting=true;
+      this.stopPolling();
+      try {
       document.getElementById('msCard').hidden = false;
       document.getElementById('msCode').hidden = false;
       document.getElementById('msSub').textContent = "Une fen\u00eatre va s'ouvrir dans ton navigateur.";
@@ -2109,7 +1724,9 @@ const Login = {
         return;
       }
       document.getElementById('userCode').textContent = res.userCode;
+      if(res.provider){document.getElementById('msCode').hidden=true;document.getElementById('msSub').textContent='Termine la connexion dans la fenêtre Microsoft. XRN récupérera ton pseudo et ton skin Minecraft.';}
       this.poll(res);
+      } finally {this.starting=false;}
     },
 
     /*  Interrogation du serveur Microsoft.
@@ -2122,6 +1739,7 @@ const Login = {
            dure plus de 5 s : on serialize avec un verrou.               */
     poll(info) {
       this.stopPolling();
+      const generation=this.pollGeneration;
 
       const bar = document.getElementById('loginBar');
       const start = Date.now();
@@ -2136,8 +1754,8 @@ const Login = {
         if (enCours || termine) return;      // pas de recouvrement
         enCours = true;
         try {
-          const r = await api(x => x.auth.poll());
-          if (!r || !r.done) return;
+          const r = await X.auth.poll();
+          if (generation!==this.pollGeneration || !r || !r.done) return;
           termine = true;
           this.stopPolling();
           if (bar) bar.style.width = '100%';
@@ -2161,6 +1779,11 @@ const Login = {
           Account.apply(done.account);
           Toast.show('Connecté', done.account.name, 'ok');
           this.refresh();
+        } catch (e) {
+          if(generation!==this.pollGeneration)return;
+          termine = true;
+          this.stopPolling();
+          await this.onAuthError(e);
         } finally {
           enCours = false;
         }
@@ -2168,33 +1791,25 @@ const Login = {
     },
 
     stopPolling() {
+      this.pollGeneration=(this.pollGeneration||0)+1;
       if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
       if (this.barTimer) { clearInterval(this.barTimer); this.barTimer = null; }
     },
 
         async onAuthError(e) {
       const msg = String((e && (e.body || e.message)) || e || '');
-      const refusMojang = /Invalid app registration|AppRegInfo/i.test(msg);
-      if (this.mode === 'minecraft' && refusMojang) {
+      if(e?.code==='mc'||e?.diagnostic?.stage==='minecraft-login'||/Invalid app registration|AppRegInfo/i.test(msg)) {
         this.stopPolling();
-        /*  Le mode Xbox a disparu de l'interface : le launcher ne
-            joue plus en hors-ligne avec un pseudo choisi a la main.
-            On dit donc la verite plutot que de promettre un
-            contournement qui n'existe plus.                        */
-        await Dialog.alert({
-          kind: 'warn',
-          icon: 'i-alert',
-          title: 'Connexion Minecraft refusée',
-          html: "Minecraft a reconnu ton compte, mais refuse l'application du launcher :" +
-                ' elle doit être déclarée et approuvée auprès de Mojang' +
-                ' (<span class="mono">aka.ms/AppRegInfo</span>).' +
-                '<br><br>Ce n\'est pas un problème de configuration, et rien dans le launcher ne peut y remédier.' +
-                ' En attendant, le <b>mode solo</b> fonctionne complètement :' +
-                ' toutes les versions, les mods et les sauvegardes.',
-          ok: 'Compris'
-        });
-        this.reset();
-        return;
+        const d=e.diagnostic||await X.auth.diagnostic();
+        const report=d ? ['XRN '+(X.version||''),'Date UTC : '+d.at,'Étape : '+d.stage,'HTTP : '+d.status,'Application : '+d.clientId,'Réponse : '+d.reason,d.requestId?'Requête : '+d.requestId:''].filter(Boolean).join('\n') : msg;
+        const registration=/Invalid app registration|AppRegInfo/i.test(d?.reason||msg);
+        const waiting=Dialog.alert({kind:'warn',title:'Minecraft refuse la connexion',html:
+          '<p>Microsoft et Xbox ont répondu, mais la création de la session Minecraft a échoué'+(d?' (HTTP '+esc(d.status)+')':'')+'.</p>'+
+          '<pre style="white-space:pre-wrap;max-height:180px;overflow:auto">'+esc(d?.reason||msg)+'</pre>'+
+          (registration?'<p>L’identifiant n’a pas été remplacé. Si Mojang a confirmé cet identifiant précis, ce diagnostic permettra de leur transmettre le refus actuel.</p>':'<p>Le diagnostic conserve le code exact pour identifier le problème, sans mot de passe ni jeton.</p>')+
+          '<button class="btn" id="copyAuthDiagnostic">Copier le diagnostic</button>',ok:'Fermer'});
+        document.getElementById('copyAuthDiagnostic').onclick=async()=>{try{await navigator.clipboard.writeText(report);Toast.show('Diagnostic copié','Aucun mot de passe ni jeton inclus.','ok');}catch{Toast.show('Copie impossible','Le diagnostic est enregistré dans le dossier du launcher.','warn');}};
+        await waiting;this.reset();return;
       }
       Toast.show('Connexion refusée', msg.slice(0, 220), 'err', 7000);
     },
@@ -2204,7 +1819,7 @@ const Login = {
       this.renderCurrent();
       const accounts = await api(x => x.auth.accounts(), { soft: true }) || [];
       const card = document.getElementById('accountsCard');
-      card.hidden = !accounts.length;
+      card.hidden = false;
       const list = document.getElementById('accountsList');
       list.innerHTML = accounts.map(a =>
         '<div class="acc-item">' +
@@ -2215,10 +1830,10 @@ const Login = {
         '<span class="ai"><span class="an">' + esc(a.name) +
         (a.gamertag && a.gamertag !== a.name ? ' <span class="ag">' + esc(a.gamertag) + '</span>' : '') +
         '</span><span class="au">' + esc(a.id) + '</span></span>' +
-        '<span class="acc-type">' + (a.type === 'offline' ? 'solo' : 'Microsoft') + '</span>' +
+        '<span class="acc-type">' + (a.type === 'offline' ? 'Solo' : (a.minecraftVerified ? 'Minecraft' : 'À reconnecter')) + '</span>' +
         '<button class="btn sm" data-use-acc="' + esc(a.id) + '">Changer</button>' +
         '<button class="btn sm danger" data-rm-acc="' + esc(a.id) + '">Supprimer</button>' +
-        '</div>').join('');
+        '</div>').join('') || '<p class="empty">Aucun compte enregistré sur ce PC. Les comptes ajoutés apparaîtront ici pour changer de profil.</p>';
       $$('[data-acc-id]', list).forEach(cv => {
         const a = accounts.find(x => x.id === cv.dataset.accId);
         SkinHead.draw(cv, a.skinUrl, a.name, a.avatarUrl);
@@ -2239,23 +1854,23 @@ const Login = {
 
     renderCurrent() {
       const acc = STATE.account;
+      const help=document.getElementById('loginHelpState');
+      if(help)help.textContent=!acc?'Connectez votre compte pour retrouver votre pseudo et votre skin.':acc.type==='offline'?'Profil solo actif. Connectez Microsoft pour utiliser votre compte Minecraft en ligne.':acc.minecraftVerified?'Profil Minecraft chargé. La session sera vérifiée avant chaque lancement.':'La session Minecraft doit être renouvelée.';
       const s3 = document.getElementById('loginStep3');
       if (!s3) return;
-      if (!acc) { s3.hidden = true; return; }
+      if (!acc) {
+        s3.hidden = false;
+        s3.innerHTML='<div class="connected login-empty-profile"><div class="big-avatar"><canvas id="emptyProfileHead" width="120" height="120"></canvas></div><div><div class="cname">Non connecté</div><p class="session-caption">Choisissez votre compte Microsoft ou un profil solo.</p></div><div class="session-details"><span>Session</span><b>Aucune session active</b><span>Skin</span><b>Alex · aperçu par défaut</b></div></div>';
+        SkinHead.draw(document.getElementById('emptyProfileHead'),'','','');
+        return;
+      }
       s3.hidden = false;
-      s3.innerHTML =
-        '<div class="connected">' +
-        '<div class="big-avatar"><canvas id="bigAvatar" width="220" height="220"></canvas></div>' +
-        '<div><div class="cname">' + esc(acc.name) + '</div><div class="cuuid">' + esc(acc.id) + '</div></div>' +
-        '<span class="acc-type">' + ic(acc.type === 'offline' ? 'i-shield' : 'i-check', 12) +
-        ' ' + (acc.type === 'offline' ? 'Mode solo' : 'Compte Microsoft') + '</span>' +
-        '<div class="kvlist">' +
-        '<div class="kv"><span>Identifiant</span><b class="mono" style="font-size:11px">' + esc(acc.id) + '</b></div>' +
-        '<div class="kv"><span>Session</span><b>' + (acc.type === 'offline' ? 'Session locale' : 'Compte Microsoft vérifié') + '</b></div>' +
-        (acc.gamertag ? '<div class="kv"><span>Gamertag Xbox</span><b>' + esc(acc.gamertag) + '</b></div>' : '') +
-        '</div>' +
-        '<button class="btn primary" id="btnPlayFromAcc">Jouer maintenant</button>' +
-        '</div>';
+      s3.innerHTML = '<div class="connected">' +
+        '<div class="big-avatar"><canvas id="bigAvatar" width="120" height="120"></canvas></div>' +
+        '<div><div class="cname">' + esc(acc.name) + '</div>' +
+        '<p class="session-caption">' + (acc.type === 'offline' ? 'Profil local · solo et LAN' : (acc.minecraftVerified ? 'Session Minecraft authentifiée' : 'Connexion Minecraft à renouveler')) + '</p></div>' +
+        '<button class="btn primary" id="btnPlayFromAcc">Jouer</button>' +
+        '<dl class="session-details"><div><dt>Profil</dt><dd>'+esc(acc.name)+'</dd></div><div><dt>Type de session</dt><dd>'+(acc.type==='offline'?'Solo et LAN':acc.minecraftVerified?'Minecraft Java':'À reconnecter')+'</dd></div></dl></div>';
       SkinHead.draw(document.getElementById('bigAvatar'), acc.skinUrl, acc.name, acc.avatarUrl);
       document.getElementById('btnPlayFromAcc').addEventListener('click', () => { Nav.go('home'); play(null); });
     },
@@ -2326,7 +1941,7 @@ const Login = {
       if (this.timer) { clearInterval(this.timer); this.timer = null; }
     }
   };
-  X.on('maj:progression', d => maj.progr(d));
+  if (DESKTOP) X.on('maj:progression', d => maj.progr(d));
   onClick('majAnnuler', () => {
     api(x => x.env.annulerMaj(), { soft: true });
     maj.fermer();
@@ -2433,11 +2048,14 @@ const Login = {
       $('#setGw').value = cfg.gameWidth; $('#setGh').value = cfg.gameHeight;
       $('#setGui').value = String(cfg.guiScale || 3);
       setRange('#setRam', cfg.ramGB, 1, 32);
-      setRange('#setVol', Math.round(cfg.ambientVolume * 100), 0, 100);
+      $('#setRamVal').textContent = cfg.ramGB + ' Go';
+      $('#stRam').innerHTML = esc(cfg.ramGB) + '<small>Go</small>';
+      $$('[data-ram]').forEach(b => b.classList.toggle('on', Number(b.dataset.ram) === Number(cfg.ramGB)));
+
       $('#dlConc').textContent = cfg.maxDownloads; $('#dlConcVal').textContent = cfg.maxDownloads;
       $$('[data-switch]').forEach(s => {
         const key = s.dataset.switch;
-        if (key in cfg) s.classList.toggle('on', !!cfg[key]);
+        if (key in cfg) {s.classList.toggle('on', !!cfg[key]);s.setAttribute('aria-checked',String(!!cfg[key]));}
       });
       renderQuickLinks(cfg);
     },
@@ -2447,7 +2065,12 @@ const Login = {
       if (hint && detail) hint.innerHTML = 'Java ' + detail.need + '+ requis. <a href="#" id="dlJavaLink" style="color:var(--v2)">Télécharger Temurin</a>';
       if (hint && detail) $('#dlJavaLink').addEventListener('click', e => { e.preventDefault(); api(x => x.env.openUrl(detail.url)); });
     },
-    async save(patch) { await api(x => x.env.saveConfig(patch), { soft: true }); }
+    async save(patch) {
+      const saved = await api(x => x.env.saveConfig(patch));
+      const status = $('#settingsSaved');
+      if (status) status.textContent = saved ? 'Modifications enregistrées' : 'Enregistrement impossible';
+      return saved;
+    }
   };
   function setRange(sel, val, min, max) {
     const el = $(sel); if (!el) return;
@@ -2496,9 +2119,7 @@ const Login = {
   $('#setRam').addEventListener('change', e => {
     Settings.save({ ramGB: parseFloat(e.target.value) });
   });
-  $('#setVol').addEventListener('change', e => {
-    Settings.save({ ambientVolume: parseInt(e.target.value, 10) / 100 });
-  });
+
   $$('[data-ram]').forEach(c => c.addEventListener('click', () => {
     const v = parseFloat(c.dataset.ram);
     setRange('#setRam', v, 1, 32);
@@ -2507,12 +2128,11 @@ const Login = {
     $$('[data-ram]').forEach(x => x.classList.toggle('on', x === c));
     Settings.save({ ramGB: v });
   }));
-  $('#setVol').addEventListener('input', e => {
-    const v = parseInt(e.target.value, 10);
-    e.target.style.setProperty('--pct', v + '%');
-    $('#setVolVal').textContent = v + ' %';
-    Ambience.setVolume(v / 100);
-    Settings.save({ ambientVolume: v / 100 });
+
+  $('#btnCheckUpdates').addEventListener('click',async()=>{
+    const button=$('#btnCheckUpdates'),label=$('#updateState');button.disabled=true;label.textContent='Vérification…';
+    try{const result=await X.env.chercherMiseAJour();miseAJourInfo=result;miseAJourPromise=null;miseAJourVue=false;label.textContent=result.ok?'XRN '+result.version+' disponible · '+human(result.taille)+' à télécharger.':!result.version?'Le service de mise à jour ne répond pas. Réessaie plus tard.':result.version===result.courant?'XRN '+result.courant+' est à jour.':'Version locale '+result.courant+' · dernière version publique '+result.version+'.';if(result.ok)verifierMiseAJour();}
+    catch{label.textContent='Vérification indisponible.';}finally{button.disabled=false;}
   });
   $('#setGw').addEventListener('change', e => Settings.save({ gameWidth: +e.target.value || 1280 }));
   $('#setGh').addEventListener('change', e => Settings.save({ gameHeight: +e.target.value || 720 }));
@@ -2544,9 +2164,8 @@ const Login = {
     }
   });
   $$('[data-switch]').forEach(s => s.addEventListener('click', () => {
-    s.classList.toggle('on');
+    s.classList.toggle('on');s.setAttribute('aria-checked',String(s.classList.contains('on')));
     const patch = {}; patch[s.dataset.switch] = s.classList.contains('on');
-    if (s.dataset.switch === 'ambientSound') Ambience.toggle(patch.ambientSound);
     Settings.save(patch);
   }));
   $$('[data-step]').forEach(b => b.addEventListener('click', () => {
@@ -2578,55 +2197,6 @@ const Login = {
   /* ================================================================== *
    *  VIDEOS — deux dernieres publications de la chaine Xerion
    * ================================================================== */
-  const VIDEOS = {
-    channel: 'UC3E0PoYxTmceOBYNavTqDSg',
-    handle: 'https://www.youtube.com/@xerionmc',
-    list: [
-      { id: 'bTpKi0bU710', title: 'Je suis PARTI à la RECHERCHE de ce JOUEUR sur ce SMP HARDCORE', date: '31 août 2026', views: '1 494 vues', likes: '75' },
-      { id: 'sZ2FohWa_3w', title: "J'ai BÂTI la CIVILISATION la plus PUISSANTE sur ce SMP HARDCORE", date: '8 juillet 2026', views: '18 590 vues', likes: '520' }
-    ],
-    more: [
-      { id: '4NVmIKo1tLk', title: "J'ai INFILTRÉ et TRAHI la Meilleure Team de ce SMP", date: '30 juin 2026', views: '3 335 vues' },
-      { id: 'Zynbsy_Qqek', title: 'Récupérer TOUTES les Elytras de ce SMP', date: '1 oct. 2025', views: '1 346 vues' }
-    ],
-    render() {
-      const grid = $('#vidGrid');
-      if (!grid) return;
-      grid.innerHTML = this.list.map(v => `
-        <article class="vid-card" data-vid="${v.id}">
-          <div class="vid-thumb">
-            <img class="vid-poster" loading="lazy" alt="" src="https://i.ytimg.com/vi/${v.id}/hqdefault.jpg" />
-            <div class="vid-play"><span>${ic('i-play', 22)}</span></div>
-          </div>
-          <div class="vid-body">
-            <h4>${esc(v.title)}</h4>
-            <div class="vid-meta"><span>${ic('i-clock2', 12)} ${esc(v.date)}</span>
-              <span>${esc(v.views)}</span><span>♥ ${esc(v.likes || '')}</span></div>
-          </div>
-        </article>`).join('');
-      $$('.vid-card', grid).forEach(card => {
-        const play = () => {
-          const url = 'https://www.youtube.com/watch?v=' + card.dataset.vid;
-          if (DESKTOP) X.env.openUrl(url); else window.open(url, '_blank');
-        };
-        card.querySelector('.vid-poster').addEventListener('click', play);
-        card.querySelector('.vid-play').addEventListener('click', play);
-      });
-
-      const more = $('#vidMore');
-      more.innerHTML = this.more.map(v => `
-        <div class="vid-row">
-          <img loading="lazy" alt="" src="https://i.ytimg.com/vi/${v.id}/default.jpg" />
-          <span class="vr-info"><span class="vr-t">${esc(v.title)}</span><span class="vr-m">${esc(v.date)} · ${esc(v.views)}</span></span>
-          <button class="btn sm" data-open-vid="${v.id}">Regarder</button>
-        </div>`).join('');
-      $$('[data-open-vid]', more).forEach(b => b.addEventListener('click', () => window.open('https://www.youtube.com/watch?v=' + b.dataset.openVid, '_blank')));
-    }
-  };
-  $('#btnChannel').addEventListener('click', () => {
-    if (DESKTOP) X.env.openUrl(VIDEOS.handle); else window.open(VIDEOS.handle, '_blank');
-  });
-
   /* ---------- RECHERCHE DE L ENTETE ---------- */
   /*  Ce champ etait present mais sans aucun gestionnaire : on pouvait
       taper dedans sans qu il se passe quoi que ce soit. Il cherche
@@ -2746,7 +2316,6 @@ const Login = {
           l application vit, sans remplir le disque de lignes. */
       setInterval(() => X.report('PING', 'actif'), 300000);
     }
-  $('#soundBtn').addEventListener('click', () => Ambience.toggle());
 
   /* ================================================================== *
    *  HORLOGE + HELPERS
@@ -2779,10 +2348,6 @@ const Login = {
   /* ================================================================== *
    *  DÉMARRAGE
    * ================================================================== */
-  setTimeout(function () {
-    if (!window.XRN) document.title = 'XRN-DIAG main=' + (window.__XRN_START || 'ABSENT') + ' require=' + (typeof require) + ' nw=' + (typeof window.nw);
-  }, 2500);
-
   (async function boot() {
     Splash.boot();
     if (DESKTOP) {
@@ -2795,7 +2360,7 @@ const Login = {
       // on laisse le launcher s'afficher tout de suite, puis on reconnecte
       Account.apply(null);
       Settings.refresh();
-      /*  L'etat du mode Boost FPS, pour que le bouton d'accueil
+      /*  L'etat du mode Profil FPS Plus, pour que le bouton d'accueil
           dise la verite des le premier affichage.                      */
       api(x => x.env.config(), { soft: true }).then(c => { if (c) majEtatBoost(c); });
       const acc = await X.auth.resume();
@@ -2811,14 +2376,14 @@ const Login = {
       view.insertAdjacentHTML('afterbegin',
         `<div class="banner">${ic('i-alert', 18)}<div><b>Mode aperçu.</b> Les fonctions système (téléchargement, fichiers, Java) ne sont actives que dans l'application Windows.</div></div>`);
       Account.apply(null);
-      const inst = [{ id: '1.21.1', type: 'release', size: 0, releaseTime: Date.now() }, { id: '1.20.1', type: 'release', size: 0, releaseTime: 0 }];
-      STATE.installed = inst;
-      Version.select('1.21.1', true);
-      STATE.catalog = { latest: { release: '1.21.1' }, versions: [{ id: '1.21.1', type: 'release', releaseTime: Date.now() }, { id: '1.20.1', type: 'release', releaseTime: 0 }] };
+      STATE.installed = [];
+      STATE.catalog = { latest: {}, versions: [] };
       Version.renderList();
+      Mods.renderIntegre([]);
     }
     Splash.ready();
-    VIDEOS.render();
-    Ambience.updateSoundBtn();
+
+
   })();
 })();
+

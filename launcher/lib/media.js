@@ -42,13 +42,13 @@ function dossierOutils() {
  * Demarre la detection, si la plateforme et les fichiers le permettent.
  * Sans effet sur Linux et macOS, ou si le detecteur a disparu.
  */
-function demarrer() {
+function demarrer(ownerPid) {
   if (process.platform !== 'win32') return false;
   if (processus) return true;
 
   const exe = path.join(dossierOutils(), 'XrnMedia.exe');
   const script = path.join(dossierOutils(), 'media-session.ps1');
-  const arguments_ = [fichierMedia(), fichierPochette()];
+  const arguments_ = [fichierMedia(), fichierPochette(), String(ownerPid || 0)];
 
   try {
     if (fs.existsSync(exe)) {
@@ -63,6 +63,8 @@ function demarrer() {
     } else {
       return false;
     }
+    const current = processus;
+    current.once('exit', () => { if (processus === current) processus = null; });
     processus.unref();
     processus.on('error', () => { processus = null; });
     return true;
@@ -79,4 +81,5 @@ function arreter() {
   processus = null;
 }
 
-module.exports = { demarrer, arreter, fichierMedia, fichierPochette };
+function detacher() { if (processus) processus.unref(); }
+module.exports = { demarrer, arreter, detacher, fichierMedia, fichierPochette };

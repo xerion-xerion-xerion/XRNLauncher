@@ -1,0 +1,18 @@
+# Artefacts de build
+build/
+.gradle/
+run/
+out/
+
+# Fichiers locaux
+*.log
+*.local.json
+config.local.json
+
+# Systeme
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Copies de secours des versions qui marchent
+versions/*.jar

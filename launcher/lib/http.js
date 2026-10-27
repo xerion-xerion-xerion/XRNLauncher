@@ -9,7 +9,7 @@ const path   = require('path');
 const crypto = require('crypto');
 const util   = require('./util');
 
-const UA = 'XRNLauncher/3.5 (+https://localhost)';
+const UA = 'XRNLauncher/' + require('../package.json').version + ' (+https://github.com/xerion-xerion-xerion/XRNLauncher)';
 
 /*  Agent a connexions persistantes.
     Sans cela, chaque requete ouvre une nouvelle connexion TCP et
@@ -36,13 +36,16 @@ async function waitWhilePaused(token) {
 
 function rawRequest(url, options) {
   options = options || {};
-  const mod = url.startsWith('http:') ? http : https;
+  const parsed=new URL(url);
+  if(!['http:','https:'].includes(parsed.protocol)||parsed.username||parsed.password)throw new Error('URL réseau refusée');
+  const mod = parsed.protocol==='http:' ? http : https;
   return new Promise((resolve, reject) => {
     const req = mod.request(url, {
       method: options.method || 'GET',
       agent: agentPour(mod),
       headers: Object.assign({ 'User-Agent': UA }, options.headers || {})
     }, res => resolve({ res, req }));
+    req.setTimeout(30000,()=>req.destroy(new Error('Délai réseau dépassé')));
     req.on('error', reject);
     if (options.body) req.write(options.body);
     req.end();
@@ -56,6 +59,11 @@ async function request(url, options, depth) {
   if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
     res.resume();
     const next = new URL(res.headers.location, url).toString();
+    const from=new URL(url),to=new URL(next);
+    if(from.protocol==='https:'&&to.protocol!=='https:')throw new Error('Redirection HTTPS non sécurisée refusée');
+    // Never forward an OAuth body, session token or authorization header to another origin.
+    const sensitive=options&&(options.body||Object.keys(options.headers||{}).some(k=>/authorization|cookie/i.test(k)));
+    if(from.origin!==to.origin&&sensitive)throw new Error('Redirection authentifiée vers un autre service refusée');
     return request(next, options, depth + 1);
   }
   return { res, req };
@@ -96,16 +104,17 @@ function formBody(payload) {
 }
 
 async function postJSON(url, payload, extraHeaders, method) {
-  const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  const readOnly=/^(GET|HEAD)$/i.test(method||'POST');
+  const body = readOnly ? undefined : (typeof payload === 'string' ? payload : JSON.stringify(payload));
   const { res } = await request(url, {
     method: method || 'POST',
-    headers: Object.assign({ 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }, extraHeaders || {}),
+    headers: Object.assign(readOnly ? {} : { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }, extraHeaders || {}),
     body
   });
   const text = await readBody(res, 4 * 1024 * 1024);
   let json = null;
   try { json = JSON.parse(text); } catch (e) { json = null; }
-  return { status: res.statusCode, json, text };
+  return { status: res.statusCode, json, text, headers:res.headers };
 }
 
 /*  Variante form-urlencodee : utilisee par l'OAuth Microsoft.         */
@@ -122,18 +131,21 @@ async function postForm(url, payload, extraHeaders, method) {
   const text = await readBody(res, 4 * 1024 * 1024);
   let json = null;
   try { json = JSON.parse(text); } catch (e) { json = null; }
-  return { status: res.statusCode, json, text };
+  return { status: res.statusCode, json, text, headers:res.headers };
 }
 
-function sha1File(file) {
+function hashFile(file,algorithm) {
   return new Promise((resolve, reject) => {
-    const h = crypto.createHash('sha1');
+    const h = crypto.createHash(algorithm);
     const s = fs.createReadStream(file);
     s.on('data', d => h.update(d));
     s.on('end', () => resolve(h.digest('hex')));
     s.on('error', reject);
   });
 }
+
+function sha1File(file){return hashFile(file,'sha1');}
+function sha256File(file){return hashFile(file,'sha256');}
 
 /*  Telecharge une URL vers `dest`.
     opts : { sha1, onProgress(done,total), token, verify, retries }          */
@@ -162,7 +174,13 @@ async function download(url, dest, opts) {
 
       if (res.statusCode === 416) { // deja complet
         res.resume();
-        return { file: dest, skipped: true };
+        const algorithm=opts.sha256?'sha256':opts.sha1?'sha1':null;
+        if(algorithm&&opts.verify!==false&&existing>0){
+          const got=await hashFile(dest,algorithm);
+          if(got.toLowerCase()===String(opts[algorithm]).toLowerCase())return {file:dest,skipped:true};
+        }else if(existing>0&&res.headers['content-range']==='bytes */'+existing)return {file:dest,skipped:true};
+        if(existing>0)fs.unlinkSync(dest);
+        throw new Error('Fichier local incomplet ou corrompu');
       }
       if (res.statusCode >= 400) {
         res.resume();
@@ -204,11 +222,12 @@ async function download(url, dest, opts) {
       token.current = null;
 
       // verification d'integrite
-      if (opts.verify !== false && opts.sha1) {
-        const got = await sha1File(dest);
-        if (got.toLowerCase() !== String(opts.sha1).toLowerCase()) {
+      if (opts.verify !== false && (opts.sha1||opts.sha256)) {
+        const algorithm=opts.sha256?'sha256':'sha1';
+        const got = await hashFile(dest,algorithm);
+        if (got.toLowerCase() !== String(opts[algorithm]).toLowerCase()) {
           try { fs.unlinkSync(dest); } catch (e) {}
-          throw new Error('SHA-1 invalide (fichier corrompu)');
+          throw new Error('Empreinte invalide (fichier corrompu)');
         }
       }
       return { file: dest, skipped: false };
@@ -233,4 +252,4 @@ async function getText(url, options) {
   return body;
 }
 
-module.exports = { makeToken, cancel, download, getJSON, getText, postJSON, postForm, formBody, request, sha1File, UA };
+module.exports = { makeToken, cancel, download, getJSON, getText, postJSON, postForm, formBody, request, sha1File, sha256File, UA };

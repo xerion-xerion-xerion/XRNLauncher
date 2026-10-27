@@ -1,0 +1,8 @@
+XRN Launcher — composants de distribution
+
+NW.js 0.119.2 : licence MIT, LICENSE-NWJS.txt.
+Node.js, Chromium et leurs dépendances : https://nwjs.io et https://github.com/nwjs/nw.js
+Fabric Loader et Fabric API : Apache-2.0 ; https://fabricmc.net
+Authlib Injector : https://github.com/yushijinhun/authlib-injector
+Minecraft et Java ne sont pas inclus dans le setup ; téléchargements à partir des distributeurs concernés.
+XRN HUD : les notices du projet restent dans les JAR distribués.

@@ -1,0 +1,33 @@
+CONFIDENTIALITÉ — XRN LAUNCHER
+Version du 27 octobre 2026 — distribution 4.7.3
+
+Responsable et contact
+Xerion, développeur du projet XRN Launcher. Pour toute question ou demande concernant vos données : xrnlauncher@gmail.com.
+
+Données conservées sur votre PC
+XRN conserve vos préférences, vos installations, vos journaux techniques et vos profils dans son dossier de données Windows. Le profil connecté contient le pseudo, l’UUID Minecraft, les adresses de skin et des jetons nécessaires à la session. Les jetons enregistrés sont protégés par le mécanisme Windows DPAPI pour votre compte Windows. XRN ne lit ni ne stocke votre mot de passe Microsoft.
+Les mondes, mods, captures F2 et réglages du jeu restent dans le dossier de jeu choisi. Ils ne sont pas envoyés automatiquement à Xerion. Les données locales restent jusqu’à votre suppression ; supprimer un compte dans XRN efface son enregistrement local. La désinstallation conserve les données du jeu.
+
+Connexions indispensables aux fonctions choisies
+Pour vous connecter, XRN communique avec Microsoft, Xbox et Minecraft Services. Pour télécharger Minecraft et Java, il utilise les serveurs officiels de distribution de Minecraft et Adoptium. Les recherches et téléchargements de mods peuvent contacter Modrinth. Les recherches de skins peuvent transmettre un pseudo aux services Minecraft et récupérer l’image du skin.
+Ces échanges servent à fournir les fonctions que vous demandez. Les hébergeurs voient les informations réseau habituelles, notamment l’adresse IP. Leurs politiques s’appliquent à leurs propres services.
+
+Mises à jour et annonces
+GitHub héberge le site, le setup et les fichiers de mise à jour. Le launcher consulte les releases GitHub pour proposer les nouvelles versions. Le service d’annonces XRN, hébergé chez Cloudflare, reçoit la version du launcher. La version 4.7.3 n’envoie aucun identifiant d’installation par défaut. Vous pouvez désactiver les annonces dans les paramètres.
+Aucun outil publicitaire ou de mesure d’audience n’est intégré au site. Les prestataires techniques peuvent traiter les requêtes et leurs journaux de sécurité selon leurs politiques et leurs durées de conservation. XRN ne dispose pas d’une copie centrale de vos mondes ou de vos jetons de connexion.
+Des versions antérieures ont pu transmettre un identifiant aléatoire d’installation et la date de consultation au service XRN. Pour demander la suppression d’un ancien enregistrement, contactez l’adresse ci-dessus. N’envoyez aucun mot de passe ni jeton.
+
+Présence et apparence partagée
+Le relais de présence vérifiée et le partage public des couleurs ne sont pas activés dans cette distribution. Leur activation future fera l’objet d’une information adaptée avant transmission des informations de présence.
+
+Support et exercice de vos droits
+Si vous nous écrivez, les informations transmises servent à traiter votre demande et sont conservées pendant le temps nécessaire à son suivi. Le service de messagerie utilisé est Gmail. Évitez d’envoyer des fichiers contenant des secrets ou des informations sur d’autres personnes.
+Vous pouvez demander l’accès, la rectification, l’effacement ou la limitation des données vous concernant et, selon le traitement, vous y opposer. Écrivez à xrnlauncher@gmail.com en précisant la demande. Pour les données traitées directement par Microsoft, GitHub ou un autre prestataire, leurs propres moyens de contact restent disponibles. Vous pouvez également adresser une réclamation à la CNIL : https://www.cnil.fr/fr/plaintes.
+
+Politiques des prestataires
+Microsoft : https://privacy.microsoft.com/fr-fr/privacystatement
+GitHub : https://docs.github.com/fr/site-policy/privacy-policies/github-general-privacy-statement
+Cloudflare : https://www.cloudflare.com/privacypolicy/
+Modrinth : https://modrinth.com/legal/privacy
+Adoptium : https://adoptium.net/about/privacy
+Google : https://policies.google.com/privacy

@@ -102,6 +102,20 @@ function rmrf(p) {
   try { fs.rmSync(p, { recursive: true, force: true }); return true; } catch (e) { return false; }
 }
 
+async function listDirAsync(dir) {
+  const entries = await fs.promises.readdir(dir, {withFileTypes:true});
+  const result = [];
+  for (let i = 0; i < entries.length; i += 24) {
+    const batch = await Promise.all(entries.slice(i, i+24).map(async e => {
+      const full = path.join(dir, e.name);
+      try { const st = await fs.promises.stat(full); return {name:e.name,path:full,dir:e.isDirectory(),size:e.isDirectory()?0:st.size,mtime:st.mtimeMs}; }
+      catch (_) { return null; }
+    }));
+    result.push(...batch.filter(Boolean));
+  }
+  return result.sort((a,b)=>(b.dir-a.dir)||a.name.localeCompare(b.name,'fr',{numeric:true}));
+}
+
 function listDir(dir, opts) {
   opts = opts || {};
   const out = [];
@@ -163,7 +177,9 @@ function openExplorer(target, select) {
 
 /* Ouvre une URL dans le navigateur par defaut */
 function openUrl(url) {
-  require('child_process').spawn('cmd', ['/c', 'start', '""', url.replace(/&/g, '^&')], {
+  const parsed=new URL(String(url));
+  if(!['https:','http:'].includes(parsed.protocol)||parsed.username||parsed.password)throw new Error('Adresse web refusée');
+  require('child_process').spawn('explorer.exe', [parsed.href], {
     detached: true, stdio: 'ignore', windowsHide: true
   }).unref();
   return true;
@@ -244,5 +260,5 @@ function copyDir(src, dst) {
 module.exports = {
   APP_NAME, appRoot, ensureDir, exists, readJSON, writeJSON,
   human, humanTime, humanDate, relative,
-  dirSize, viderTailles, rmrf, listDir, run, openExplorer, openUrl, copyDir, extractZip
+  dirSize, viderTailles, rmrf, listDir, listDirAsync, run, openExplorer, openUrl, copyDir, extractZip
 };

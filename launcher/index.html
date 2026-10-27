@@ -1,123 +1,88 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<html lang="fr"><head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>XRNLauncher</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2308060f'/%3E%3Cpath d='M16 4l3.4 9.4L29 16l-9.6 2.6L16 28l-3.4-9.4L3 16l9.6-2.6z' fill='%23a78bfa'/%3E%3C/svg%3E" />
-<link rel="stylesheet" href="style.css" />
-</head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Orbitron:wght@500;700;900&amp;display=swap" rel="stylesheet">
+<link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="studio.css">
+<link rel="stylesheet" href="refine.css"></head>
 <body>
 
 <!-- ==================== SPRITE D'ICONES (SVG inline, 100% hors-ligne) ==================== -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <g id="i-home"><path d="M3 9.6 12 3l9 6.6V20a1.5 1.5 0 0 1-1.5 1.5H15V14H9v7.5h-4.5A1.5 1.5 0 0 1 3 20Z"/></g>
-  <g id="i-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></g>
-  <g id="i-cube"><path d="M12 2 3 7v10l9 5 9-5V7Z"/><path d="m3 7 9 5 9-5M12 12v10"/></g>
-  <g id="i-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></g>
-  <g id="i-folder"><path d="M4 20a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4.5l2 3H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/></g>
-  <g id="i-globe"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/></g>
-  <g id="i-gear"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.6 1.6 0 0 0 9 4.6a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.6 1.6 0 0 0 19.4 9v0a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.47 1Z"/></g>
-  <g id="i-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g>
-  <g id="i-play"><path d="M7 4.5v15l13-7.5Z" fill="currentColor" stroke="none"/></g>
-  <g id="i-gem"><path d="M6 3h12l4 6-10 12L2 9Z"/><path d="M2 9h20M9 3 6 9l6 12 6-12-3-6"/></g>
-  <g id="i-star"><path d="m12 3 2.9 5.9 6.6.9-4.8 4.6 1.2 6.5L12 17.8 6.1 20.9l1.2-6.5L2.5 9.8l6.6-.9Z"/></g>
-  <g id="i-bolt"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"/></g>
-  <g id="i-users"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></g>
-  <g id="i-search"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g>
-  <g id="i-min"><path d="M5 12h14"/></g>
-  <g id="i-max"><rect x="5" y="5" width="14" height="14" rx="2"/></g>
-  <g id="i-close"><path d="m6 6 12 12M18 6 6 18"/></g>
-  <g id="i-chev"><path d="m6 9 6 6 6-6"/></g>
-  <g id="i-chip"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></g>
-  <g id="i-check"><path d="M20 6 9 17l-5-5"/></g>
-  <g id="i-trash"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></g>
-  <g id="i-import"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></g>
-  <g id="i-refresh"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></g>
-  <g id="i-volume"><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></g>
-  <g id="i-mute"><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="m16 9 5 6M21 9l-5 6"/></g>
-  <g id="i-shield"><path d="M20 13c0 5-3.5 7.5-7.7 8.9a1 1 0 0 1-.7 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.3-2.7a1 1 0 0 1 1.5 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1Z"/></g>
-  <g id="i-info"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></g>
-  <g id="i-alert"><path d="M12 3 2 20h20Z"/><path d="M12 10v4M12 17h.01"/></g>
-  <g id="i-arrow"><path d="M5 12h14M13 6l6 6-6 6"/></g>
-  <g id="i-external"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></g>
-  <g id="i-clock"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g>
-  <g id="i-plus"><path d="M12 5v14M5 12h14"/></g>
-  <g id="i-x"><path d="M18 6 6 18M6 6l12 12"/></g>
-  <g id="i-zap"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"/></g>
-  <g id="i-palette"><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h4a5 5 0 0 0 5-5c0-3-4-5-9-5Z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="15" cy="8" r="1"/></g>
-  <g id="i-harddrive"><path d="M22 12H2"/><path d="M5.5 5h13L22 12v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7Z"/><path d="M6 16h.01M10 16h.01"/></g>
-  <g id="i-clock2"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></g>
-  <g id="i-list"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></g>
-  <g id="i-package"><path d="m16.5 9.4-9-5.2M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/></g>
+  <g id="i-image"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8" cy="8" r="1.5"></circle><path d="m3 17 6-6 5 5 3-3 4 4"></path></g>
+  <g id="i-home"><path d="M3 9.6 12 3l9 6.6V20a1.5 1.5 0 0 1-1.5 1.5H15V14H9v7.5h-4.5A1.5 1.5 0 0 1 3 20Z"></path></g>
+  <g id="i-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5M12 15V3"></path></g>
+  <g id="i-cube"><path d="M12 2 3 7v10l9 5 9-5V7Z"></path><path d="m3 7 9 5 9-5M12 12v10"></path></g>
+  <g id="i-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path><path d="M17 21v-8H7v8M7 3v5h8"></path></g>
+  <g id="i-folder"><path d="M4 20a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4.5l2 3H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"></path></g>
+  <g id="i-globe"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"></path></g>
+  <g id="i-gear"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.6 1.6 0 0 0 9 4.6a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.6 1.6 0 0 0 19.4 9v0a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.47 1Z"></path></g>
+  <g id="i-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></g>
+  <g id="i-play"><path d="M7 4.5v15l13-7.5Z" fill="currentColor" stroke="none"></path></g>
+  <g id="i-gem"><path d="M6 3h12l4 6-10 12L2 9Z"></path><path d="M2 9h20M9 3 6 9l6 12 6-12-3-6"></path></g>
+  <g id="i-star"><path d="m12 3 2.9 5.9 6.6.9-4.8 4.6 1.2 6.5L12 17.8 6.1 20.9l1.2-6.5L2.5 9.8l6.6-.9Z"></path></g>
+  <g id="i-bolt"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"></path></g>
+  <g id="i-users"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9.5" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></g>
+  <g id="i-search"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></g>
+  <g id="i-min"><path d="M5 12h14"></path></g>
+  <g id="i-max"><rect x="5" y="5" width="14" height="14" rx="2"></rect></g>
+  <g id="i-close"><path d="m6 6 12 12M18 6 6 18"></path></g>
+  <g id="i-chev"><path d="m6 9 6 6 6-6"></path></g>
+  <g id="i-chip"><rect x="6" y="6" width="12" height="12" rx="2"></rect><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"></path></g>
+  <g id="i-check"><path d="M20 6 9 17l-5-5"></path></g>
+  <g id="i-trash"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></g>
+  <g id="i-import"><path d="M12 3v12M8 11l4 4 4-4"></path><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path></g>
+  <g id="i-refresh"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path><path d="M3 21v-5h5"></path></g>
+  <g id="i-volume"><path d="M11 5 6 9H3v6h3l5 4Z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"></path></g>
+  <g id="i-mute"><path d="M11 5 6 9H3v6h3l5 4Z"></path><path d="m16 9 5 6M21 9l-5 6"></path></g>
+  <g id="i-shield"><path d="M20 13c0 5-3.5 7.5-7.7 8.9a1 1 0 0 1-.7 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.3-2.7a1 1 0 0 1 1.5 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1Z"></path></g>
+  <g id="i-info"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></g>
+  <g id="i-alert"><path d="M12 3 2 20h20Z"></path><path d="M12 10v4M12 17h.01"></path></g>
+  <g id="i-arrow"><path d="M5 12h14M13 6l6 6-6 6"></path></g>
+  <g id="i-external"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path></g>
+  <g id="i-clock"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></g>
+  <g id="i-plus"><path d="M12 5v14M5 12h14"></path></g>
+  <g id="i-x"><path d="M18 6 6 18M6 6l12 12"></path></g>
+  <g id="i-zap"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"></path></g>
+  <g id="i-palette"><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h4a5 5 0 0 0 5-5c0-3-4-5-9-5Z"></path><circle cx="7.5" cy="11.5" r="1"></circle><circle cx="10" cy="7.5" r="1"></circle><circle cx="15" cy="8" r="1"></circle></g>
+  <g id="i-harddrive"><path d="M22 12H2"></path><path d="M5.5 5h13L22 12v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7Z"></path><path d="M6 16h.01M10 16h.01"></path></g>
+  <g id="i-clock2"><path d="M12 8v4l3 2"></path><circle cx="12" cy="12" r="9"></circle></g>
+  <g id="i-list"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></g>
+  <g id="i-package"><path d="m16.5 9.4-9-5.2M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="M3.3 7 12 12l8.7-5M12 22V12"></path></g>
   <linearGradient id="gRing" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#d946ef"/>
+    <stop offset="0%" stop-color="#a78bfa"></stop><stop offset="50%" stop-color="#7c3aed"></stop><stop offset="100%" stop-color="#d946ef"></stop>
   </linearGradient>
 </defs></svg>
 
-<!-- ==================== FOND ESPACE ==================== -->
-<div class="space" aria-hidden="true">
-  <div class="neb n1"></div><div class="neb n2"></div>
-  <canvas id="stars"></canvas>
-  <div class="grid"></div>
-  <div class="vignette"></div>
-</div>
-
-<!-- ==================== SPLASH D'OUVERTURE ==================== -->
-<div class="splash" id="splash">
-  <div class="sp-vignette"></div>
-  <div class="sp-particles" id="spParticles"></div>
-  <div class="sp-ring r1"></div>
-  <div class="sp-ring r2"></div>
-  <div class="sp-ring r3"></div>
-
-  <div class="sp-center">
-    <svg class="sp-logo" viewBox="0 0 64 64">
-      <ellipse class="sp-orbit" cx="32" cy="32" rx="27.5" ry="11"/>
-      <ellipse class="sp-orbit o2" cx="32" cy="32" rx="27.5" ry="11"/>
-      <path class="sp-x" d="M19.5 16 L44.5 48 M44.5 16 L19.5 48"/>
-      <path class="sp-star" d="M32 20.5l2.9 8.6 8.6 2.9-8.6 2.9-2.9 8.6-2.9-8.6-8.6-2.9 8.6-2.9z"/>
-    </svg>
-
-    <h1 class="sp-title"><span>XRN</span>LAUNCHER</h1>
-    <p class="sp-sub">Citations &amp; étoiles</p>
-
-    <div class="sp-subtitle" id="spSubtitle"></div>
-
-    <div class="sp-progress"><i id="spBar"></i></div>
-    <div class="sp-status" id="spStatus">Initialisation…</div>
-  </div>
-
-  <button class="sp-skip" id="spSkip">Passer <kbd>Échap</kbd></button>
-</div>
 <!-- ==================== FENETRE ==================== -->
 <div class="workspace" id="workspace">
 
   <!-- ---------- barre de titre ---------- -->
   <header class="titlebar">
     <div class="brand">
-      <div class="brand-mark"><svg viewBox="0 0 64 64"><ellipse class="lg-orbit" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(-22 32 32)"/><ellipse class="lg-orbit soft" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(38 32 32)"/><path class="lg-x" d="M19.5 16 L44.5 48 M44.5 16 L19.5 48"/><path class="lg-star" d="M32 20.5l2.9 8.6 8.6 2.9-8.6 2.9-2.9 8.6-2.9-8.6-8.6-2.9 8.6-2.9z"/></svg></div>
+      <div class="brand-mark"><img src="assets/icon.png" alt="Logo XRN" width="34" height="34"></div>
       <div>
-        <div class="brand-name">XRN<span>LAUNCHER</span></div>
-        <div class="brand-tag" id="brandTag">v3.5.0</div>
+        <div class="brand-name">XRN<span> / Launcher</span></div>
+        <div class="brand-tag" id="brandTag">v4.5.0</div>
       </div>
     </div>
 
     <div class="title-center">
       <label class="title-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-search"/></svg>
-        <input type="text" id="searchInput" placeholder="Rechercher une sauvegarde, une version, un fichier…" autocomplete="off" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-search"></use></svg>
+        <input type="text" id="searchInput" placeholder="Rechercher dans le launcher…" aria-label="Rechercher dans le launcher" autocomplete="off">
       </label>
-      <div class="search-pop" id="searchPop" hidden></div>
+      <div class="search-pop" id="searchPop" hidden=""></div>
     </div>
 
     <div class="title-right">
-      <button class="icon-btn" id="soundBtn" data-tip="Son d'ambiance">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-volume"/></svg>
-      </button>
+      
       <div class="clock" id="clock">--:--</div>
       <button class="account-chip" id="accountChip">
         <span class="acc-avatar" id="accAvatarMini"></span>
@@ -125,12 +90,12 @@
           <span class="pc-name" id="accNameMini">Non connecté</span>
           <span class="pc-sub" id="accSubMini">Cliquer pour se connecter</span>
         </span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chev"/></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chev"></use></svg>
       </button>
       <div class="win-btns">
-        <button class="win-btn" id="winMin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-min"/></svg></button>
-        <button class="win-btn" id="winMax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-max"/></svg></button>
-        <button class="win-btn close" id="winClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-close"/></svg></button>
+        <button class="win-btn" id="winMin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-min"></use></svg></button>
+        <button class="win-btn" id="winMax"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-max"></use></svg></button>
+        <button class="win-btn close" id="winClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-close"></use></svg></button>
       </div>
     </div>
   </header>
@@ -140,19 +105,19 @@
     <!-- ---------- sidebar ---------- -->
     <aside class="sidebar">
       <div class="nav-label">Launcher</div>
-      <button class="nav-item active" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-home"/></svg>Accueil</button>
-      <button class="nav-item" data-view="downloads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-download"/></svg>Téléchargements<span class="nav-badge" id="dlBadge" hidden>0</span></button>
-      <button class="nav-item" data-view="versions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cube"/></svg>Versions</button>
-      <button class="nav-item" data-view="mods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"/></svg>Mods</button>
-      <button class="nav-item" data-view="saves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"/></svg>Sauvegardes</button>
-      <button class="nav-item" data-view="files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"/></svg>Fichiers</button>
-      <button class="nav-item" data-view="servers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-globe"/></svg>Serveurs</button>
-      <button class="nav-item" data-view="videos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-play"/></svg>Vidéos</button>
-      <button class="nav-item" data-view="boutique"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gem"/></svg>Boutique</button>
+      <button class="nav-item active" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-home"></use></svg>Accueil</button>
+      <button class="nav-item" data-view="downloads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-download"></use></svg>Téléchargements<span class="nav-badge" id="dlBadge" hidden="">0</span></button>
+      <button class="nav-item" data-view="versions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cube"></use></svg>Installations</button>
+      <button class="nav-item" data-view="mods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"></use></svg>Mods</button>
+      <button class="nav-item" data-view="saves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"></use></svg>Sauvegardes</button>
+      <button class="nav-item" data-view="shots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><use href="#i-image"></use></svg>Captures</button>
+      <button class="nav-item" data-view="files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"></use></svg>Fichiers</button>
+      <button class="nav-item" data-view="servers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-globe"></use></svg>Serveurs</button>
+      
 
-      <div class="nav-label" style="margin-top:10px">Compte & système</div>
-      <button class="nav-item" data-view="login"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"/></svg>Connexion</button>
-      <button class="nav-item" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gear"/></svg>Paramètres</button>
+      <div class="nav-label" style="margin-top:10px">Compte &amp; système</div>
+      <button class="nav-item" data-view="login"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"></use></svg>Connexion</button>
+      <button class="nav-item" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gear"></use></svg>Paramètres</button>
 
       <div class="side-foot">
         <div class="mini-card">
@@ -171,88 +136,86 @@
 
   <!--  Barre de mise a jour : elle reste la tant qu on ne l a pas
       fermee, et le bouton met a jour sans rien decompresser a la main. -->
-  <div class="barre-maj" id="barreMaj" hidden>
-    <span class="bm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M7 13l5 5 5-5"/><path d="M4 21h16"/></svg></span>
+  <div class="barre-maj" id="barreMaj" hidden="">
+    <span class="bm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"></path><path d="M7 13l5 5 5-5"></path><path d="M4 21h16"></path></svg></span>
     <div class="bm-txt">
       <b id="barreMajTitre">Nouvelle version</b>
       <span id="barreMajTexte">Une version plus recente est disponible.</span>
     </div>
     <button class="btn btn-p" id="barreMajBtn">Mettre a jour</button>
-    <button class="bm-fermer" id="barreMajFermer" type="button" title="Fermer">&times;</button>
+    <button class="bm-fermer" id="barreMajFermer" type="button" title="Fermer">×</button>
   </div>
         <div class="hero">
           <div class="hero-top">
             <div>
-              <div class="eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:12px;height:12px"><use href="#i-zap"/></svg>Launcher privé</div>
-              <h1>XRN<span class="hl">LAUNCHER</span></h1>
-              <p class="sub">Minecraft Java Edition — launcher personnel</p>
+              <div class="eyebrow">VOTRE ESPACE MINECRAFT</div>
+              <h1>Un monde<br>vous attend<span class="hl">.</span></h1>
+              <p class="sub">Choisissez votre version. Retrouvez vos mondes. Jouez.</p>
               <div class="badges" id="homeBadges">
-                <span class="badge warn-badge" id="badgeJava"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-alert"/></svg>Java non détecté</span>
-                <span class="badge" id="badgeVersion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"/></svg>Aucune version installée</span>
-                <span class="badge" id="badgeAccount"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"/></svg>Aucun compte</span>
+                <span class="badge warn-badge" id="badgeJava"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-alert"></use></svg>Java non détecté</span>
+                <span class="badge" id="badgeVersion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"></use></svg>Aucune version installée</span>
+                <span class="badge" id="badgeAccount"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"></use></svg>Aucun compte</span>
               </div>
             </div>
-            <div class="hero-art" aria-hidden="true">
-              <svg class="ha-art" viewBox="0 0 64 64" fill="none">
-                <ellipse class="ha-orbit" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(-22 32 32)"/>
-                <ellipse class="ha-orbit ha-orbit2" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(38 32 32)"/>
-                <path class="ha-x" d="M19.5 16 L44.5 48 M44.5 16 L19.5 48"/>
-                <path class="ha-star" d="M32 25 L34.2 29.8 L39 32 L34.2 34.2 L32 39 L29.8 34.2 L25 32 L29.8 29.8 Z"/>
-              </svg>
-            </div>
+            <div class="hero-art" aria-hidden="true"><img src="assets/terrain.svg" alt=""><span class="terrain-label">JAVA EDITION / XRN</span></div>
           </div>
 
           <div class="playbar">
             <button class="btn-play" id="btnPlay">
-              <svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-play"/></svg>JOUER
+              <svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-play"></use></svg>Jouer
             </button>
 
             <div class="version-wrap">
               <button class="btn-version" id="btnVersion" aria-haspopup="listbox" aria-expanded="false">
-                <span class="cube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cube"/></svg></span>
+                <span class="cube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cube"></use></svg></span>
                 <span class="v-meta"><span class="v-name" id="vName">—</span><span class="v-loader" id="vLoader">non installée</span></span>
-                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chev"/></svg>
+                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chev"></use></svg>
               </button>
               <div class="v-list" id="vList" role="listbox"></div>
             </div>
 
             <button class="btn ghost-btn" id="btnInstall" title="Télécharger la version sélectionnée">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-download"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-download"></use></svg>
               Installer
             </button>
           </div>
-          <div class="dl-strip" id="dlStrip" hidden>
+          <div class="dl-strip" id="dlStrip" hidden="">
             <div class="dl-bar"><i id="dlBar"></i></div>
             <div class="dl-info"><span id="dlLabel">Préparation…</span><span id="dlPct">0 %</span></div>
           </div>
         </div>
 
-        <div class="stats">
-          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-harddrive"/></svg>Taille du jeu</div><div class="t-val" id="stSize">—</div><div class="t-sub" id="stSizeSub">dossier du jeu</div></div>
-          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cube"/></svg>Versions</div><div class="t-val" id="stVersions">0</div><div class="t-sub" id="stVersionsSub">installées</div></div>
-          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"/></svg>Sauvegardes</div><div class="t-val" id="stSaves">0</div><div class="t-sub" id="stSavesSub">dans le dossier du jeu</div></div>
-          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"/></svg>Mémoire</div><div class="t-val" id="stRam">4.0<small>Go</small></div><div class="t-sub">allouée à Minecraft</div></div>
+        <div class="home-shortcuts">
+      <button data-goto="mods"><span class="shortcut-number">01 / PERSONNALISER</span><b>Vos mods, votre jeu <span>↗</span></b><small>Gérer les fichiers et les modules XRN</small></button>
+      <button data-goto="versions"><span class="shortcut-number">02 / INSTALLER</span><b>Changer de version <span>↗</span></b><small>Minecraft, Fabric et NeoForge</small></button>
+      <button data-goto="saves"><span class="shortcut-number">03 / RETROUVER</span><b>Reprendre un monde <span>↗</span></b><small>Sauvegardes et archives locales</small></button>
+    </div>
+<div class="stats">
+          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-harddrive"></use></svg>Taille du jeu</div><div class="t-val" id="stSize">—</div><div class="t-sub" id="stSizeSub">dossier du jeu</div></div>
+          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cube"></use></svg>Versions</div><div class="t-val" id="stVersions">0</div><div class="t-sub" id="stVersionsSub">installées</div></div>
+          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"></use></svg>Sauvegardes</div><div class="t-val" id="stSaves">0</div><div class="t-sub" id="stSavesSub">dans le dossier du jeu</div></div>
+          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"></use></svg>Mémoire</div><div class="t-val" id="stRam">4.0<small>Go</small></div><div class="t-sub">allouée à Minecraft</div></div>
         </div>
 
-        <!--  Le mode Boost FPS : d ici, on decide comment le jeu tourne.
+        <!--  Le mode Profil FPS Plus : d ici, on decide comment le jeu tourne.
               Il applique un profil de performance, et dit clairement ce
               qu il fait, parce qu un gain d images par seconde se
               paie en distance d affichage et en details.              -->
         <div class="panel" style="margin-top:14px" id="boostPanel">
           <div class="panel-h">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bolt"/></svg>
-            <h4>Boost FPS</h4>
-            <span class="live" id="boostBadge" hidden><span class="dot"></span>ACTIF</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bolt"></use></svg>
+            <h4>Profil FPS Plus</h4>
+            <span class="live" id="boostBadge" hidden=""><span class="dot"></span>ACTIF</span>
           </div>
           <div class="panel-b">
-            <p class="boutique-txt" id="boostTexte">Un profil de performance applique au demarrage : distance d affichage reduite, mode graphique rapide, particules minimales, ombres et nuages coupes, moteur de lumiere le plus econome. Tu vois moins loin, et tu gagnes des images par seconde.</p>
-            <button class="btn" id="boostBtn">Activer le mode Boost FPS</button>
+            <p class="boutique-txt" id="boostTexte">Réduit la distance d’affichage, les particules et les détails graphiques. À activer si vous privilégiez la fluidité.</p>
+            <button class="btn" id="boostBtn">Activer le mode Profil FPS Plus</button>
           </div>
         </div>
 
         <div class="view-head" style="margin-top:32px">
           <div><div class="eyebrow">Reprendre</div><h2>Sauvegardes récentes</h2><p>Vos parties, lues directement dans le dossier du jeu.</p></div>
-          <button class="btn" data-goto="saves">Tout voir<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-arrow"/></svg></button>
+          <button class="btn" data-goto="saves">Tout voir<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-arrow"></use></svg></button>
         </div>
         <div class="cards" id="recentSaves"></div>
       </section>
@@ -260,41 +223,40 @@
       <!-- ========== TELECHARGEMENTS ========== -->
       <section class="view" id="view-downloads">
         <div class="view-head">
-          <div><div class="eyebrow">Fichiers Mojang</div><h2>Téléchargements</h2><p>Client, bibliothèques natives, ressources et sons.</p></div>
+          <div><div class="eyebrow">Sur ce PC</div><h2>Téléchargements</h2><p>Tes versions téléchargées et la progression des installations.</p></div>
           <div style="display:flex;gap:9px">
-            <button class="btn" id="btnPause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-mute"/></svg>Pause</button>
-            <button class="btn danger" id="btnCancelDl">Annuler</button>
+            <button class="btn" id="btnPause" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-mute"></use></svg>Pause</button>
+            <button class="btn danger" id="btnCancelDl" disabled>Annuler</button>
           </div>
         </div>
+        <div class="panel" style="margin-bottom:14px"><div class="panel-h"><h4>Versions téléchargées</h4></div><div class="panel-b verlist" id="dlInstalled"><p class="empty">Chargement…</p></div></div>
         <div class="panel">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-download"/></svg><h4 id="dlPanelTitle">Fichier en cours</h4><span class="live" id="dlLive" hidden><span class="dot pulse"></span>EN COURS</span></div>
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-download"></use></svg><h4 id="dlPanelTitle">Installation en cours</h4><span class="live" id="dlLive" hidden=""><span class="dot pulse"></span>EN COURS</span></div>
           <div class="panel-b" id="dlBody"><p class="empty">Aucun téléchargement en cours. Choisissez une version puis « Installer ».</p></div>
         </div>
-        <div class="panel" style="margin-top:14px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-list"/></svg><h4>Fichiers de cette installation</h4></div>
-          <div class="panel-b"><div id="dlFiles" class="filelist"><p class="empty">—</p></div></div>
-        </div>
+        <details class="download-details" style="margin-top:18px"><summary>Détails des fichiers téléchargés</summary><p class="hint">Minecraft télécharge son programme, les bibliothèques et les sons nécessaires au jeu. Ces détails servent au diagnostic.</p><div id="dlFiles" class="filelist"><p class="empty">Aucune installation pendant cette session.</p></div></details>
       </section>
 
       <!-- ========== VERSIONS ========== -->
       <section class="view" id="view-versions">
         <div class="view-head">
           <div><div class="eyebrow">Installations</div><h2>Versions</h2><p>Versions téléchargées sur ce PC et catalogue Mojang officiel.</p></div>
-          <button class="btn" id="btnRefreshVersions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-refresh"/></svg>Actualiser</button>
+          <button class="btn" id="btnRefreshVersions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-refresh"></use></svg>Actualiser</button>
         </div>
 
         <div class="panel">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-harddrive"/></svg><h4>Installées</h4></div>
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-harddrive"></use></svg><h4>Installées</h4></div>
           <div class="panel-b" id="installedList"><p class="empty">Chargement…</p></div>
         </div>
 
         <div class="panel" style="margin-top:14px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-globe"/></svg><h4>Catalogue Mojang</h4></div>
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-globe"></use></svg><h4>Catalogue Mojang</h4></div>
           <div class="panel-b">
             <label class="title-search" style="width:100%;max-width:340px">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-search"/></svg>
-              <input type="text" id="versionSearch" placeholder="Filtrer (ex : 1.20.1, snapshot…)" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-search"></use></svg>
+              <input type="text" id="versionSearch" placeholder="Filtrer (ex : 1.20.1, snapshot…)">
             </label>
+            <div class="version-presets" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm" data-version-preset="1.8.9">1.8.9</button><button class="btn sm" data-version-preset="1.12.2">1.12.2</button><button class="btn sm" data-version-preset="1.16.5">1.16.5</button><button class="btn sm" data-version-preset="1.20.1">1.20.1</button><button class="btn sm" data-version-preset="1.21.11">1.21.11</button><button class="btn sm" data-version-preset="26.2">26.2</button></div>
             <div id="catalogList" class="verlist" style="margin-top:12px"><p class="empty">Chargement du catalogue…</p></div>
           </div>
         </div>
@@ -305,42 +267,42 @@
       <section class="view" id="view-mods">
         <div class="view-head">
           <div><div class="eyebrow">Modifications</div><h2>Mods</h2>
-          <p>Glissez vos fichiers <code class="mono">.jar</code> : ils sont copiés dans <code class="mono" id="modsPath">le dossier mods</code>.</p></div>
+          <p>Activez, désactivez ou importez vos fichiers <code class="mono">.jar</code> dans <code class="mono" id="modsPath">le dossier mods</code>.</p></div>
           <div style="display:flex;gap:9px">
-            <button class="btn" id="btnModsFolder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"/></svg>Ouvrir le dossier</button>
-            <button class="btn primary" id="btnModsPlay"><svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-play"/></svg>Lancer le jeu</button>
+            <button class="btn" id="btnModsFolder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"></use></svg>Ouvrir le dossier</button>
+            <button class="btn primary" id="btnModsPlay"><svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-play"></use></svg>Lancer le jeu</button>
           </div>
         </div>
 
         <!--  Le mod embarque : ce qu'il sait faire aujourd'hui. La
               liste des modules vit avec le jar integre : a chaque mise
               a jour du launcher, la liste suit. Rien a installer.      -->
-        <div class="panel" style="margin-bottom:16px">
+        <details class="client-details"><summary>Modules inclus dans XRN Client</summary><div class="panel" style="margin-bottom:16px">
           <div class="panel-h">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"/></svg>
-            <h4>Mod embarque — XRN HUD <span class="integre-ver" id="integreVersion"></span></h4>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"></use></svg>
+            <h4>Modules du client · XRN HUD <span class="integre-ver" id="integreVersion"></span></h4>
           </div>
           <div class="panel-b">
             <div class="integre-modules" id="integreModules"></div>
-            <p class="boutique-txt" style="margin:0">Tout est deja installe : <b class="touche">Maj droite</b> ouvre le menu dans le jeu, <b class="touche">Ctrl droit</b> deplace les blocs a la souris, <b class="touche">U</b> ouvre la garde-robe des capes.</p>
+            <p class="boutique-txt" style="margin-top:14px">Dans le jeu : <b class="touche">Maj droite</b> ouvre les réglages, <b class="touche">Alt droit</b> déplace les éléments, <b class="touche">Ctrl droit</b> affiche ou masque le HUD. Minecraft 1.21.11 avec Fabric requis.</p>
           </div>
-        </div>
+        </div></details>
 
         <div class="panel">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"/></svg><h4>Chargeur de mods</h4></div>
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"></use></svg><h4>Chargeur de mods</h4></div>
           <div class="panel-b" id="loaderBox"><p class="empty">Chargement…</p></div>
         </div>
 
         <div class="panel" style="margin-top:16px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"/></svg><h4>Vos mods</h4></div>
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"></use></svg><h4>Vos mods</h4></div>
           <div class="panel-b">
             <div class="dropzone" id="dropMods">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-import"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#i-import"></use></svg>
               <b>Glissez vos fichiers .jar ici</b>
               <span>ou <button class="linkish" id="btnModsPick">choisissez-les</button></span>
-              <input type="file" id="modsPick" accept=".jar" multiple hidden />
+              <input type="file" id="modsPick" accept=".jar" multiple="" hidden="">
             </div>
-            <div class="modlist" id="modsList"><p class="empty">Aucun mod installé.</p></div>
+            <div class="mods-toolbar"><label for="modFilter">Filtrer les mods</label><input id="modFilter" class="input" type="search" placeholder="Nom du fichier…"><span id="modCount" role="status"></span></div><div class="modlist" id="modsList"><p class="empty">Aucun mod installé.</p></div>
           </div>
         </div>
       </section>
@@ -350,94 +312,31 @@
         <div class="view-head">
           <div><div class="eyebrow">Vos parties</div><h2>Sauvegardes</h2><p>Lues dans <code id="savesPath" class="mono"></code></p></div>
           <div style="display:flex;gap:9px">
-            <button class="btn" id="btnImportSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-import"/></svg>Importer un .zip</button>
-            <button class="btn" id="btnOpenSaves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"/></svg>Ouvrir le dossier</button>
-            <input type="file" id="saveFile" accept=".zip" hidden />
+            <button class="btn" id="btnImportSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-import"></use></svg>Importer un .zip</button>
+            <button class="btn" id="btnOpenSaves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"></use></svg>Ouvrir le dossier</button>
+            <input type="file" id="saveFile" accept=".zip" hidden="">
           </div>
         </div>
         <div class="cards" id="savesList"><p class="empty">Chargement…</p></div>
         <div class="panel" style="margin-top:18px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"/></svg><h4>Archives de sauvegarde</h4></div>
+          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"></use></svg><h4>Archives de sauvegarde</h4></div>
           <div class="panel-b" id="backupsList"><p class="empty">Aucune archive.</p></div>
         </div>
       </section>
 
       <!-- ========== BOUTIQUE ========== -->
-      <section class="view" id="view-boutique">
-        <div class="view-head">
-          <div><div class="eyebrow">Communaute</div><h2>Boutique</h2><p>Les cosmetiques du client, et la communaute qui les porte.</p></div>
-          <button class="btn" id="btnBoutiqueRefresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-refresh"/></svg>Actualiser</button>
-        </div>
-
-        <div class="stats">
-          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-star"/></svg>Solde</div><div class="t-val" id="btEtoiles">0<small>etoiles</small></div><div class="t-sub">a convertir en code</div></div>
-          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"/></svg>Possedees</div><div class="t-val" id="btDroits">0</div><div class="t-sub">cosmetiques</div></div>
-          <div class="tile"><div class="t-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-users"/></svg>Communaute</div><div class="t-val" id="btCommunaute">0</div><div class="t-sub">pseudos connus</div></div>
-        </div>
-
-        <!--  La recompense du jour : une fois par jour, et d autant
-              plus que la serie est longue. Le serveur garde la date
-              du dernier retrait : impossible d encaisser deux fois.  -->
-        <div class="panel" style="margin-top:14px">
-          <div class="panel-h">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-star"/></svg>
-            <h4>Recompense du jour</h4>
-            <span class="live" id="btSerieBadge" hidden><span class="dot"></span>SERIE <b id="btSerieJour">0</b></span>
-          </div>
-          <div class="panel-b">
-            <div class="serie" id="btSerie"></div>
-            <p class="boutique-txt" id="btSerieTexte" style="margin-top:12px">Reviens chaque jour : la serie de recompenses ne s interrompt pas.</p>
-            <button class="btn btn-p" id="btRecompense">Reclamer ma recompense</button>
-          </div>
-        </div>
-
-        <div class="panel" style="margin-top:14px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-star"/></svg><h4>Activer un code</h4></div>
-          <div class="panel-b">
-            <p class="boutique-txt">Un code donne acces a un cosmetique. Le serveur accorde le droit, jamais le client : il est donc valable sur toutes les machines, et il ne peut pas etre forge.</p>
-            <div class="champ-code">
-              <input type="text" id="btCode" class="input" placeholder="XRN-..." spellcheck="false" />
-              <button class="btn btn-p" id="btCodeOk">Activer</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel" style="margin-top:14px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"/></svg><h4>Catalogue</h4></div>
-          <div class="panel-b" id="btProduits"><p class="empty">Chargement…</p></div>
-        </div>
-
-        <!--  La garde-robe : ce que le joueur porte, et ce qu il
-              pourrait porter. Le choix est enregistre par le mod, et
-              le jeu le montre immediatement.                            -->
-        <div class="panel" style="margin-top:14px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"/></svg><h4>Garde-robe</h4></div>
-          <div class="panel-b">
-            <p class="boutique-txt" id="grMsg">Choisis ton cosmetique. Il sera applique au prochain lancement du jeu.</p>
-            <div class="garderobe-grid" id="garderobeGrid"></div>
-          </div>
-        </div>
-
-        <div class="panel" style="margin-top:14px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-users"/></svg><h4>Annuaire de la communaute</h4></div>
-          <div class="panel-b">
-            <p class="boutique-txt">Les pseudos qui utilisent ce client. Leur logo apparait a cote de leur pseudo, en jeu et dans la liste des joueurs. Seuls des pseudos de jeu sont partages : ni identifiant, ni jeton, ni adresse.</p>
-            <div class="panel-b" id="btPseudos" style="padding:0;margin-top:10px"><p class="empty">Chargement…</p></div>
-            <div class="champ-code">
-              <input type="text" id="btPseudoAjout" class="input" placeholder="Ajouter un pseudo (optionnel)" spellcheck="false" />
-              <button class="btn" id="btPseudoOk">Ajouter</button>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- ========== FICHIERS ========== -->
+      <section class="view" id="view-shots">
+        <div class="view-head"><div><h2>Captures</h2><p>Vos souvenirs de jeu, enregistrés avec F2.</p></div><div class="shot-tools"><button class="btn" id="shotRefresh">Actualiser</button><button class="btn" id="shotFolder">Ouvrir le dossier</button></div></div>
+        <p class="hint" id="shotStatus" role="status"></p><div id="shotGrid" class="shot-grid"></div><button class="btn" id="shotMore" hidden="">Voir 24 captures de plus</button>
+      </section>
       <section class="view" id="view-files">
         <div class="view-head">
           <div><div class="eyebrow">Explorateur</div><h2>Fichiers</h2><p>Accès direct au dossier du jeu. La suppression est définitive.</p></div>
           <div style="display:flex;gap:9px">
             <button class="btn" id="btnFsUp">Parent</button>
-            <button class="btn" id="btnFsOpen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-external"/></svg>Ouvrir dans l'explorateur</button>
+            <button class="btn" id="btnFsOpen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-external"></use></svg>Ouvrir dans l'explorateur</button>
           </div>
         </div>
         <div class="crumbs" id="fsCrumbs"></div>
@@ -450,173 +349,143 @@
           <div><div class="eyebrow">Statut réseau réel</div><h2>Serveurs</h2><p>Chaque serveur est interrogé avec le protocole Minecraft (ping, joueurs, MOTD).</p></div>
         </div>
         <div class="addsrv">
-          <input class="input" id="srvHost" placeholder="adresse (ex : play.example.net)" />
-          <input class="input short" id="srvPort" placeholder="25565" value="25565" />
-          <button class="btn primary" id="btnAddSrv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"/></svg>Ajouter</button>
+          <input class="input" id="srvHost" placeholder="adresse (ex : play.example.net)">
+          <input class="input short" id="srvPort" placeholder="25565" value="25565">
+          <button class="btn primary" id="btnAddSrv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"></use></svg>Ajouter</button>
         </div>
         <div id="serverList" style="margin-top:14px"></div>
       </section>
 
             <!-- ========== VIDEOS ========== -->
-      <section class="view" id="view-videos">
-        <div class="view-head">
-          <div><div class="eyebrow">YouTube</div><h2>Dernières vidéos</h2><p>Les deux dernières publications de la chaîne <b>Xerion</b>.</p></div>
-          <button class="btn primary" id="btnChannel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-external"/></svg>Ouvrir la chaîne</button>
-        </div>
-        <div class="vid-grid" id="vidGrid"></div>
-        <div class="panel" style="margin-top:16px">
-          <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-list"/></svg><h4>Autres vidéos</h4></div>
-          <div class="panel-b" id="vidMore"></div>
-        </div>
-      </section>
+      
 
       <!-- ========== CONNEXION ========== -->
-      <section class="view" id="view-login">
+      <section class="view" id="view-login"><div class="login-view-title"><h2>Votre compte Minecraft</h2><p>Connectez le compte Microsoft qui possède Minecraft Java.</p></div>
         <div class="login-wrap">
 
           <!-- Connexion : Microsoft puis profil hors-ligne -->
-          <div class="choice">
+          
+
+          <!-- Écran de connexion Microsoft -->
+          
+
+          <!-- Profil hors-ligne : action principale -->
+          <!-- Mode solo -->
+          
+
+          <!-- Compte connecté -->
+          
+
+          <!-- Comptes enregistrés -->
+          
+
+        <div class="login-layout"><div class="login-main"><div class="choice">
             <button class="choice-card primary" id="pickMicrosoft">
               <span class="cc-ico"><span class="ms-tiles sm"><i></i><i></i><i></i><i></i></span></span>
               <span class="cc-txt"><b>Se connecter avec Microsoft</b>
-                <small>Ton vrai compte Minecraft : skin, pseudo et UUID r&eacute;els</small></span>
+                <small>Ton vrai compte Minecraft : skin, pseudo et UUID réels</small></span>
               <span class="cc-go">→</span>
             </button>
 
             <button class="choice-card" id="pickSolo">
-              <span class="cc-ico alt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"/></svg></span>
+              <span class="cc-ico alt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"></use></svg></span>
               <span class="cc-txt"><b>Jouer en solo</b>
-                <small>Aucun compte &agrave; cr&eacute;er. Solo et LAN imm&eacute;diatement.</small></span>
+                <small>Aucun compte à créer. Solo et LAN immédiatement.</small></span>
               <span class="cc-go">→</span>
             </button>
-          </div>
-
-          <!-- Écran de connexion Microsoft -->
-          <div class="login-card" id="msCard" hidden>
+          </div><div class="login-card" id="msCard" hidden="">
             <div class="login-head">
-              <div class="login-logo"><svg viewBox="0 0 64 64"><ellipse class="lg-orbit" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(-22 32 32)"/><path class="lg-x" d="M19.5 16 L44.5 48 M44.5 16 L19.5 48"/><path class="lg-star" d="M32 20.5l2.9 8.6 8.6 2.9-8.6 2.9-2.9 8.6-2.9-8.6-8.6-2.9 8.6-2.9z"/></svg></div>
-              <div><h2>Connexion Microsoft</h2><p id="msSub">Ton vrai compte Minecraft : pseudo, skin et UUID r&eacute;els.</p></div>
+              <div class="login-logo"><img src="assets/icon.png" alt="XRN"></div>
+              <div><h2>Connexion Microsoft</h2><p id="msSub">Ton vrai compte Minecraft : pseudo, skin et UUID réels.</p></div>
             </div>
 
-            <div id="msCode" hidden>
+            <div id="msCode" hidden="">
               <div class="codebox">
                 <span class="code-label">Ton code de connexion</span>
                 <div class="code" id="userCode">·······</div>
                 <button class="btn sm" id="btnCopyCode">Copier le code</button>
               </div>
-              <div class="waitbox"><span class="dot pulse"></span><span id="waitText">Valide la connexion dans la fen&ecirc;tre du navigateur…</span></div>
-              <p class="ms-help" id="msHelp">
-                <b>Microsoft demande une cl&eacute; de s&eacute;curit&eacute; ?</b>
-                Clique sur <b>Autres m&eacute;thodes de connexion</b> puis <b>Utiliser un mot de passe</b>.
-                Tu peux aussi retirer la cl&eacute; de s&eacute;curit&eacute; de ton compte sur
-                <span class="mono">myaccount.microsoft.com</span>.
-              </p>
+              <div class="waitbox"><span class="dot pulse"></span><span id="waitText">Valide la connexion dans la fenêtre du navigateur…</span></div>
+              <p class="ms-help" id="msHelp">Validez uniquement sur le site officiel Microsoft. XRN ne demande jamais votre mot de passe dans le launcher.</p>
               <button class="btn danger sm" id="btnCancelLogin">Annuler</button>
             </div>
-          </div>
-
-          <!-- Profil hors-ligne : action principale -->
-          <!-- Mode solo -->
-          <div class="login-card primary-card" id="soloCard">
+          </div><div class="login-card primary-card" id="soloCard" hidden="">
             <div class="login-head">
-              <div class="login-logo alt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"/></svg></div>
+              <div class="login-logo alt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"></use></svg></div>
               <div><h2>Mode solo</h2><p>Jouer seul ou en LAN, sans compte Microsoft.</p></div>
             </div>
             <div class="solo-row">
-              <input class="input" id="soloName" placeholder="Ton pseudo" maxlength="16" />
+              <input class="input" id="soloName" placeholder="Ton pseudo" maxlength="16">
               <button class="btn primary" id="btnSolo">Commencer</button>
             </div>
             <p class="hint">Les serveurs en ligne refuseront ce mode — c'est le fonctionnement normal du mode hors-ligne de Minecraft.</p>
-          </div>
-
-          <!-- Compte connecté -->
-          <div class="login-card" id="loginStep3" hidden></div>
-
-          <!-- Comptes enregistrés -->
-          <div class="login-card slim" id="accountsCard" hidden>
+          </div><div class="login-card" id="loginStep3" hidden=""></div><div class="login-card slim" id="accountsCard" hidden="">
             <div class="login-head">
-              <div class="login-logo alt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"/></svg></div>
+              <div class="login-logo alt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"></use></svg></div>
               <div><h2>Comptes enregistrés</h2><p>Clique pour changer de profil.</p></div>
             </div>
             <div id="accountsList" class="acc-list"></div>
-          </div>
-
-        </div>
+          </div></div><aside class="login-guide"><img src="assets/brand.svg" alt="" width="40" height="40"><h3>Votre profil Minecraft</h3><p id="loginHelpState">Connectez votre compte pour retrouver votre pseudo et votre skin.</p><ol><li><b>Connexion Microsoft</b><span>Validez votre compte sur le site officiel Microsoft.</span></li><li><b>Profil Minecraft Java</b><span>XRN récupère le pseudo et le skin associés à votre jeu.</span></li><li><b>Session de jeu</b><span>Le jeton Minecraft est vérifié avant le lancement.</span></li></ol><p class="login-guide-note">Votre mot de passe reste sur le site Microsoft. Les profils enregistrés se retrouvent sur ce PC.</p></aside></div></div>
       </section>
 <!-- ========== PARAMETRES ========== -->
       <section class="view" id="view-settings">
         <div class="view-head">
-          <div><div class="eyebrow">Configuration</div><h2>Paramètres</h2><p>Chemins, mémoire, Java, rendu et audio.</p></div>
+          <div><div class="eyebrow">Configuration</div><h2>Paramètres</h2><p>Mémoire, affichage, dossiers et environnement Java.</p></div>
         </div>
 
-        <div class="grid-2">
-          <div class="panel">
-            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"/></svg><h4>Dossiers</h4></div>
+        <div class="grid-2 settings-columns"><div class="settings-column"><div class="panel"><div class="panel-h"><h4>Mises à jour</h4></div><div class="panel-b"><p id="updateState">La vérification porte sur les versions publiées de XRN.</p><button class="btn" id="btnCheckUpdates">Vérifier les mises à jour</button><p class="hint">Les mises à jour utilisent un petit patch lorsque le runtime reste compatible.</p></div></div><div class="panel">
+            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"></use></svg><h4>Mémoire du jeu</h4></div>
+            <div class="panel-b">
+              <div class="field">
+                <label for="setRam">Mémoire allouée : <b id="setRamVal" style="color:var(--v2)">4.0 Go</b></label>
+                <input type="range" id="setRam" min="1" max="32" step="0.5" value="4">
+                <div class="chips" id="ramChips"><button class="chip" data-ram="2">2 Go</button><button class="chip" data-ram="4">4 Go</button><button class="chip" data-ram="6">6 Go</button><button class="chip" data-ram="8">8 Go</button><button class="chip" data-ram="12">12 Go</button><button class="chip" data-ram="16">16 Go</button></div>
+              </div>
+              
+              
+            </div>
+          </div><div class="panel"><div class="panel-h"><h4>Java et affichage</h4></div><div class="panel-b"><div class="field"><label>GUI scale</label><select class="input" id="setGui"><option>1</option><option>2</option><option selected="">3</option><option>4</option></select></div><div class="field">
+                <label for="setJava">Chemin de java.exe / javaw.exe</label>
+                <div class="inline"><input class="input mono" id="setJava" placeholder="Détection automatique"><button class="btn" id="btnTestJava">Tester</button></div>
+                <p class="hint" id="javaHint">Recherche dans JAVA_HOME, Program Files et le registre.</p>
+              </div><button class="btn" id="btnDownloadJava">Télécharger un JDK Temurin</button><div class="field"><label>Arguments JVM additionnels</label><input class="input mono" id="setJavaArgs" placeholder="-XX:+UseZGC"></div></div></div><div class="panel">
+            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"></use></svg><h4>Connexion Microsoft</h4></div>
+  <div class="panel-b">
+  <div class="field">
+  <label for="setClientId">Identifiant d'application Azure</label>
+  <div class="inline"><input class="input mono" id="setClientId" placeholder="00000000-0000-0000-0000-000000000000"><button class="btn" id="btnSaveClientId">Enregistrer</button></div>
+  <p class="hint" id="clientIdHint">Anciennes sessions Azure uniquement. La connexion standard utilise Xbox et PKCE, indépendamment de ce champ.</p>
+  </div>
+  </div>
+  </div></div><div class="settings-column"><div class="panel">
+            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-palette"></use></svg><h4>Jeu &amp; fenêtre</h4></div>
+            <div class="panel-b">
+              <div class="grid-2 tight">
+                <div class="field"><label>Largeur du jeu</label><input class="input" id="setGw" type="number" min="640" max="7680" step="10"></div>
+                <div class="field"><label>Hauteur du jeu</label><input class="input" id="setGh" type="number" min="480" max="4320" step="10"></div>
+              </div>
+              
+              
+              <div class="switch-row"><div><b style="font-size:13px">Annonces XRN</b><p>Afficher les annonces du projet au lancement. Aucun identifiant d’installation envoyé par défaut.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Recevoir les annonces XRN" data-switch="notificationsEnabled"></button></div>
+              <div class="switch-row"><div><b style="font-size:13px">XRN Client en jeu</b><p>Prépare Fabric et les modules pour les versions prises en charge.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Activer XRN Client en jeu" data-switch="clientEnabled"></button></div>
+              <div class="switch-row"><div><b style="font-size:13px">Vérification SHA-1</b><p>Contrôle l'intégrité de chaque fichier téléchargé</p></div><button class="switch on" type="button" role="switch" aria-label="Activer cette option" data-switch="verifySha1"></button></div>
+              <div class="switch-row"><div><b style="font-size:13px">Téléchargements parallèles</b><p><b id="dlConc">6</b> fichiers en même temps</p></div><div class="stepper"><button data-step="-1">−</button><span id="dlConcVal">6</span><button data-step="1">+</button></div></div>
+            </div>
+          </div><div class="panel">
+            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"></use></svg><h4>Dossiers</h4></div>
             <div class="panel-b">
               <div class="field">
                 <label>Dossier du jeu</label>
-                <div class="inline"><input class="input mono" id="setGameDir" readonly /><button class="btn" id="btnPickGameDir">Parcourir</button></div>
+                <div class="inline"><input class="input mono" id="setGameDir" readonly=""><button class="btn" id="btnPickGameDir">Parcourir</button></div>
                 <p class="hint" id="gameDirHint">Contient versions/, libraries/, assets/, saves/</p>
               </div>
               <div class="field">
                 <label>Fichiers du launcher</label>
-                <div class="inline"><input class="input mono" id="setUserDir" readonly /><button class="btn" id="btnOpenUserDir">Ouvrir</button></div>
+                <div class="inline"><input class="input mono" id="setUserDir" readonly=""><button class="btn" id="btnOpenUserDir">Ouvrir</button></div>
               </div>
               <div class="quick-links" id="quickLinks"></div>
             </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"/></svg><h4>Java & mémoire</h4></div>
-            <div class="panel-b">
-              <div class="field">
-                <label for="setRam">Mémoire allouée : <b id="setRamVal" style="color:var(--v2)">4.0 Go</b></label>
-                <input type="range" id="setRam" min="1" max="32" step="0.5" value="4" />
-                <div class="chips" id="ramChips"><button class="chip" data-ram="2">2 Go</button><button class="chip" data-ram="4">4 Go</button><button class="chip" data-ram="6">6 Go</button><button class="chip" data-ram="8">8 Go</button><button class="chip" data-ram="12">12 Go</button><button class="chip" data-ram="16">16 Go</button></div>
-              </div>
-              <div class="field">
-                <label for="setJava">Chemin de java.exe / javaw.exe</label>
-                <div class="inline"><input class="input mono" id="setJava" placeholder="Détection automatique" /><button class="btn" id="btnTestJava">Tester</button></div>
-                <p class="hint" id="javaHint">Recherche dans JAVA_HOME, Program Files et le registre.</p>
-              </div>
-              <button class="btn" id="btnDownloadJava">Télécharger un JDK Temurin</button>
-            </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-palette"/></svg><h4>Jeu & fenêtre</h4></div>
-            <div class="panel-b">
-              <div class="grid-2 tight">
-                <div class="field"><label>Largeur du jeu</label><input class="input" id="setGw" type="number" min="640" max="7680" step="10" /></div>
-                <div class="field"><label>Hauteur du jeu</label><input class="input" id="setGh" type="number" min="480" max="4320" step="10" /></div>
-              </div>
-              <div class="field"><label>GUI scale</label><select class="input" id="setGui"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></div>
-              <div class="field"><label>Arguments JVM additionnels</label><input class="input mono" id="setJavaArgs" placeholder="-XX:+UseZGC" /></div>
-              <div class="switch-row"><div><b style="font-size:13px">Vérification SHA-1</b><p>Contrôle l'intégrité de chaque fichier téléchargé</p></div><div class="switch on" data-switch="verifySha1"></div></div>
-              <div class="switch-row"><div><b style="font-size:13px">Téléchargements parallèles</b><p><b id="dlConc">6</b> fichiers en même temps</p></div><div class="stepper"><button data-step="-1">−</button><span id="dlConcVal">6</span><button data-step="1">+</button></div></div>
-            </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"/></svg><h4>Connexion Microsoft</h4></div>
-  <div class="panel-b">
-  <div class="field">
-  <label for="setClientId">Identifiant d'application Azure</label>
-  <div class="inline"><input class="input mono" id="setClientId" placeholder="00000000-0000-0000-0000-000000000000" /><button class="btn" id="btnSaveClientId">Enregistrer</button></div>
-  <p class="hint" id="clientIdHint">Cree une application dans le portail Azure, autorise la connexion publique, puis colle son identifiant ici. Vide : utilise celle fournie avec le launcher.</p>
-  </div>
-  </div>
-  </div>
-
-  <div class="panel">
-  <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-volume"/></svg><h4>Audio</h4></div>
-            <div class="panel-b">
-              <div class="switch-row"><div><b style="font-size:13px">Nappe d'ambiance</b><p>Générée en direct, aucun fichier audio</p></div><div class="switch on" data-switch="ambientSound"></div></div>
-              <div class="field" style="margin-top:14px"><label for="setVol">Volume : <b id="setVolVal" style="color:var(--v2)">30 %</b></label><input type="range" id="setVol" min="0" max="100" step="1" value="30" /></div>
-              <p class="hint">Démarrage automatique au premier clic (règle d'autoplay des navigateurs).</p>
-            </div>
-          </div>
-        </div>
+          </div></div></div><span id="settingsSaved" role="status"></span>
       </section>
       <!-- ---------- pied de page ---------- -->
       <footer class="xrn-footer">
@@ -624,16 +493,16 @@
         <div class="xf-inner">
           <span class="xf-mark" aria-hidden="true">
             <svg viewBox="0 0 64 64">
-              <ellipse class="xf-orbit" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(-22 32 32)"/>
-              <ellipse class="xf-orbit soft" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(38 32 32)"/>
-              <path class="xf-x" d="M19.5 16 L44.5 48 M44.5 16 L19.5 48"/>
-              <path class="xf-star" d="M32 20.5l2.9 8.6 8.6 2.9-8.6 2.9-2.9 8.6-2.9-8.6-8.6-2.9 8.6-2.9z"/>
+              <ellipse class="xf-orbit" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(-22 32 32)"></ellipse>
+              <ellipse class="xf-orbit soft" cx="32" cy="32" rx="27.5" ry="11" transform="rotate(38 32 32)"></ellipse>
+              <path class="xf-x" d="M19.5 16 L44.5 48 M44.5 16 L19.5 48"></path>
+              <path class="xf-star" d="M32 20.5l2.9 8.6 8.6 2.9-8.6 2.9-2.9 8.6-2.9-8.6-8.6-2.9 8.6-2.9z"></path>
             </svg>
           </span>
           <div class="xf-text">
             <b>XRNLauncher</b>
-            <span>&copy; 2026 <b class="xf-owner">Xerion</b> &mdash; Tous droits r&eacute;serv&eacute;s</span>
-            <small>Con&ccedil;u et d&eacute;velopp&eacute; par <b class="xf-owner">Xerion</b> &middot; Launcher priv&eacute; &middot; Minecraft&reg; est une marque de Mojang&nbsp;AB</small>
+            <span>© 2026 <b class="xf-owner">Xerion</b> — Tous droits réservés</span>
+            <small>Conçu et développé par <b class="xf-owner">Xerion</b> · Minecraft Java · Minecraft® est une marque de Mojang&nbsp;AB</small>
           </div>
         </div>
       </footer>
@@ -642,29 +511,29 @@
     <!-- ---------- rail droit ---------- -->
     <aside class="rail">
       <div class="panel">
-        <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"/></svg><h4>Compte</h4></div>
+        <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"></use></svg><h4>Compte</h4></div>
         <div class="panel-b" id="railAccount"></div>
       </div>
 
       <div class="panel">
-        <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-harddrive"/></svg><h4>Stockage</h4></div>
+        <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-harddrive"></use></svg><h4>Stockage</h4></div>
         <div class="panel-b" id="railDisk"></div>
       </div>
 
       <div class="panel">
-        <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-zap"/></svg><h4>Accès rapides</h4></div>
+        <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-zap"></use></svg><h4>Accès rapides</h4></div>
         <div class="panel-b"><div class="quick">
-          <button class="qa" data-open="saves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"/></svg><span>Saves</span></button>
-          <button class="qa" data-open="mods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"/></svg><span>Mods</span></button>
-          <button class="qa" data-open="screenshots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-list"/></svg><span>Captures</span></button>
-          <button class="qa" data-open="logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-clock2"/></svg><span>Logs</span></button>
-          <button class="qa" data-goto="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gear"/></svg><span>Paramètres</span></button>
-          <button class="qa" id="btnReload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-refresh"/></svg><span>Actualiser</span></button>
+          <button class="qa" data-open="saves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"></use></svg><span>Saves</span></button>
+          <button class="qa" data-open="mods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"></use></svg><span>Mods</span></button>
+          <button class="qa" data-open="screenshots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-list"></use></svg><span>Captures</span></button>
+          <button class="qa" data-open="logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-clock2"></use></svg><span>Logs</span></button>
+          <button class="qa" data-goto="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gear"></use></svg><span>Paramètres</span></button>
+          <button class="qa" id="btnReload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-refresh"></use></svg><span>Actualiser</span></button>
         </div></div>
       </div>
 
       <div class="panel">
-        <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"/></svg><h4>Journal du jeu</h4></div>
+        <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"></use></svg><h4>Journal du jeu</h4></div>
         <div class="panel-b"><div class="log" id="gameLog"><p class="empty">Le jeu n'est pas lancé.</p></div></div>
       </div>
     </aside>
@@ -674,9 +543,9 @@
 <!-- ==================== TOASTS ==================== -->
 <!--  Grand voile de mise a jour : il reste tant que la mise a jour
       n est pas finie, et montre la progression et le temps ecoule. -->
-<div class="maj-voile" id="majVoile" hidden>
+<div class="maj-voile" id="majVoile" hidden="">
   <div class="maj-boite">
-    <span class="maj-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"/><path d="M7 13l5 5 5-5"/><path d="M4 21h16"/></svg></span>
+    <span class="maj-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v10"></path><path d="M7 13l5 5 5-5"></path><path d="M4 21h16"></path></svg></span>
     <h2 id="majTitre">Mise a jour</h2>
     <p id="majTexte">Telechargement de la nouvelle version...</p>
     <div class="maj-barre"><i id="majBarre"></i></div>
@@ -691,18 +560,18 @@
 <div class="toasts" id="toasts"></div>
 
 <!-- ==================== FENETRE MODALE ==================== -->
-<div class="modal-wrap" id="modalWrap" hidden>
+<div class="modal-wrap" id="modalWrap" hidden="">
   <div class="modal-bg"></div>
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-ico" id="modalIco"></div>
     <h3 id="modalTitle"></h3>
     <div class="modal-txt" id="modalTxt"></div>
-    <div class="modal-field" id="modalField" hidden>
+    <div class="modal-field" id="modalField" hidden="">
       <input class="modal-input" id="modalInput" type="text" autocomplete="off" spellcheck="false">
-      <div class="modal-err" id="modalErr" hidden></div>
+      <div class="modal-err" id="modalErr" hidden=""></div>
     </div>
-    <div class="modal-bar" id="modalBar" hidden><i id="modalBarFill"></i></div>
-    <div class="modal-note" id="modalNote" hidden></div>
+    <div class="modal-bar" id="modalBar" hidden=""><i id="modalBarFill"></i></div>
+    <div class="modal-note" id="modalNote" hidden=""></div>
     <div class="modal-acts">
       <button class="btn" id="modalCancel">Annuler</button>
       <button class="btn primary" id="modalOk">Confirmer</button>
@@ -713,5 +582,8 @@
 <!-- main.js s'execute dans la fenetre (contexte Node via node-remote) et expose window.XRN -->
 <script src="main.js"></script>
 <script src="ui.js"></script>
-</body>
-</html>
+<dialog id="shotViewer"><div class="shot-viewbar"><button class="btn" id="shotPrev" aria-label="Capture précédente">←</button><span id="shotCaption"></span><button class="btn" id="shotNext" aria-label="Capture suivante">→</button><button class="btn" id="shotClose">Fermer</button></div><img id="shotLarge" alt=""></dialog>
+<script src="gallery.js"></script>
+
+
+</body></html>

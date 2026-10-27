@@ -13,6 +13,8 @@
   "guiScale": 2,
   "maxDownloads": 6,
   "verifySha1": true,
-  "ambientSound": true,
-  "ambientVolume": 0.3
+  "ambientSound": false,
+  "ambientVolume": 0.3,
+  "notificationsEnabled": true,
+  "shareInstallationStatus": false
 }

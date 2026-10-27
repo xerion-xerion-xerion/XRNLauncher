@@ -12,6 +12,7 @@ const os   = require('os');
 const path = require('path');
 
 const util = require('./util');
+const safe = require('./safe-path');
 const cfgm = require('./config');
 const http = require('./http');
 const game = require('./game');
@@ -24,15 +25,16 @@ const NEOFORGE_MAVEN = 'https://maven.neoforged.net/releases/net/neoforged/neofo
 /*  Dossier des mods                                                    */
 /* ------------------------------------------------------------------ */
 function modsDir() {
-  return path.join(cfgm.load().gameDir, 'mods');
+  const base=path.resolve(cfgm.load().gameDir);
+  return safe.confine(base,path.join(base,'mods'));
 }
 
 function list() {
   const dir = modsDir();
   util.ensureDir(dir);
-  return util.listDir(dir, { withSize: true })
-    .filter(e => !e.dir && /\.jar$/i.test(e.name))
-    .map(e => ({ name: e.name, size: e.size, mtime: e.mtime }));
+  return util.listDir(dir, { withSize: false })
+    .filter(e => !e.dir && /\.jar(?:\.disabled)?$/i.test(e.name))
+    .map(e => ({ name: e.name, size: e.size, mtime: e.mtime, disabled: /\.disabled$/i.test(e.name) }));
 }
 
 /*  Ajoute des fichiers au dossier des mods.
@@ -47,8 +49,9 @@ function add(sources) {
     const nom = path.basename(src);
     if (!/\.jar$/i.test(nom)) { refuses.push({ name: nom, raison: 'seuls les fichiers .jar sont acceptes' }); continue; }
     if (!util.exists(src)) { refuses.push({ name: nom, raison: 'fichier introuvable' }); continue; }
-    const dest = path.join(dir, nom);
     try {
+      safe.name(nom);
+      const dest = safe.confine(dir,path.join(dir,nom),false);
       fs.copyFileSync(src, dest);
       ajoutes.push(nom);
     } catch (e) {
@@ -59,11 +62,28 @@ function add(sources) {
 }
 
 function remove(nom) {
+  try {
+    safe.name(nom);
+    if(!/\.jar(?:\.disabled)?$/i.test(nom))throw Error('Nom de mod invalide');
+    const dir=modsDir(),cible=safe.confine(dir,path.join(dir,nom),false);
+    fs.unlinkSync(cible);return {ok:true,mods:list()};
+  } catch(e){return {ok:false,message:e.message};}
+}
+
+function setEnabled(name, enabled) {
+  if (typeof name !== 'string' || path.basename(name) !== name || !/\.jar(?:\.disabled)?$/i.test(name)) {
+    return { ok: false, message: 'Nom de mod invalide.' };
+  }
   const dir = modsDir();
-  const cible = path.join(dir, path.basename(nom));
-  if (!cible.startsWith(dir)) return { ok: false, message: 'chemin refuse' };
-  try { fs.unlinkSync(cible); return { ok: true, mods: list() }; }
-  catch (e) { return { ok: false, message: e.message }; }
+  const target = enabled ? name.replace(/\.disabled$/i, '') : name.replace(/(?:\.disabled)?$/i, '.disabled');
+  try {
+    if (target !== name) {
+      if (fs.existsSync(path.join(dir, target))) return { ok: false, message: 'Un fichier existe déjà avec ce nom.' };
+      safe.name(name);safe.name(target);
+      fs.renameSync(safe.confine(dir,path.join(dir,name),false),safe.confine(dir,path.join(dir,target),false));
+    }
+    return { ok: true, mods: list() };
+  } catch (e) { return { ok: false, message: e.message }; }
 }
 
 function openFolder() { return util.openExplorer(modsDir()); }
@@ -294,7 +314,7 @@ function nomsIntegres() {
   const dir = dossierIntegres();
   if (!util.exists(dir)) return [];
   try {
-    return util.listDir(dir, { withSize: true })
+    return util.listDir(dir, { withSize: false })
       .filter(e => !e.dir && /\.jar$/i.test(e.name))
       .map(e => e.name);
   } catch (e) {
@@ -318,52 +338,13 @@ function empreinte(chemin) {
     Les echecs ne sont jamais silencieux : deux versions du meme mod dans
     le dossier, et Fabric refuse de demarrer. Si une ancienne version est
     verrouillee par un jeu encore lance, il faut le dire.              */
-function installerIntegres() {
-  const dir = modsDir();
-  const source = dossierIntegres();
-  util.ensureDir(dir);
-  const poses = [];
-  const echecs = [];
-
-  for (const nom of nomsIntegres()) {
-    const de = path.join(source, nom);
-    const vers = path.join(dir, nom);
-    try {
-      if (util.exists(vers) && empreinte(vers) === empreinte(de)) continue;
-      fs.copyFileSync(de, vers);
-      poses.push(nom);
-    } catch (e) {
-      echecs.push({ nom: nom, raison: e.message });
-    }
-  }
-
-  /*  Si une ancienne version du meme mod traine encore dans le dossier,
-      Fabric la chargerait elle aussi et refuserait de demarrer : deux
-      mods du meme identifiant, c'est un plantage immediat. On retire
-      donc ce que le launcher ne livre plus. Les mods du joueur, eux,
-      ne sont jamais touches.                                        */
-  const livrees = new Set(nomsIntegres());
-  for (const nom of nomsJars(dir)) {
-    if (livrees.has(nom)) continue;
-    if (!/^xrn-hud-.*\.jar$/i.test(nom)) continue;
-    try {
-      fs.unlinkSync(path.join(dir, nom));
-      poses.push('~ ' + nom);
-    } catch (e) {
-      echecs.push({
-        nom: '~ ' + nom,
-        raison: 'ancienne version impossible a supprimer (' + e.code +
-                ') : ferme le jeu en cours avant de relancer, sinon ' +
-                'Fabric refusera de demarrer avec deux fois le meme mod.'
-      });
-    }
-  }
-  return { poses: poses, echecs: echecs };
+function installerIntegres(versionId) {
+  return require('./client-builds').install(versionId,cfgm.load().gameDir,cfgm.load().clientEnabled!==false);
 }
 
 function nomsJars(dir) {
   try {
-    return util.listDir(dir, { withSize: true })
+    return util.listDir(dir, { withSize: false })
       .filter(e => !e.dir && /\.jar$/i.test(e.name))
       .map(e => e.name);
   } catch (e) {
@@ -381,12 +362,13 @@ function etat() {
     mods: mods,
     total: mods.reduce((a, m) => a + m.size, 0),
     integres: nomsIntegres(),
+    clientBuilds:require("./client-builds").manifest().map(b=>({minecraft:b.minecraft,loader:b.loader,java:b.java})),
     profils: profilsMod()
   };
 }
 
 module.exports = {
-  modsDir, list, add, remove, openFolder, etat,
+  modsDir, list, add, remove, setEnabled, openFolder, etat,
   loadersDe, profilsMod, fabricProfil, fabricInstallateur, fabricLoaderStable,
   neoforgePour, installFabric, installNeoForge,
   dossierIntegres, nomsIntegres, installerIntegres

@@ -1,0 +1,24 @@
+CONDITIONS D’UTILISATION — XRN LAUNCHER
+Version du 27 octobre 2026 — distribution 4.7.3
+
+1. Le projet
+XRN Launcher est un logiciel indépendant développé par Xerion. Contact : xrnlauncher@gmail.com. Il n’est ni développé, ni approuvé par Mojang ou Microsoft. Minecraft et leurs autres marques appartiennent à leurs titulaires.
+
+2. Installation et utilisation
+Le setup installe XRN pour votre compte Windows dans son dossier d’application, crée les raccourcis choisis et ajoute une désinstallation Windows. Une connexion Internet est nécessaire pour télécharger les composants. Aucun achat de Minecraft n’est inclus.
+Vous devez posséder Minecraft Java pour utiliser les services officiels et les serveurs authentifiés. Un profil solo local ne remplace pas une licence Minecraft. Respectez les règles des serveurs et les conditions des services auxquels vous vous connectez.
+
+3. Vos données et votre compte
+La connexion s’effectue auprès de Microsoft et Xbox. Ne communiquez jamais votre mot de passe, vos codes de connexion ou vos jetons au support XRN. La politique de confidentialité précise les informations utilisées.
+Vos mondes, captures, mods et réglages restent dans votre dossier de jeu. Vous gardez la maîtrise de ces fichiers. Sauvegardez vos mondes avant d’essayer des mods ou de changer de version.
+
+4. Compatibilité et mises à jour
+Le launcher propose plusieurs versions de Minecraft. Le module XRN intégré est fourni pour Fabric 1.21.11 et Fabric 26.2 ; il ne fonctionne pas sur toutes les versions. Les autres mods doivent correspondre à votre installation.
+Les mises à jour sont proposées dans le launcher. Lorsqu’un correctif compatible existe, seuls les fichiers nécessaires sont téléchargés. Un changement du moteur peut nécessiter un téléchargement complet. Aucun nombre de FPS n’est garanti.
+
+5. Disponibilité et composants tiers
+XRN dépend de services externes qui peuvent être indisponibles ou évoluer. Le logiciel est fourni sans garantie de fonctionnement permanent. Cette mention ne supprime aucun droit que la loi vous reconnaît.
+Les composants tiers et leurs licences restent applicables : les notices de distribution sont fournies avec le logiciel. L’accès au code source n’accorde pas, à lui seul, de droits supplémentaires sur les marques ou les éléments tiers.
+
+6. Désinstallation
+Vous pouvez désinstaller XRN dans les applications Windows. Les données du jeu et les comptes enregistrés sont conservés séparément pour éviter de supprimer vos mondes. Vous pouvez les effacer vous-même après sauvegarde depuis le dossier de données indiqué dans les paramètres.

@@ -4,13 +4,10 @@
     d entree lui renvoie le message a afficher, et enregistre au passage
     que l installation existe.
 
-    Ce qui part sur le reseau, et rien d autre :
-      - un identifiant anonyme, tire au sort au premier lancement et
-        conserve sur le poste. Il ne relie a aucune donnee personnelle.
-      - la version du launcher.
-    Ni pseudo, ni gamertag, ni nom de machine, ni liste des versions
-    installees. Le serveur voit l adresse IP de la requete, comme
-    n importe quel serveur web.
+    La version du launcher est transmise pour recevoir les annonces.
+    Aucun identifiant d'installation n'est envoyé par défaut. Le suivi
+    technique facultatif peut être activé explicitement par configuration.
+    Le serveur et son hébergeur voient l'adresse IP de la connexion.
 
     Le message porte un identifiant : on ne le montre qu une fois, et
     seulement s il change. Une notification de plus ne revient donc pas
@@ -55,12 +52,13 @@ function idInstallation() {
 /*  Le message a montrer, ou null. */
 async function verifier() {
   const cfg = config();
-  if (!cfg.active || !cfg.url) return null;
+  const preferences=require('./config').load();
+  if (!cfg.active || !cfg.url || preferences.notificationsEnabled===false) return null;
 
   const version = versionLauncher();
-  const id = idInstallation();
+  const id = preferences.shareInstallationStatus===true ? idInstallation() : '';
   const url = cfg.url + (cfg.url.indexOf('?') >= 0 ? '&' : '?')
-    + 'id=' + encodeURIComponent(id) + '&v=' + encodeURIComponent(version);
+    + (id ? 'id=' + encodeURIComponent(id) + '&' : '') + 'v=' + encodeURIComponent(version);
 
   let r = null;
   try {

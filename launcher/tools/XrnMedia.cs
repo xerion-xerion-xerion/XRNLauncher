@@ -91,6 +91,13 @@ static class XrnMedia
     }
 
     [STAThread]
+    static void EcrireEtat(string value) {
+        string temp = fichier + ".tmp";
+        File.WriteAllText(temp, value, Utf8);
+        if (File.Exists(fichier)) File.Replace(temp, fichier, null);
+        else File.Move(temp, fichier);
+    }
+
     static void Main(string[] args)
     {
         if (args.Length > 0) fichier = args[0];
@@ -102,7 +109,13 @@ static class XrnMedia
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "XRNLauncher", "media.png");
 
-        while (true)
+        System.Diagnostics.Process owner = null;
+        int ownerPid;
+        if (args.Length > 2 && Int32.TryParse(args[2], out ownerPid) && ownerPid > 0) {
+            try { owner = System.Diagnostics.Process.GetProcessById(ownerPid); }
+            catch { return; }
+        }
+        while (owner == null || !owner.HasExited)
         {
             /*  L erreur est ecrite sur la sortie d'erreur : le launcher
                 ignore cette sortie, mais elle sert quand le programme
@@ -136,7 +149,7 @@ static class XrnMedia
             if (dernier != "")
             {
                 dernier = "";
-                File.WriteAllText(fichier, "{\"titre\":\"\",\"etat\":\"stopped\"}", Utf8);
+                EcrireEtat("{\"titre\":\"\",\"etat\":\"stopped\"}");
             }
             return;
         }
@@ -200,7 +213,7 @@ static class XrnMedia
             + "\"duree\":" + duree + ","
             + "\"pochette\":" + Texte(cheminPochette)
             + "}";
-        File.WriteAllText(fichier, json, Utf8);
+        EcrireEtat(json);
     }
 
     static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);

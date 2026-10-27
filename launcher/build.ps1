@@ -299,7 +299,7 @@ function Build-App {
     }
 
     # Fichiers de l'application
-    $payload = @('index.html','style.css','ui.js','main.js','notification.json')
+    $payload = @('index.html','style.css','studio.css','refine.css','ui.js','main.js','notification.json')
     foreach ($f in $payload) {
         $src = Join-Path $Root $f
         if (Test-Path -LiteralPath $src) {

@@ -77,8 +77,25 @@ if ($Exe) {
 
 if (-not $Zip -or -not (Test-Path -LiteralPath $Zip)) { Ecrire 'archive introuvable, abandon'; exit 1 }
 if (-not $Dossier) { Ecrire 'dossier cible absent, abandon'; exit 1 }
+$Dossier = [IO.Path]::GetFullPath($Dossier).TrimEnd('\', '/')
+if (-not (Test-Path -LiteralPath $Dossier -PathType Container)) { throw 'Dossier installation introuvable' }
+function CibleSure([string]$Relatif) {
+  if ([string]::IsNullOrWhiteSpace($Relatif) -or [IO.Path]::IsPathRooted($Relatif) -or $Relatif.Contains(':') -or ($Relatif -split '[/\\]') -contains '..') { throw 'Chemin de mise a jour invalide' }
+  $resultat = [IO.Path]::GetFullPath((Join-Path $Dossier $Relatif))
+  if (-not $resultat.StartsWith($Dossier + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Chemin hors installation' }
+  $parent = $resultat
+  while ($parent -and $parent.Length -gt $Dossier.Length) {
+    if (Test-Path -LiteralPath $parent) {
+      if ((Get-Item -LiteralPath $parent -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Lien de fichiers refuse dans la mise a jour' }
+    }
+    $parent = Split-Path -Parent $parent
+  }
+  return $resultat
+}
 
-$t = Join-Path $env:TEMP ('xrn-maj-' + [guid]::NewGuid().ToString('N'))
+$tempRoot = [IO.Path]::GetFullPath($env:TEMP).TrimEnd('\', '/')
+$t = [IO.Path]::GetFullPath((Join-Path $tempRoot ('xrn-maj-' + [guid]::NewGuid().ToString('N'))))
+if (-not $t.StartsWith($tempRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Dossier temporaire invalide' }
 try {
   Ecrire 'decompression'
   Expand-Archive -LiteralPath $Zip -DestinationPath $t -Force
@@ -105,7 +122,7 @@ try {
     foreach ($f in $fichiers) {
       $rel = $f.FullName.Substring($racine.FullName.Length).TrimStart('\', '/')
       if ($rel -eq '_supprimes.txt') { continue }
-      $cible = Join-Path $Dossier $rel
+      $cible = CibleSure $rel
       try {
         $dossierCible = Split-Path -Parent $cible
         if (-not (Test-Path -LiteralPath $dossierCible)) {
@@ -127,7 +144,7 @@ try {
       foreach ($ligne in (Get-Content -LiteralPath $listeSupprimes)) {
         $rel = $ligne.Trim()
         if (-not $rel) { continue }
-        $cible = Join-Path $Dossier ($rel -replace '/', '\')
+        $cible = CibleSure $rel
         if (Test-Path -LiteralPath $cible) {
           try {
             Remove-Item -LiteralPath $cible -Force -ErrorAction Stop
@@ -142,7 +159,7 @@ try {
   } else {
     #  Archive complete : on remplace le contenu du dossier.
     foreach ($item in (Get-ChildItem -LiteralPath $racine.FullName -Force)) {
-      $cible = Join-Path $Dossier $item.Name
+      $cible = CibleSure $item.Name
       if (Test-Path -LiteralPath $cible) {
         Remove-Item -LiteralPath $cible -Recurse -Force -ErrorAction SilentlyContinue
       }

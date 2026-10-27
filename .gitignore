@@ -62,3 +62,15 @@ Thumbs.db
 desktop.ini
 .DS_Store
 node_modules/
+# Native runtime and local build products
+*.dll
+*.pak
+*.bin
+release/
+installer-fixture/
+installer/payload.iss
+installer/payload.json
+**/unins*
+**/.gradle/
+*.exe
+!launcher/tools/XrnMedia.exe

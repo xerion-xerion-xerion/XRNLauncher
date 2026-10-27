@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 430" fill="none">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#2d2537"/><stop offset="1" stop-color="#6c6476"/></linearGradient><linearGradient id="fade"><stop stop-color="#1e1c21"/><stop offset=".4" stop-color="#1e1c21" stop-opacity="0"/></linearGradient></defs>
+<path fill="url(#sky)" d="M0 0h720v430H0z"/>
+<path fill="#b8aec6" opacity=".18" d="M350 55h125v12h40v12H350zM570 102h125v12H550V90h20z"/>
+<path fill="#cfbee6" d="M538 55h47v47h-47z"/>
+<path fill="#5d536b" d="M80 210h65v-40h55v-35h70v42h60v-52h45v45h55v-28h40v55h65v-25h70v52h115v206H80z"/>
+<path fill="#473c56" d="M160 280v-50h65v-40h85v-30h65v35h45v48h68v-29h55v-40h50v45h62v31h65v180H160z"/>
+<path fill="#2f253d" d="M30 320h80v-40h60v-22h92v28h65v-35h80v-29h74v39h92v-20h62v45h85v144H30z"/>
+<!-- Stepped terrain, with distinct grass, earth and rock strata. -->
+<path fill="#715893" d="m208 323 150-75 150 75-150 75z"/>
+<path fill="#473d55" d="m358 398 150-75v48l-150 75z"/>
+<path fill="#4b405b" d="m208 323 150 75v48l-150-75z"/>
+<path fill="#856ba9" d="m268 277 90-45 90 45-90 45z"/>
+<path fill="#544767" d="m358 322 90-45v46l-90 45z"/>
+<path fill="#5e5071" d="m268 277 90 45v46l-90-45z"/>
+<path fill="#947cb6" d="m298 239 60-30 60 30-60 30z"/>
+<path fill="#5e4e75" d="m358 269 60-30v38l-60 30z"/>
+<path fill="#695880" d="m298 239 60 30v38l-60-30z"/>
+<!-- Block pine trees. -->
+<path fill="#584e36" d="M478 267h11v61h-11zM558 215h10v55h-10zM276 200h9v42h-9z"/>
+<path fill="#31273e" d="M455 251h57v26h-57zM463 223h41v28h-41zM474 201h20v22h-20z"/>
+<path fill="#443854" d="M537 202h51v23h-51zM545 177h35v25h-35zM554 158h17v19h-17z"/>
+<path fill="#4f4361" d="M257 193h47v19h-47zM265 174h31v19h-31zM273 157h15v17h-15z"/>
+<path fill="#1f172b" d="M624 327h73v34h-73zM633 290h55v37h-55zM646 260h29v30h-29z"/>
+<path fill="#9b704b" d="m376 340 13-6 14 6-14 7z"/><path fill="#493b5c" d="m389 347 14-7v11l-14 7z"/>
+<path fill="url(#fade)" d="M0 0h720v430H0z"/>
+</svg>

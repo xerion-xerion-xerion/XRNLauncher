@@ -1,5 +1,4 @@
 {
-  "url": "",
-  "active": true,
-  "avertissement": "L adresse du point d entree est injectee au build depuis config.local.json, qui n est pas versionne. Le modele reste donc neutre : aucune adresse personnelle dans le depot public."
+  "url": "https://xrn-notifications.schianotom667.workers.dev/notification.json",
+  "active": true
 }

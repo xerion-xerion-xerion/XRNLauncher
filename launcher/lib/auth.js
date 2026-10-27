@@ -30,10 +30,9 @@ const http = require('./http');
     "vous ne pouvez pas vous connecter ici avec un compte personnel".
     On ne prend donc jamais un code emis pour un mauvais tenant.
  ------------------------------------------------------------------ */
-const TENANTS = ['consumers', 'common', 'organizations'];
+const TENANTS = ['consumers', 'common'];
 
-/*  Si l'identifiant du creerateur est refuse, on retente avec l'app
-    publique de Microsoft : l'utilisateur n'a alors rien a configurer.  */
+/* The configured application ID is retained throughout authentication. */
 const cfgmod = require('./config');
 
 async function deviceCodeFor(id, tenant, portee) {
@@ -51,15 +50,8 @@ function base(tenant) { return 'https://login.microsoftonline.com/' + tenant + '
     via l'endpoint /consumers. Sur un tenant precis, Microsoft refuse
     le scope (AADSTS650053). Donc : /consumers en premier, toujours.  */
 function tenantsList() { return TENANTS; }
-/*  La portee de service de Minecraft est ce qui permet l'echange
-    Xbox -> Minecraft, et donc de jouer avec son VRAI compte. Elle
-    exige que Microsoft ait enregistre l'application pour ce service,
-    ce qui peut prendre des heures apres une approbation.
-
-    On tente donc la portee complete, et on revient a la portee simple
-    si elle n'est pas encore enregistree : la connexion doit toujours
-    fonctionner, meme si l'echange Minecraft attendra.                */
-const OAUTH_SCOPE  = 'XboxLive.signin offline_access service::user.auth.xboxlive.com::MBI_SSL';
+/* Consumer OAuth scopes for the device flow; Minecraft acceptance is verified separately. */
+const OAUTH_SCOPE  = 'XboxLive.signin offline_access';
 const OAUTH_SIMPLE = 'XboxLive.signin offline_access';
 const XBL_URL      = 'https://user.auth.xboxlive.com/user/authenticate';
 const XSTS_URL     = 'https://xsts.auth.xboxlive.com/xsts/authorize';
@@ -70,8 +62,8 @@ const MC_MSA_URL   = 'https://api.minecraftservices.com/minecraft/has_legacy_ent
 const XBL_PROFILE_URL = 'https://profile.xboxlive.com/users/me';
 
 function store()  { return path.join(util.appRoot(), 'profiles.json'); }
-function load()   { return util.readJSON(store(), { accounts: [] }); }
-function persist(o) { util.writeJSON(store(), o); }
+function load()   { return require('./session-vault').read(store()); }
+function persist(o) { require('./session-vault').write(store(), o); }
 
 /* Traduit les erreurs Microsoft en francais clair.
    C'est ici que se joue 90 % de la confusion des utilisateurs.
@@ -99,19 +91,19 @@ function explain(text, code) {
      C'est le verrou final : Mojang n'accepte que les applications
      enregistrees ET approuvees dans leur programme partenaires.       */
   if (/invalid app registration|AADSTS900023|aka\.ms\/AppRegInfo/i.test(t))
-    return "Mojang refuse l'echange final : l'application du launcher n'est pas approuvee dans le programme partenaires Mojang (https://aka.ms/AppRegInfo). Cette approbation se demande par formulaire et met plusieurs semaines. Ce n'est reglable ni dans le portail Microsoft ni depuis le launcher. Utilise le mode solo, ou le mode par jeton (Authlib-Injector).";
+    return "Minecraft Services refuse l'identifiant de cette application (Invalid app registration). Vérifiez que l'identifiant configuré est exactement celui approuvé pour Minecraft, puis refaites une connexion Microsoft. Aucun lancement hors ligne automatique n'est effectué.";
 
   if (/AADSTS70000/i.test(t))
     return "Ce code de connexion a deja ete utilise. Relance la connexion pour obtenir un nouveau code.";
 
   if (/AADSTS9002346/i.test(t))
-    return "Ton application est correctement configuree pour les comptes Microsoft personnels. Microsoft doit encore l'enregistrer aupres de ces comptes : c'est en cours. Reviens dans une heure, ca fonctionnera sans rien changer.";
+    return "Microsoft refuse cette configuration pour les comptes personnels (AADSTS9002346). Vérifiez le type de comptes autorisés et l’identifiant de l’application ; le launcher ne peut pas garantir un délai de résolution.";
 
   if (/AADSTS70002/i.test(t))
-    return "Microsoft n'a pas encore enregistre cette application. Si tu viens de la creer ou de changer ses types de comptes, c'est normal : la propagation prend de quelques minutes a quelques heures. Reessaie plus tard, le launcher est pret.";
+    return "Microsoft refuse la configuration du client (AADSTS70002). Vérifiez l’identifiant et l’activation du flux de connexion pour une application publique ; aucun secret ne doit être ajouté au launcher.";
 
   if (/AADSTS50059/i.test(t))
-    return "Microsoft refuse cet identifiant pour la connexion Minecraft. Trois causes possibles, dans l'ordre de probabilite : 1) tu as copie l'ID d'objet au lieu de l'ID d'application (client) ; 2) l'application n'a pas les permissions deleguees XboxLive.signin et offline_access ; 3) l'application n'accepte pas les comptes Microsoft personnels. Le guide ci-dessous indique quoi verifier.";
+    return "Microsoft n’a pas pu identifier le répertoire de connexion (AADSTS50059). Vérifiez le point de connexion et le type de comptes autorisés.";
 
   /* 700016 : l'application est introuvable depuis ce tenant.        */
   if (/AADSTS700016|not found in the directory/i.test(t))
@@ -175,7 +167,7 @@ async function checkClientId(clientId) {
 
   const essais = [];
   for (const tenant of tenantsList()) {
-    const { status, json, text } = await postDeviceCode(tenant, id, portee);
+    const { status, json, text } = await postDeviceCode(tenant, id, OAUTH_SCOPE);
     if (status === 200 && json && json.device_code)
       return { ok: true, level: 'ok', label: 'Identifiant valide',
                detail: "Microsoft accepte cet identifiant. Utilise « Se connecter » pour obtenir ton code.",
@@ -202,21 +194,8 @@ async function checkClientId(clientId) {
 }
 
 async function startDeviceCode(clientId) {
-    /*  On tente la portee de service de Minecraft. Si l'application
-        n'est pas encore enregistree pour ce service, on revient a la
-        portee simple : mieux vaut se connecter sans jeton Minecraft
-        que pas se connecter du tout.                                   */
-    try {
-      return await demarrerDeviceCode(clientId, OAUTH_SCOPE);
-    } catch (e) {
-      const msg = String((e && e.message) || '');
-      if (/9002346|pas encore enregistre|not.*registered/i.test(msg)) {
-        try { cfg.trace('portee de service pas encore enregistree, repli sur la portee simple'); } catch (x) { }
-        return await demarrerDeviceCode(clientId, OAUTH_SIMPLE);
-      }
-      throw e;
-    }
-  }
+  return demarrerDeviceCode(clientId,OAUTH_SCOPE);
+}
 
   async function demarrerDeviceCode(clientId, portee) {
   // Garde-fou : sans identifiant valide, Microsoft renvoie AADSTS900144
@@ -233,7 +212,7 @@ async function startDeviceCode(clientId) {
   /*  Microsoft met parfois plusieurs minutes a enregistrer une nouvelle
       application, et davantage apres un changement de type de comptes.
       Plutot que d'echouer, on retente quelques fois sur une minute.    */
-  const ATTENTES = [0, 8000, 15000, 25000, 45000, 90000, 180000];
+  const ATTENTES = [0];
 
 
   for (let essai = 0; essai < ATTENTES.length; essai++) {
@@ -274,7 +253,7 @@ async function startDeviceCode(clientId) {
     messages.some(m => /AADSTS9002346/i.test(m)) ? 'AADSTS9002346'
       : messages[messages.length - 1] || '',
     'identifiant'
-  ) || explain('AADSTS70002', 'identifiant');
+  );
 
   throw new AuthError(clair || ('Demande de connexion refusee (' + dernier.status + ') : ' + String(dernier.msg).slice(0, 200)), 'identifiant');
 }
@@ -303,9 +282,9 @@ async function pollDeviceCode(clientId, deviceCode, interval, tenant) {
 }
 
 /* 3. Rafraichissement automatique */
-async function refresh(refreshToken) {
+async function refresh(refreshToken, registeredClientId) {
   const c = cfg.load();
-  const clientId = c.workingClientId || c.microsoftClientId;
+  const clientId = registeredClientId || cfg.clientId();
   let dernier = null;
   for (const tenant of tenantsList()) {
     const { status, json, text } = await http.postForm(base(tenant) + '/token', {
@@ -339,7 +318,7 @@ async function xblTokenFor(msaAccessToken) {
     TokenType: 'JWT'
   }, { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' });
 
-  trace('XBL HTTP ' + xbl.status + ' ' + JSON.stringify(xbl.json || {}).slice(0, 220));
+  trace('XBL HTTP ' + xbl.status);
   if (xbl.status !== 401 && xbl.status !== 200) {
     throw new AuthError('Xbox Live a refuse la demande (' + xbl.status + ') : ' + String((xbl.json && xbl.json.XErr) || (xbl.text || '')).slice(0, 160), 'xbl');
   }
@@ -452,27 +431,29 @@ async function toMinecraft(msaAccessToken) {
     TokenType: 'JWT'
   }, { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' });
 
-  trace('XSTS HTTP ' + xsts.status + ' ' + JSON.stringify(xsts.json || {}).slice(0, 260));
+  trace('XSTS HTTP ' + xsts.status);
   if (xsts.status !== 200) {
     const e = (xsts.json && xsts.json.XErr) || xsts.status;
     const msg = String(e).includes('2148916238')
-      ? 'Ce compte n\'a pas de compte Minecraft associe.'
+      ? 'Xbox refuse cette session (2148916238). Vérifiez les restrictions du compte ou de la famille dans Xbox.'
       : 'XSTS a refuse la session (' + e + ').';
     throw new AuthError(msg, 'xsts');
   }
-  trace('XSTS ok, uhs=' + String(xsts.json.DisplayClaims.xui[0].uhs).slice(0, 12));
+  trace('XSTS valide');
   const uhs = xsts.json.DisplayClaims.xui[0].uhs;
 
-  const mc = await http.postJSON(MC_LOGIN_URL, { identityToken: 'XBL3.0 x=' + uhs + ';' + xsts.json.Token });
-  trace('MC login HTTP ' + mc.status + ' ' + JSON.stringify(mc.json || {}).slice(0, 200));
+  const mc = await http.postJSON(MC_LOGIN_URL, { identityToken: 'XBL3.0 x=' + uhs + ';' + xsts.json.Token },{'Accept':'application/json'});
+  trace('MC login HTTP ' + mc.status);
   if (mc.status !== 200 || !mc.json || !mc.json.access_token) {
-    throw new AuthError('Minecraft a refuse la connexion (' + mc.status + ') : ' + String((mc.json && mc.json.errorMessage) || mc.text || '').slice(0, 160), 'mc');
+    const diagnostic=require('./auth-diagnostic').record({stage:'minecraft-login',status:mc.status,reason:(mc.json&&(mc.json.errorMessage||mc.json.error))||mc.text||'Réponse vide',clientId:cfg.clientId(),requestId:mc.headers?.['x-request-id']||mc.headers?.['x-correlation-id']||''});
+    trace('Minecraft login refusé HTTP '+mc.status+' : '+diagnostic.reason);
+    const error=new AuthError('Minecraft refuse la connexion (HTTP '+mc.status+') : '+diagnostic.reason,'mc');error.diagnostic=diagnostic;throw error;
   }
   return mc.json.access_token;
 }
 
 async function profile(mcToken) {
-  const { status, json, text } = await http.postJSON(MC_ME_URL + '?x=1', null,
+  const { status, json, text } = await http.postJSON(MC_ME_URL, null,
     { 'Authorization': 'Bearer ' + mcToken }, 'GET');
   if (status !== 200 || !json || !json.id) {
     throw new AuthError('Impossible de lire le profil Minecraft (' + status + ') : ' + (text || '').slice(0, 160));
@@ -480,7 +461,7 @@ async function profile(mcToken) {
   return {
     id: json.id,
     name: json.name,
-    skinUrl: (json.skins && json.skins[0] && json.skins[0].url) || '',
+    skinUrl: ((json.skins || []).find(s=>s.state==='ACTIVE') || (json.skins || [])[0] || {}).url || '',
     capeUrl: (json.capes && json.capes[0] && json.capes[0].url) || '',
     firstJoined: json.firstJoined || 0
   };
@@ -492,7 +473,7 @@ async function entitlements(mcToken) {
   if (status !== 200 || !json) return { ownsGame: false, ownsLegacy: false };
   const items = json.items || [];
   return {
-    ownsGame: items.some(i => i.sku === 'minecraft' || i.sku === 'minecraft_dungeons'),
+    ownsGame: items.some(i => ['game_minecraft','product_minecraft'].includes(i.name) || i.sku === 'minecraft'),
     ownsLegacy: (await http.postJSON(MC_MSA_URL, null, { 'Authorization': 'Bearer ' + mcToken }, 'GET')).status === 200
   };
 }
@@ -505,7 +486,8 @@ function publicAccount(acc) {
     skinUrl: acc.skinUrl || '',
     avatarUrl: acc.avatarUrl || '',
     capeUrl: acc.capeUrl || '',
-    userType: acc.userType || 'msla',
+    userType: acc.type === 'microsoft' ? 'msa' : 'legacy',
+    minecraftVerified: acc.type === 'microsoft' && !!acc.mcToken && !!acc.minecraftVerified,
     isLegacy: !!acc.isLegacy
   };
 }

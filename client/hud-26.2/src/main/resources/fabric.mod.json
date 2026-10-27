@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "xrnhud",
+  "version": "${version}",
+  "name": "XRN HUD",
+  "description": "HUD discret et menu d'options, ouverts par la touche Maj droite. Tout reste local, aucune donnee n'est collectee.",
+  "authors": [
+    "Xerion"
+  ],
+  "license": "MIT",
+  "environment": "client",
+  "mixins": [
+    {
+      "config": "xrnhud.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "entrypoints": {
+    "client": [
+      "fr.xerion.xrnhud.XrnHudClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

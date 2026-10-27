@@ -1,3 +1,4 @@
+if (typeof require === 'function') {
 window.__XRN_START = 'main.js execute';
 'use strict';
 /*  main.js — CONTEXTE NODE (NW.js)
@@ -14,8 +15,10 @@ const util   = require('./lib/util');
 const cfgm   = require('./lib/config');
 const http   = require('./lib/http');
 const auth   = require('./lib/auth');
+const microsoftSession = require('./lib/microsoft-session').create(auth, account => updateAccount(account));
 const game   = require('./lib/game');
 const files  = require('./lib/files');
+const screenshots = require('./lib/screenshots');
 const servers = require('./lib/servers');
 const alib   = require('./lib/authlib');
 const mods   = require('./lib/mods');
@@ -24,6 +27,7 @@ const notif  = require('./lib/notification');
 const media  = require('./lib/media');
 const manif  = require('./lib/manifeste');
 const communaute = require('./lib/communaute');
+const presence = require('./lib/presence');
 const boutique = require('./lib/boutique');
 
 util.ensureDir(util.appRoot());
@@ -252,7 +256,7 @@ const XRN = {
       /*  Une trace par enregistrement : on voit dans le journal ce qui
           a ete ecrit, et quand. Sans cela, un reglage qui ne seemingly
           part pas reste impossible a diagnostiquer.                      */
-      writeLog('CFG', 'enregistre : ' + Object.keys(patch || {}).map(k => k + '=' + c[k]).join(', '));
+      writeLog('CFG', 'enregistre : ' + Object.keys(patch || {}).join(', '));
       return c;
     },
     openFolder(p) { return util.openExplorer(p); },
@@ -274,7 +278,7 @@ const XRN = {
     async appliquerMiseAJourAuto() {
       const r = await this.chercherMiseAJour();
       if (!r || !r.ok) return { ok: false, detail: 'aucune mise a jour' };
-      const url = r.mode === 'patch' ? r.patch : (r.telecharger || r.url);
+      const url = r.mode === 'patch' ? r.patch : r.mode === 'noyau' ? r.noyau : (r.telecharger || r.url);
       if (!url) return { ok: false, detail: 'adresse introuvable' };
       return this.appliquerMiseAJour(url, r.taille, r.mode);
     },
@@ -282,6 +286,9 @@ const XRN = {
     async appliquerMiseAJour(url, total, mode) {
       try {
         if (!url) return { ok: false, detail: 'aucune adresse' };
+        const release=await http.getJSON('https://api.github.com/repos/xerion-xerion-xerion/XRNLauncher/releases/latest');
+        const approved=require('./lib/release-security').approvedAsset(url,release.assets);
+        total=approved.size;
         /*  Une seule mise a jour a la fois : deux clics rapides sur
             deux boutons lancaient deux telechargements complets en
             parallele (vrai dans le journal). On refuse le second.    */
@@ -301,7 +308,7 @@ const XRN = {
 
         jetonMaj = require('./lib/http').makeToken();
         try {
-          await http.download(url, zip, { token: jetonMaj });
+          await http.download(approved.url, zip, { token: jetonMaj,sha256:approved.sha256,verify:true });
         } finally {
           clearInterval(suivi);
         }
@@ -521,6 +528,7 @@ const XRN = {
 
   /* ---------------------------------------------------------------- */
   auth: {
+    diagnostic() { return require('./lib/auth-diagnostic').current(); },
     accounts() {
       const db = auth.load();
       return db.accounts.map(auth.publicAccount);
@@ -595,7 +603,7 @@ const XRN = {
     /*  "minecraft" : la chaine complete, qui exige l'approbation de
         Mojang. "xbox" : on s'arrete a Xbox Live, sans approbation.  */
     setMode(mode) {
-      session.loginMode = (mode === 'xbox') ? 'xbox' : 'minecraft';
+      session.loginMode = 'minecraft';
       return session.loginMode;
     },
     mode() { return session.loginMode || 'minecraft'; },
@@ -614,41 +622,17 @@ const XRN = {
     },
 
     async begin() {
-      if (!cfgm.hasClientId()) {
-        const e = new Error("Identifiant Microsoft absent : colle-le dans le champ de l'onglet Connexion.");
-        e.code = 'no-client-id';
-        throw e;
-      }
-      const info = await auth.startDeviceCode(cfgm.clientId());
-      session.login = {
-        mode: session.loginMode || 'minecraft',
-        clientId: info.clientId,
-        deviceCode: info.deviceCode,
-        userCode: info.userCode,
-        verificationUri: info.verificationUri,
-        verificationUriComplete: info.verificationUriComplete,
-        interval: info.interval,
-        tenant: info.tenant,
-        expiresAt: Date.now() + info.expiresIn * 1000
-      };
-      XRN.report('AUTH', 'devicecode ok | client=' + String(info.clientId).slice(0, 8) +
-        ' tenant=' + info.tenant + ' code=' + info.userCode);
-      const url = info.verificationUriPropre || info.verificationUriComplete || info.verificationUri;
-      util.openUrl(url);
-      return {
-        userCode: info.userCode,
-        verificationUri: info.verificationUri,
-        verificationUriComplete: info.verificationUriComplete,
-        tenant: info.tenant,
-        // si le seul point d'entree qui marche est "organizations",
-        // l'application refuse les comptes personnels : on le dit.
-        personnelSeulement: info.tenant === 'organizations',
-        expiresIn: info.expiresIn
-      };
+      if(session.login?.sisuWindow)session.login.sisuWindow.cancel();
+      const sisu=require('./lib/auth-sisu');
+      const flow=await sisu.begin();
+      const authWindow=require('./lib/auth-window').open(nw,flow,sisu);
+      session.login={mode:'minecraft',clientId:sisu.CLIENT_ID,sisuWindow:authWindow,expiresAt:flow.ctx.expiresAt};
+      return {provider:sisu.PROVIDER,userCode:'Microsoft',expiresIn:flow.expiresIn};
     },
 
     cancel() {
       if (session.login && session.login.timer) clearInterval(session.login.timer);
+      if(session.login?.sisuWindow)session.login.sisuWindow.cancel();
       session.login = null;
       session.login_clientId = null;
       return true;
@@ -660,16 +644,19 @@ const XRN = {
         la connexion a reussi. On serialise donc les interrogations.     */
     async poll() {
       if (!session.login) throw new Error('Aucune connexion en cours');
+      if(session.login.sisuWindow)return session.login.sisuWindow.poll();
       if (session.polling) { await session.polling; return { done: false }; }
 
+      const attempt = session.login;
       session.polling = (async () => {
         const r = await auth.pollDeviceCode(
-          cfgm.load().workingClientId || cfgm.clientId(),
-          session.login.deviceCode,
-          session.login.interval,
-          session.login.tenant
+          attempt.clientId,
+          attempt.deviceCode,
+          attempt.interval,
+          attempt.tenant
         );
-        if (r.slowDown && session.login) session.login.interval = Math.min(20, session.login.interval + 5);
+        if (session.login !== attempt) return {done:false};
+        if (r.slowDown) attempt.interval = Math.min(20, attempt.interval + 5);
         if (r.done) XRN.report('AUTH', 'jeton obtenu, echange XBL/XSTS en cours');
         return r;
       })();
@@ -741,6 +728,7 @@ const XRN = {
     },
     javaDir() { return game.javaDir(); },
 
+    clientBuilds() { return require('./lib/client-builds').manifest().map(b=>({minecraft:b.minecraft,loader:b.loader})); },
     async launch(opts) {
       const acc = session.account;
       const offline = opts.offline;
@@ -754,7 +742,7 @@ const XRN = {
       let accessToken = '0';
       let uuid = acc ? acc.id : (opts.uuid || '00000000000000000000000000000000');
       let username = acc ? (acc.javaName || acc.name) : (opts.username || 'Joueur');
-      let userType = acc ? (acc.userType || 'msla') : 'legacy';
+      let userType = acc ? (acc.userType || 'msa') : 'legacy';
 
       /*  Un vrai jeton Minecraft, c'est ce qui fait que le jeu tourne
           avec le VRAI compte : skin, session en ligne, et le bon
@@ -765,25 +753,11 @@ const XRN = {
           de Minecraft (voir OAUTH_SCOPE). Si elle manque, Mojang
           refuse avec un 403 "Invalid app registration" : on ne casse
           donc pas le lancement, on retombe sur le jeton deja connu. */
-      if (acc && acc.refreshToken && !offline) {
-        // on tente un rafraichissement si le jeton est vieux
-        try {
-          if (acc.mcToken && Date.now() - (acc.savedAt || 0) <= 60 * 60 * 1000) {
-            accessToken = acc.mcToken;
-          } else {
-            const t = await auth.refresh(acc.refreshToken);
-            const mcTok = await auth.toMinecraft(t.access_token);
-            const prof = await auth.profile(mcTok);
-            updateAccount({ ...acc, refreshToken: t.refresh_token, mcToken: mcTok, name: prof.name, id: prof.id, uuid: prof.id, skinUrl: prof.skinUrl, savedAt: Date.now() });
-            accessToken = mcTok;
-            uuid = prof.id;
-            username = prof.name;
-            userType = 'msla';
-          }
-        } catch (e) {
-          XRN.report('AUTH', 'jeton Minecraft indisponible : ' + (e && e.message ? e.message : e));
-          accessToken = acc.mcToken || '0';
-        }
+      if (acc && ['microsoft','xbox'].includes(acc.type)) {
+        const verified = await microsoftSession.validate(acc);
+        session.account = verified;
+        accessToken = verified.mcToken; uuid = verified.id; username = verified.name; userType = 'msa';
+        bus.emit('auth:connected', auth.publicAccount(verified));
       }
 
       /*  Un compte authlib-injector a besoin de l'agent Java ; sans lui
@@ -797,21 +771,18 @@ const XRN = {
         }
       }
 
-      /*  XRN HUD est livre avec le launcher : on le met en place juste
-          avant de lancer, pour qu'il soit deja la des la premiere
-          partie, et qu'une amelioration du mod ne demande rien au
-          joueur. Un mod optionnel ne doit jamais bloquer le jeu. */
-      try {
-        const pose = mods.installerIntegres();
-        if (pose && pose.poses && pose.poses.length) {
-          XRN.report('MODS', 'poses : ' + pose.poses.join(', '));
-        }
-        /*  Un echec ici n'est pas anodin : une ancienne version restee
-            dans mods/ ferait refuser le demarrage a Fabric.           */
-        for (const e of (pose && pose.echecs) || []) {
-          XRN.report('MODS-ERREUR', e.nom + ' : ' + e.raison);
-        }
-      } catch (e) { }
+      const supported=require('./lib/client-builds').manifest().some(b=>b.minecraft===entry.id&&b.loader==='fabric');
+      let disabledClient=false;
+      try{disabledClient=fs.readdirSync(mods.modsDir()).some(n=>/^xrn-hud-.*\.jar\.disabled$/i.test(n));}catch{}
+      if(cfgm.load().clientEnabled!==false&&!disabledClient&&supported&&mods.loadersDe(entry.id).length===0){
+        const existing=mods.profilsMod().find(p=>p.base===entry.id&&p.loader.id==='fabric');
+        if(existing)entry={id:existing.version,url:null};
+        else{bus.emit('mods:stage',{text:'Preparation de XRN Client pour Minecraft '+entry.id+'…'});const profile=await mods.installFabric(entry.id,bus);entry={id:profile.profil,url:null};}
+      }
+      const pose=mods.installerIntegres(entry.id);
+      if(pose.poses.length)XRN.report('MODS',pose.poses.join(', '));
+      if(pose.echecs.length)throw new Error(pose.echecs.map(e=>e.nom+' : '+e.raison).join('\n'));
+      if(!pose.compatibility.supported)bus.emit('mods:notice',{text:pose.compatibility.reason});
 
       const res = await game.launch({
         version: entry.id,
@@ -840,6 +811,7 @@ const XRN = {
         l'objet File de NW.js, qui expose « path ».                   */
     add(chemins) { return mods.add(chemins || []); },
     remove(nom) { return mods.remove(nom); },
+    setEnabled(nom, enabled) { return mods.setEnabled(nom, enabled); },
     openFolder() { return mods.openFolder(); },
     loaders(versionId) { return mods.loadersDe(versionId); },
     async fabricInfo(mcVersion) { return mods.fabricInstallateur(mcVersion); },
@@ -848,6 +820,7 @@ const XRN = {
   },
 
   /* ---------------------------------------------------------------- */
+  screenshots: screenshots,
   files: {
     saves() { return files.listSaves(); },
     saveSize(folder) { return files.saveSize(folder); },
@@ -1043,29 +1016,10 @@ function enregistrerXbox(xb, tokens, nom) {
 }
 
 async function completeLogin(tokens) {
-  if (session.login && session.login.mode === 'xbox') return completeLoginXbox(tokens);
-  XRN.report('AUTH', 'finalisation : echange Xbox Live');
-  let mcToken;
-  try {
-    mcToken = await auth.toMinecraft(tokens.access_token);
-  } catch (e) {
-    /*  Mojang refuse tant que l'application n'est pas declaree. Ce n'est
-        pas un echec de l'utilisateur : on bascule donc tout seul sur la
-        voie Xbox, qui verifie l'identite du compte et retrouve le vrai
-        profil Java ainsi que la vraie skin. Le jour ou Mojang acceptera
-        l'application, ce meme bouton donnera le jeton Minecraft complet
-        et les serveurs en ligne, sans rien changer dans l'interface.   */
-    const msg = String((e && (e.body || e.message)) || e || '');
-    if (/Invalid app registration|AppRegInfo/i.test(msg)) {
-      XRN.report('AUTH', 'Mojang refuse l application : repli sur la voie Xbox, sans rien demander');
-      return completeLoginXbox(tokens);
-    }
-    XRN.report('AUTH', 'ECHEC XBL/XSTS : ' + ((e && (e.code + ' / ' + e.message)) || String(e)).slice(0, 300));
-    throw e;
-  }
+  const mcToken = tokens.authProvider===require('./lib/auth-sisu').PROVIDER ? await require('./lib/auth-sisu').minecraft(tokens) : await auth.toMinecraft(tokens.access_token);
   XRN.report('AUTH', 'jeton Minecraft obtenu');
   const prof    = await auth.profile(mcToken);
-  XRN.report('AUTH', 'profil = ' + prof.name + ' / ' + prof.id);
+  XRN.report('AUTH', 'profil Minecraft confirme');
   const ent     = await auth.entitlements(mcToken);
   XRN.report('AUTH', 'droits sur le jeu : ' + (ent.ownsGame ? 'oui' : 'NON'));
   const account = {
@@ -1075,9 +1029,13 @@ async function completeLogin(tokens) {
     uuid: prof.id,
     skinUrl: prof.skinUrl,
     capeUrl: prof.capeUrl,
-    userType: 'msla',
+    userType: 'msa',
     ownsGame: ent.ownsGame,
+    minecraftVerified: true,
+    verifiedAt: Date.now(),
     refreshToken: tokens.refresh_token || null,
+    authProvider:tokens.authProvider || 'azure-device',
+    authClientId:tokens.clientId || session.login?.clientId || cfgm.clientId(),
     mcToken,
     savedAt: Date.now()
   };
@@ -1087,7 +1045,7 @@ async function completeLogin(tokens) {
   session.login = null;
   // on ne retient l'identifiant qu'apres une connexion completee :
   // un device code accepte ne prouve rien (le consentement peut echouer).
-  if (session.login_clientId) cfgm.save({ workingClientId: session.login_clientId });
+  if (session.login_clientId && account.authProvider!=='xbox-sisu-pkce') cfgm.save({ workingClientId: session.login_clientId });
   cfgm.save({ lastProfile: account.name });
   bus.emit('auth:connected', auth.publicAccount(account));
   return { account: auth.publicAccount(account), ownsGame: ent.ownsGame };
@@ -1129,7 +1087,16 @@ async function refreshAuthlib(acc) {
 }
 
 function updateAccount(patch) {
-  const db = auth.load();
+  let db;
+  try { db=auth.load(); }
+  catch(error) {
+    // A newly authenticated account can recover an unreadable local store.
+    // Keep the old file for recovery; never substitute a failed online login.
+    const original=auth.store();
+    if(fs.existsSync(original))fs.copyFileSync(original,original+'.unreadable.'+Date.now());
+    db={accounts:[]};
+    XRN.report('AUTH','Ancien fichier de session illisible conservé avant réenregistrement.');
+  }
   const i = db.accounts.findIndex(a => a.id === patch.id);
   if (i >= 0) db.accounts[i] = Object.assign({}, db.accounts[i], patch);
   else db.accounts.push(patch);
@@ -1165,12 +1132,13 @@ XRN.auth.selectOffline = function (id) {
   return auth.publicAccount(acc);
 };
 
-XRN.auth.selectMicrosoft = function (id) {
-  const acc = auth.load().accounts.find(a => a.id === id);
-  if (!acc) throw new Error('Compte introuvable');
-  session.account = acc;
-  bus.emit('auth:connected', auth.publicAccount(acc));
-  return auth.publicAccount(acc);
+XRN.auth.selectMicrosoft = async function (id) {
+  const account = auth.load().accounts.find(a => a.id === id);
+  const verified = await microsoftSession.validate(account);
+  session.account = verified;
+  cfgm.save({lastProfile:verified.name});
+  bus.emit('auth:connected', auth.publicAccount(verified));
+  return auth.publicAccount(verified);
 };
 
 XRN.auth.disconnect = function () {
@@ -1191,6 +1159,7 @@ XRN.auth.disconnect = function () {
 async function resumeSession() {
   const db = auth.load();
   const last = cfgm.load().lastProfile;
+  const jours = cfgm.sessionMaxDays();
   const acc = db.accounts.find(a => a.name === last) || db.accounts[0] || null;
   session.expired = null;
 
@@ -1245,53 +1214,6 @@ async function resumeSession() {
       authentification Mojang. Si le reseau manque, on garde la session
       telle quelle : une identite deja obtenue ne disparait pas parce
       qu'un serveur a repondu a cote.                               */
-  if (acc.type === 'xbox') {
-    session.resuming = true;
-    bus.emit('auth:resuming', { name: acc.name });
-    try {
-      const t = await auth.refresh(acc.refreshToken);
-      const xb = await auth.toXbox(t.access_token);
-
-      /*  Le nom deja verifie passe avant le gamertag : c est la seule
-          piste qui designe avec certitude ce joueur.                */
-      const candidats = [];
-      if (acc.javaName) candidats.push(acc.javaName);
-      candidats.push(xb.name, acc.name);
-      const profil = await skins.resoudre(candidats);
-
-      /*  Un nom verifie ne se remplace pas par un nom trouve au hasard
-          parmi les profils publics de Mojang.                       */
-      const nom = acc.javaName || (profil ? profil.nom : acc.name);
-      const uuid = acc.javaName ? acc.uuid : (profil ? profil.uuid : acc.id);
-      const skin = acc.javaName ? acc.skinUrl : (profil && profil.skin ? profil.skin : acc.skinUrl);
-
-      const fresh = Object.assign({}, acc, {
-        gamertag: xb.name || acc.gamertag || '',
-        xuid: xb.xuid || acc.xuid || '',
-        name: nom,
-        id: uuid,
-        uuid: uuid,
-        skinUrl: skin,
-        avatarUrl: skin,
-        refreshToken: t.refresh_token || acc.refreshToken,
-        savedAt: Date.now()
-      });
-      updateAccount(fresh);
-      session.account = fresh;
-      session.resuming = false;
-      const pub = auth.publicAccount(fresh);
-      bus.emit('auth:connected', pub);
-      inscrireCommunaute();
-      return pub;
-    } catch (e) {
-      session.resuming = false;
-      const pub = auth.publicAccount(acc);
-      bus.emit('auth:connected', pub);
-      return pub;
-    }
-  }
-
-  const jours = cfgm.sessionMaxDays();
   const age = Date.now() - (acc.savedAt || 0);
 
   if (age > jours * 86400000) {
@@ -1304,23 +1226,7 @@ async function resumeSession() {
   session.resuming = true;
   bus.emit('auth:resuming', { name: acc.name });
   try {
-    if (!acc.refreshToken) throw new Error('Aucun jeton de rafraichissement enregistre.');
-    const t = await auth.refresh(acc.refreshToken);
-    const mcTok = await auth.toMinecraft(t.access_token);
-    const prof = await auth.profile(mcTok);
-    const ent = await auth.entitlements(mcTok);
-    const fresh = Object.assign({}, acc, {
-      refreshToken: t.refresh_token || acc.refreshToken,
-      mcToken: mcTok,
-      name: prof.name,
-      id: prof.id,
-      uuid: prof.id,
-      skinUrl: prof.skinUrl,
-      capeUrl: prof.capeUrl,
-      ownsGame: ent.ownsGame,
-      savedAt: Date.now()
-    });
-    updateAccount(fresh);
+    const fresh = await microsoftSession.validate(acc);
     session.account = fresh;
     cfgm.save({ lastProfile: fresh.name });
     const pub = auth.publicAccount(fresh);
@@ -1350,50 +1256,21 @@ XRN.auth.expired = () => session.expired;
     la liste arrive quand elle arrive. Sans reseau, le mod garde la
     liste qu il a deja.                                                 */
 function inscrireCommunaute() {
-  const pseudo = pseudoSession();
-  if (!pseudo) return;
-  setTimeout(async () => {
-    try {
-      const r = await communaute.rafraichir(pseudo);
-      if (r.ok) {
-        bus.emit('communaute:maj', { total: r.total });
-        XRN.report('COMMUNAUTE', 'annuaire a jour : ' + r.total + ' pseudo(s)');
-      }
-    } catch (e) { }
-
-    /*  Les droits de la boutique sont rafraichis dans la foulure :
-        le mod les lit au demarrage du jeu, et il ne doit pas trouver
-        une liste de la veille.                                            */
-    try {
-      const b = await boutique.catalogue(pseudo);
-      if (b && b.ok) {
-        XRN.report('BOUTIQUE', (b.droits || []).length + ' cosmetique(s), ' + (b.etoiles || 0) + ' etoiles');
-      }
-    } catch (e) { }
-  }, 4000);
+  const account=session.account;
+  if (!account || !account.minecraftVerified) return;
+  presence.sync(account).catch(() => XRN.report('PRESENCE','Service de présence indisponible ; le jeu reste utilisable.'));
 }
+const presenceTimer=setInterval(() => {
+  presence.sync(session.account).catch(() => {});
+},5000);
+if (presenceTimer.unref) presenceTimer.unref();
 
 /* Rafraichit un profil a la volee (bouton de la barre laterale). */
 XRN.auth.revalidate = async function () {
-  const acc = session.account;
-  if (!acc || acc.type !== 'microsoft' || !acc.refreshToken) return acc ? auth.publicAccount(acc) : null;
-  try {
-    const t = await auth.refresh(acc.refreshToken);
-    const mcTok = await auth.toMinecraft(t.access_token);
-    const prof = await auth.profile(mcTok);
-    const fresh = Object.assign({}, acc, {
-      refreshToken: t.refresh_token || acc.refreshToken, mcToken: mcTok,
-      name: prof.name, id: prof.id, uuid: prof.id,
-      skinUrl: prof.skinUrl, capeUrl: prof.capeUrl, savedAt: Date.now()
-    });
-    updateAccount(fresh);
-    session.account = fresh;
-    const pub = auth.publicAccount(fresh);
-    bus.emit('auth:connected', pub);
-    return pub;
-  } catch (e) {
-    return acc ? auth.publicAccount(acc) : null;
-  }
+  const fresh = await microsoftSession.validate(session.account);
+  session.account = fresh;
+  bus.emit('auth:connected', auth.publicAccount(fresh));
+  return auth.publicAccount(fresh);
 };
 
 /* ------------------------------------------------------------------ */
@@ -1460,4 +1337,5 @@ process.on('unhandledRejection', e => {
 process.on('exit', code => writeLog('EXIT', 'code=' + code));
   /*  Le detecteur de musique est un processus a part : on le ferme
   avec le launcher, sinon il continuerait d interroger Windows.     */
-  process.on('exit', () => { try { media.arreter(); } catch (e) { } });
+  process.on('exit', () => { try { if (session.game) media.detacher(); else media.arreter(); } catch (e) { } });
+}

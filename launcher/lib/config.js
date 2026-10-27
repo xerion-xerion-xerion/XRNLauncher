@@ -3,6 +3,8 @@
                         + config utilisateur (%APPDATA%\XRNLauncher\config.json)  */
 
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const util = require('./util');
 
 let cache = null;
@@ -26,7 +28,7 @@ function defaults() {
     guiScale: 2,
     maxDownloads: 6,
     verifySha1: true,
-    ambientSound: true,
+    ambientSound: false,
     ambientVolume: 0.3,
     lastVersion: null,
     lastProfile: null,
@@ -35,9 +37,14 @@ function defaults() {
         demarrage, cote client. C'est une preference du joueur, elle
         n'a rien a voir avec le compte.                                  */
     boostFps: false,
+    clientEnabled:true,
     /*  L'adresse du service en ligne (annuaire, boutique). Elle vient
         du fichier livre avec l'application, comme celle des
         notifications.                                                    */
+    presenceUrl: '',
+    developerMode: false,
+    notificationsEnabled: true,
+    shareInstallationStatus: false,
     serviceUrl: ''
   };
 }
@@ -69,10 +76,17 @@ function load() {
 }
 
 function save(patch) {
-  const cfg = Object.assign(load(), patch || {});
-  util.writeJSON(userFile(), cfg);
-  cache = cfg;
-  return cfg;
+  const next = Object.assign({}, load(), patch || {});
+  if (!Number.isFinite(Number(next.ramGB))) throw new Error('Quantité de mémoire invalide.');
+  next.ramGB = Math.max(1, Math.min(32, Number(next.ramGB)));
+  const target = userFile();
+  util.ensureDir(path.dirname(target));
+  const temp = target + '.' + process.pid + '.tmp';
+  fs.writeFileSync(temp, JSON.stringify(next, null, 2), {encoding:'utf8',mode:0o600});
+  try { fs.renameSync(temp, target); }
+  catch (error) { try { fs.unlinkSync(temp); } catch (_) {} throw error; }
+  cache = next;
+  return {...cache};
 }
 
 /*  L'identifiant d'application est l'IDENTITE de l'application, pas une

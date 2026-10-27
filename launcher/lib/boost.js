@@ -25,29 +25,7 @@ const path = require('path');
     Elles sont employees par beaucoup de clients : le GC G1 avec des
     pauses courtes, pas de GC explicite, et un ratio de survie qui
     libere vite les objets jeunes.                                     */
-const OPTIONS_JVM = [
-  '-XX:+UseG1GC',
-  '-XX:+ParallelRefProcEnabled',
-  '-XX:MaxGCPauseMillis=30',
-  '-XX:+UnlockExperimentalVMOptions',
-  '-XX:+DisableExplicitGC',
-  '-XX:+UseStringDeduplication',
-  '-XX:G1NewSizePercent=30',
-  '-XX:G1MaxNewSizePercent=40',
-  '-XX:G1HeapRegionSize=8M',
-  '-XX:G1ReservePercent=20',
-  '-XX:G1HeapWastePercent=5',
-  '-XX:G1MixedGCCountTarget=4',
-  '-XX:InitiatingHeapOccupancyPercent=15',
-  '-XX:G1MixedGCLiveThresholdPercent=90',
-  '-XX:G1RSetUpdatingPauseTimePercent=5',
-  '-XX:SurvivorRatio=32',
-  '-XX:+PerfDisableSharedMem',
-  '-XX:MaxTenuringThreshold=1',
-  '-Dusing.aikars.flags=https://mcflags.emc.gs',
-  '-Dfml.ignoreInvalidMinecraftCertificates=true',
-  '-Dfml.ignoreJavaVersion=true'
-];
+const OPTIONS_JVM = [];
 
 /**
  * Les options de JVM a ajouter, selon le mode.
@@ -57,25 +35,9 @@ const OPTIONS_JVM = [
  * @param {number} ramGo   la memoire allouee, en Go
  * @returns {string[]} les arguments a ajouter
  */
-function optionsJVM(actif, javaArgs, ramGo) {
-  const deja = String(javaArgs || '').trim();
-  const out = [];
-  if (!actif) return out;
-
-  /*  On ne repete pas une option que le joueur a deja mise. */
-  for (const o of OPTIONS_JVM) {
-    if (deja.indexOf(o.split('=')[0]) >= 0) continue;
-    out.push(o);
-  }
-
-  /*  Une memoire de depart egale a la memoire finale evite de
-      recopier le tas au cours de la partie. On ne le fait que si le
-      joueur n a pas impose de -Xmx lui-meme.                          */
-  const mo = Math.max(1024, Math.round((Number(ramGo) || 4) * 1024));
-  if (deja.indexOf('-Xms') < 0 && deja.indexOf('-Xmx') < 0) {
-    out.push('-Xms' + mo + 'M');
-  }
-  return out;
+function optionsJVM() {
+  // Keep Minecraft's own JVM defaults. A rendering preset is not a GC preset.
+  return [];
 }
 
 /**

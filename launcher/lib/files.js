@@ -7,12 +7,15 @@ const path = require('path');
 const zlib = require('zlib');
 const util  = require('./util');
 const cfgm  = require('./config');
+const safe = require('./safe-path');
 
 /* ------------------------------------------------------------------ */
 /*  Lecteur NBT minimal (level.dat)                                   */
 /* ------------------------------------------------------------------ */
 function readNBT(buf) {
+  if(buf.length>16*1024*1024)throw new Error("NBT trop volumineux");
   let o = 0;
+  function count(n){if(n<0||n>1000000)throw new Error("Taille NBT invalide");return n;}
   const u8   = () => buf.readUInt8(o++);
   const i8   = () => buf.readInt8(o++);
   const i16  = () => { const v = buf.readInt16BE(o); o += 2; return v; };
@@ -22,7 +25,8 @@ function readNBT(buf) {
   const f64  = () => { const v = buf.readDoubleBE(o); o += 8; return v; };
   const str  = () => { const n = buf.readUInt16BE(o); o += 2; const v = buf.toString('utf8', o, o + n); o += n; return v; };
 
-  function payload(t) {
+  function payload(t,depth=0) {
+    if(depth>64)throw new Error("Imbrication NBT excessive");
     switch (t) {
       case 1:  return i8();
       case 2:  return i16();
@@ -30,12 +34,12 @@ function readNBT(buf) {
       case 4:  return Number(i64());
       case 5:  return f32();
       case 6:  return f64();
-      case 7:  { const n = i32(); const v = Buffer.from(buf.slice(o, o + n)); o += n; return v; }
+      case 7:  { const n = count(i32()); const v = Buffer.from(buf.slice(o, o + n)); o += n; return v; }
       case 8:  return str();
-      case 9:  { const et = u8(); const n = i32(); const a = []; for (let k = 0; k < n && n > 0; k++) a.push(payload(et)); return a; }
-      case 10: { const r = {}; for (;;) { const t2 = u8(); if (t2 === 0) break; const nm = str(); r[nm] = payload(t2); } return r; }
-      case 11: { const n = i32(); const a = []; for (let k = 0; k < n && n > 0; k++) a.push(i32()); return a; }
-      case 12: { const n = i32(); const a = []; for (let k = 0; k < n && n > 0; k++) a.push(Number(i64())); return a; }
+      case 9:  { const et = u8(); const n = count(i32()); const a = []; for (let k = 0; k < n && n > 0; k++) a.push(payload(et,depth+1)); return a; }
+      case 10: { const r = Object.create(null); for (;;) { const t2 = u8(); if (t2 === 0) break; const nm = str(); r[nm] = payload(t2,depth+1); } return r; }
+      case 11: { const n = count(i32()); const a = []; for (let k = 0; k < n && n > 0; k++) a.push(i32()); return a; }
+      case 12: { const n = count(i32()); const a = []; for (let k = 0; k < n && n > 0; k++) a.push(Number(i64())); return a; }
       default: throw new Error('type NBT inconnu : ' + t);
     }
   }
@@ -49,8 +53,9 @@ const GAME_MODES = ['Survie', 'Creatif', 'Aventure', 'Spectateur'];
 
 function readLevelDat(file) {
   try {
+    if(fs.statSync(file).size>4*1024*1024)return null;
     let buf = fs.readFileSync(file);
-    if (buf.length > 2 && buf[0] === 0x1f && buf[1] === 0x8b) buf = zlib.gunzipSync(buf);
+    if (buf.length > 2 && buf[0] === 0x1f && buf[1] === 0x8b) buf = zlib.gunzipSync(buf,{maxOutputLength:16*1024*1024});
     const root = readNBT(buf);
     const d = (root && root.Data && typeof root.Data === 'object') ? root.Data : root;
     return {
@@ -69,7 +74,7 @@ function readLevelDat(file) {
 /* ------------------------------------------------------------------ */
 /*  Sauvegardes                                                        */
 /* ------------------------------------------------------------------ */
-function savesDir() { return path.join(cfgm.load().gameDir, 'saves'); }
+function savesDir() { const base=cfgm.load().gameDir;return safe.confine(base,path.join(base,'saves')); }
 function backupsDir() { util.ensureDir(path.join(cfgm.load().gameDir, 'backups')); return path.join(cfgm.load().gameDir, 'backups'); }
 
 function listSaves() {
@@ -103,31 +108,31 @@ function listSaves() {
 }
 
 function saveSize(folder) {
-  return util.dirSize(path.join(savesDir(), folder)).size;
+  return util.dirSize(safe.confine(savesDir(),path.join(savesDir(),safe.name(folder)),false)).size;
 }
 
 function previewIcon(folder, size) {
   // renvoie le chemin d'une vignette PNG si dispo (icone du monde)
-  const p = path.join(savesDir(), folder, 'icon.png');
+  const p = safe.confine(savesDir(),path.join(savesDir(),safe.name(folder),'icon.png'),false);
   return util.exists(p) ? p : null;
 }
 
 function deleteSave(folder) {
-  const p = path.join(savesDir(), path.basename(folder));
+  const p = safe.confine(savesDir(),path.join(savesDir(),safe.name(folder)),false);
   if (!util.exists(p)) throw new Error('Sauvegarde introuvable');
   return util.rmrf(p);
 }
 
 function renameSave(folder, newName) {
-  const from = path.join(savesDir(), path.basename(folder));
-  const to   = path.join(savesDir(), path.basename(newName));
+  const from = safe.confine(savesDir(),path.join(savesDir(),safe.name(folder)),false);
+  const to   = safe.confine(savesDir(),path.join(savesDir(),safe.name(newName)),false);
   if (util.exists(to)) throw new Error('Une sauvegarde porte deja ce nom');
   fs.renameSync(from, to);
   return to;
 }
 
 function backupSave(folder) {
-  const src = path.join(savesDir(), path.basename(folder));
+  const src = safe.confine(savesDir(),path.join(savesDir(),safe.name(folder)),false);
   if (!util.exists(src)) throw new Error('Sauvegarde introuvable');
   const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
   const zip = path.join(backupsDir(), path.basename(folder) + '-' + stamp + '.zip');
@@ -154,15 +159,24 @@ function listBackups() {
 
 function importSave(archivePath, targetName) {
   const src = path.basename(archivePath);
-  const dest = path.join(savesDir(), path.basename(targetName || src.replace(/\.zip$/i, '')));
+  const dest = safe.confine(savesDir(),path.join(savesDir(),safe.name(targetName || src.replace(/\.zip$/i, ''))),false);
   util.ensureDir(savesDir());
   if (util.exists(dest)) throw new Error('Une sauvegarde porte deja ce nom : ' + path.basename(dest));
 
-  const ps = "Add-Type -AssemblyName System.IO.Compression.FileSystem; " +
-             "[System.IO.Compression.ZipFile]::ExtractToDirectory('" +
-             archivePath.replace(/'/g, "''") + "','" + dest.replace(/'/g, "''") + "')";
+  const quote = value => "'" + value.replace(/'/g,"''") + "'";
+  const ps = "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; " +
+    "$zip=[System.IO.Compression.ZipFile]::OpenRead("+quote(archivePath)+"); try { " +
+    "$total=0L; $names=New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase); " +
+    "if($zip.Entries.Count -gt 100000){throw 'Archive trop volumineuse'}; " +
+    "foreach($entry in $zip.Entries){ $name=$entry.FullName.Replace('\\','/'); " +
+    "if($name.StartsWith('/') -or $name.Contains(':') -or $name.Contains([char]0) -or (($entry.ExternalAttributes -shr 16) -band 61440) -eq 40960){throw 'Chemin archive refuse'}; " +
+    "foreach($part in $name.TrimEnd('/').Split('/')){if($part -eq '..' -or $part -eq '.' -or $part -match '[<>:\\|?*\\x00-\\x1f]' -or $part -match '[. ]$' -or $part -match '^(?i:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\\.|$)'){throw 'Nom archive refuse'}}; " +
+    "if(-not $names.Add($name)){throw 'Doublon archive refuse'}; $total+=$entry.Length; " +
+    "if($entry.Length -gt 2147483648L -or $total -gt 17179869184L){throw 'Archive decompressee trop volumineuse'} " +
+    "} } finally {$zip.Dispose()}; [System.IO.Compression.ZipFile]::ExtractToDirectory("+quote(archivePath)+","+quote(dest)+")";
   return util.run('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], 300000)
     .then(r => {
+      if(r.code!==0)throw new Error("Import refuse ou archive invalide");
       // certaines archives contiennent un dossier racine : on aplatit
       const items = util.listDir(dest);
       if (items.length === 1 && items[0].dir && util.exists(path.join(items[0].path, 'level.dat'))) {
@@ -182,16 +196,16 @@ function importSave(archivePath, targetName) {
 /* ------------------------------------------------------------------ */
 /*  Explorateur de fichiers                                            */
 /* ------------------------------------------------------------------ */
-function browse(dir, depth) {
+async function browse(dir, depth) {
   const base = cfgm.load().gameDir;
-  const target = dir ? path.resolve(dir) : base;
-  if (!target.toLowerCase().startsWith(path.resolve(base).toLowerCase())) {
+  const target = safe.confine(base,dir ? path.resolve(dir) : base);
+  if (target.toLowerCase() !== path.resolve(base).toLowerCase() && !target.toLowerCase().startsWith(path.resolve(base).toLowerCase() + path.sep)) {
     throw new Error('Acces refuse : en dehors du dossier du jeu');
   }
   depth = Math.max(0, Math.min(4, depth == null ? 1 : depth));
   if (!util.exists(target)) return { path: target, name: path.basename(target), parent: null, entries: [], missing: true };
 
-  const entries = util.listDir(target, { withSize: depth === 0 }).map(e => {
+  const entries = (await util.listDirAsync(target)).map(e => {
     let icon = 'file';
     if (e.dir) {
       const n = e.name.toLowerCase();
@@ -204,8 +218,7 @@ function browse(dir, depth) {
     return { name: e.name, path: e.path, dir: e.dir, size: e.size, mtime: e.mtime, icon };
   });
 
-  const parent = path.dirname(target).toLowerCase() === path.resolve(base).toLowerCase()
-    ? null : path.dirname(target);
+  const parent = target.toLowerCase() === path.resolve(base).toLowerCase() ? null : path.dirname(target);
 
   return {
     path: target,
@@ -249,23 +262,23 @@ async function espaceLibre(cible) {
   return valeur;
 }
 
-function diskInfo() {
+async function diskInfo() {
   const base = cfgm.load().gameDir;
-  const top = browse(base, 0);
+  const top = await browse(base, 0);
   const total = top.entries.reduce((a, e) => a + e.size, 0);
   return espaceLibre(base).then(free => ({ root: base, entries: top.entries, total, free }));
 }
 
 function deleteEntry(p) {
   const base = path.resolve(cfgm.load().gameDir);
-  const target = path.resolve(p);
+  const target = safe.confine(base,p,false);
   if (!target.toLowerCase().startsWith(base.toLowerCase())) throw new Error('Acces refuse');
   if (target.toLowerCase() === base.toLowerCase()) throw new Error('Suppression du dossier racine refusee');
   return util.rmrf(target);
 }
 
 function createFolder(parent, name) {
-  const p = path.join(parent, path.basename(name));
+  const p = safe.confine(cfgm.load().gameDir,path.join(parent,safe.name(name)),false);
   util.ensureDir(p);
   return p;
 }

@@ -1,143 +1,33 @@
-'use strict';
-/*  lib/servers.js — statut reel d'un serveur Minecraft (protocole "status")
-                      handshake + status request + ping                     */
-
-const net   = require('net');
-const util  = require('./util');
-
-function varint(value) {
-  const bytes = [];
-  let v = value >>> 0;
-  do {
-    let b = v & 0x7f;
-    v >>>= 7;
-    if (v !== 0) b |= 0x80;
-    bytes.push(b);
-  } while (v !== 0);
-  return Buffer.from(bytes);
+ 'use strict';
+const fs=require('fs'),path=require('path'),crypto=require('crypto'),util=require('./util'),network=require('./server-status');
+const DEFAULT_SERVERS=[
+ {name:'PvPHub',host:'pvphub.me',port:25565,website:'https://store.pvphub.me/'},
+ {name:'Vanilla Practice',host:'vanillapractice.com',port:25565,website:'https://www.vanillapractice.com/'},
+ {name:'Nimlot',host:'nimlot.xyz',port:25565,website:'https://discord.gg/nRGHPepKPd'},
+ {name:'PvP Club',host:'mcpvp.club',port:25565,website:'https://mcpvp.club/'},
+ {name:'Minemen Club',host:'minemen.club',port:25565,website:'https://minemen.club/'},
+ {name:'Central PvP',host:'centralpvp.net',port:25565,website:'https://modrinth.com/server/centralpvp/'}
+];
+function serverFile(){return path.join(util.appRoot(),'servers.json');}
+function iconFile(host,port){return path.join(util.appRoot(),'cache/server-icons',crypto.createHash('sha256').update(host+':'+port).digest('hex')+'.png');}
+function cachedIcon(host,port){try{return 'data:image/png;base64,'+fs.readFileSync(iconFile(host,port)).toString('base64');}catch{return '';}}
+function saveServers(list){util.writeJSON(serverFile(),{schema:3,list:(list||[]).map(({icon,...s})=>s)});}
+function loadServers(){
+ const data=util.readJSON(serverFile(),null);
+ if(data&&data.schema>=2&&Array.isArray(data.list)){
+  if(data.schema===2){for(const preset of DEFAULT_SERVERS.slice(0,3))if(!data.list.some(s=>s.host.toLowerCase()===preset.host))data.list.push({...preset});saveServers(data.list);}
+  return data.list.map(s=>({...s,icon:cachedIcon(s.host,s.port)}));
+ }
+ const list=Array.isArray(data)?data:[];
+ for(const preset of DEFAULT_SERVERS)if(!list.some(s=>s.host.toLowerCase()===preset.host&&Number(s.port)===preset.port))list.push({...preset});
+ saveServers(list);return list.map(s=>({...s,icon:cachedIcon(s.host,s.port)}));
 }
-
-function mcString(str) {
-  const b = Buffer.from(str, 'utf8');
-  const out = Buffer.alloc(3 + b.length);
-  out.writeUInt16BE(b.length, 0);
-  b.copy(out, 3);
-  return out;
+function addServer(inputHost,inputPort,name){const {host,port}=network.endpoint(inputHost,inputPort),list=loadServers();if(!list.some(s=>s.host.toLowerCase()===host.toLowerCase()&&s.port===port)){list.push({host,port,name:String(name||host).slice(0,64)});saveServers(list);}return list;}
+function removeServer(host,port){const list=loadServers().filter(s=>!(s.host===host&&s.port===Number(port)));saveServers(list);return list;}
+const cache=new Map();
+async function status(host,port){
+ const key=host+':'+port,old=cache.get(key);if(old&&Date.now()-old.at<15000)return old.promise;
+ const promise=network.status(host,port).then(data=>{if(data.favicon){const target=iconFile(host,port);util.ensureDir(path.dirname(target));try{fs.writeFileSync(target,Buffer.from(data.favicon.slice(22),'base64'));}catch{}}return data;});
+ cache.set(key,{at:Date.now(),promise});if(cache.size>64)cache.delete(cache.keys().next().value);return promise;
 }
-
-function packet(id, payload) {
-  const body = Buffer.concat([varint(id), payload]);
-  return Buffer.concat([varint(body.length), body]);
-}
-
-function readVarint(buf, offset) {
-  let numRead = 0, result = 0, byte;
-  do {
-    if (offset + numRead >= buf.length) throw new Error('paquet tronque');
-    byte = buf.readUInt8(offset + numRead);
-    result |= (byte & 0x7f) << (7 * numRead);
-    numRead++;
-    if (numRead > 5) throw new Error('varint invalide');
-  } while (byte & 0x80);
-  return { value: result >>> 0, size: numRead };
-}
-
-/* Etape 1+2 : recuperation du statut (motd, joueurs, version) */
-function status(host, port) {
-  return new Promise((resolve, reject) => {
-    const sock = new net.Socket();
-    let done = false, buffer = Buffer.alloc(0);
-    const started = Date.now();
-    const finish = (err, data) => {
-      if (done) return;
-      done = true;
-      try { sock.destroy(); } catch (e) {}
-      err ? reject(err) : resolve(data);
-    };
-    sock.setTimeout(8000);
-    sock.on('timeout', () => finish(new Error('Delai depasse')));
-    sock.on('error', e => finish(new Error(e.code === 'ECONNREFUSED' ? 'Connexion refusee' : (e.code || e.message))));
-    sock.on('close', () => finish(new Error('Serveur ferme la connexion')));
-    sock.on('data', chunk => {
-      buffer = Buffer.concat([buffer, chunk]);
-      try {
-        if (buffer.length < 3) return;
-        const len = readVarint(buffer, 0);
-        const total = len.size + len.value;
-        if (buffer.length < total) return;
-        const id = readVarint(buffer, len.size);
-        if (id.value !== 0x00) return finish(new Error('reponse inattendue'));
-        const strLen = readVarint(buffer, len.size + id.size);
-        const start = len.size + id.size + strLen.size;
-        const json = buffer.toString('utf8', start, start + strLen.value);
-        const data = JSON.parse(json);
-
-        // etape 3 : ping/pong pour la latence reelle
-        const pingPacket = packet(0x01, Buffer.alloc(8));
-        sock.write(pingPacket);
-        const t0 = Date.now();
-        const onPong = buf => {
-          try {
-            if (buf.length < 2) return;
-            const l = readVarint(buf, 0);
-            if (buf.length < l.size + l.value) return;
-            sock.removeListener('data', onPong);
-            finish(null, {
-              host, port,
-              online: true,
-              version: data.version && (data.version.name || data.version.protocol),
-              protocol: data.version ? data.version.protocol : null,
-              players: data.players ? data.players.online : 0,
-              maxPlayers: data.players ? data.players.max : 0,
-              description: typeof data.description === 'string' ? data.description : (data.description && data.description.text) || '',
-              favicon: data.favicon || '',
-              latency: Math.max(1, Date.now() - t0),
-              handshake: Date.now() - started
-            });
-          } catch (e) { /* ignore */ }
-        };
-        sock.on('data', onPong);
-        setTimeout(() => finish(null, {
-          host, port, online: true,
-          version: data.version && data.version.name,
-          players: data.players ? data.players.online : 0,
-          maxPlayers: data.players ? data.players.max : 0,
-          description: typeof data.description === 'string' ? data.description : '',
-          favicon: data.favicon || '',
-          latency: Date.now() - started
-        }), 2500);
-      } catch (e) { finish(new Error('Protocole invalide : ' + e.message)); }
-    });
-    sock.connect(port, host, () => {
-      const handshake = packet(0x00, Buffer.concat([
-        varint(767),                       // version de protocole (1.21.x)
-        mcString(host),
-        Buffer.from([(port >> 8) & 0xff, port & 0xff]),
-        varint(1)
-      ]));
-      const req = packet(0x00, Buffer.alloc(0));
-      sock.write(Buffer.concat([handshake, req]));
-    });
-  });
-}
-
-/* Serveurs enregistres par l'utilisateur */
-function serverFile() { return require('path').join(require('./util').appRoot(), 'servers.json'); }
-
-function loadServers() { return util.readJSON(serverFile(), []); }
-function saveServers(list) { util.writeJSON(serverFile(), list || []); }
-
-function addServer(host, port, name) {
-  const list = loadServers();
-  if (list.some(s => s.host === host && s.port === port)) return list;
-  list.push({ host, port: Number(port) || 25565, name: name || (host + ':' + (port || 25565)) });
-  saveServers(list);
-  return list;
-}
-function removeServer(host, port) {
-  const list = loadServers().filter(s => !(s.host === host && s.port === Number(port)));
-  saveServers(list);
-  return list;
-}
-
-module.exports = { status, loadServers, saveServers, addServer, removeServer, serverFile };
+module.exports={status,loadServers,saveServers,addServer,removeServer,serverFile,DEFAULT_SERVERS};

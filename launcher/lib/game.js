@@ -122,10 +122,13 @@ function buildPlan(vjson, cfg, racineId) {
         jar contient les DLL, il doit etre extrait et mis de cote :
         le client choisira lui-meme la variante correspondant a son
         architecture parmi les sous-dossiers windows/x64, x86, arm64.  */
-    const estNative = parties.length >= 4 && parties[3];
+    const estNative = parties.length >= 4 && /^natives-/i.test(parties[3]);
     if (estNative) {
       if (dl.artifact) {
         const dest = path.join(dir, 'libraries', mvnToPath(dl.artifact.path));
+        // Modern Minecraft bootstraps also load native resources from these
+        // jars. Extraction alone is insufficient for LWJGL 3.4 and 26.x.
+        cp.push(dest);
         files.push({
           kind: 'natives',
           label: name,
@@ -550,7 +553,8 @@ function installedVersions() {
   try { dirs = fs.readdirSync(root, { withFileTypes: true }); } catch (e) { return out; }
   /*  Un seul calcul pour toutes les versions : il ne depend pas de la
       version affichee.                                                    */
-  const assets = tailleAssets(cfg.gameDir);
+  // Installed-version browsing must not synchronously scan the shared asset tree.
+  const assets = cacheAssets.chemin === path.join(cfg.gameDir,'assets') ? cacheAssets.taille : 0;
   for (const d of dirs) {
     if (!d.isDirectory()) continue;
     const jar = path.join(root, d.name, d.name + '.jar');
@@ -754,6 +758,10 @@ function javaDuRegistreSiBesoin() {
   return javaDuRegistre();
 }
 
+function javaCompatible(actual,required) {
+  // Legacy clients use Java 8/16 APIs removed from newer JVMs.
+  return required>0&&required<=16 ? actual===required : actual>=Math.max(8,required||8);
+}
 async function findJava(needMajor) {
   const need = needMajor || 8;
   const tested = [];
@@ -770,7 +778,7 @@ async function findJava(needMajor) {
       tested.push({ path: exe, ...info });
       /*  Le chemin de l'executable fait partie du resultat : sans lui,
           l'appelant ne sait pas ou se trouve le Java retenu.          */
-      if (info.ok && info.major >= need) return { found: true, need, path: exe, ...info, tested };
+      if (info.ok && javaCompatible(info.major,needMajor)) return { found: true, need, path: exe, ...info, tested };
     }
     return null;
   }
@@ -893,7 +901,7 @@ function substitutions(plan, opts) {
     auth_session: opts.session || '',
     clientid: '',
     auth_xuid: '',
-    user_type: opts.userType || 'msla',
+    user_type: opts.userType || 'legacy',
     version_type: plan.type || 'release',
     resolution_width: String(cfg.gameWidth || 1280),
     resolution_height: String(cfg.gameHeight || 720),
@@ -1131,6 +1139,7 @@ function renommerFenetre(pid, titre, bus) {
 }
 
 async function launch(opts, bus) {
+  if (opts.userType === "msa" && (!opts.accessToken || opts.accessToken === "0")) throw new Error("Une session Minecraft valide est requise.");
   const cfg = cfgm.load();
   const entry = { id: opts.version, url: opts.versionUrl };
   const complet = await versionComplete(entry);
@@ -1143,9 +1152,9 @@ async function launch(opts, bus) {
 
   const java = await findJava(plan.javaMajor);
   if (!java.found) {
-    const e = new Error('Java ' + plan.javaMajor + '+ introuvable. Installez un JDK (Temurin) ou indiquez le chemin dans Parametres.');
+    const e = new Error('Java ' + plan.javaMajor + ' compatible introuvable. Installez un JDK (Temurin) ou indiquez le chemin dans Parametres.');
     e.code = 'nojava';
-    e.detail = { need: plan.javaMajor, url: downloadUrlAdoptium(Math.max(17, plan.javaMajor)), tested: java.tested };
+    e.detail = { need: plan.javaMajor, url: downloadUrlAdoptium(plan.javaMajor), tested: java.tested };
     throw e;
   }
 
@@ -1155,11 +1164,11 @@ async function launch(opts, bus) {
 
   const built = buildArgs(plan, opts);
   const args = built.jvm.concat([built.mainClass], built.jeu);
-  bus.emit('game:spawn', { exe, args: args.map(a => (a.length > 120 ? a.slice(0, 60) + '…' : a)) });
+  bus.emit('game:spawn', { exe, args: args.map((arg,index) => arg === opts.accessToken || args[index-1] === '--accessToken' ? '[REDACTED]' : arg) });
 
   /*  Le mod affiche la musique en cours : on lance la detection au
   moment ou le jeu demarre, et on l arrete avec le launcher.        */
-  try { require('./media').demarrer(); } catch (e) { }
+
 
   const child = spawn(exe, args, {
     cwd: plan.dir,
@@ -1167,6 +1176,9 @@ async function launch(opts, bus) {
     detached: false,
     env: Object.assign({}, process.env, { MINECRAFT_JAVA_HOME: path.dirname(java.path) })
   });
+
+  try { if (child.pid) require('./media').demarrer(child.pid); } catch (e) { }
+  child.on('exit', () => { try { require('./media').arreter(); } catch (e) { } });
 
   child.stdout.on('data', d => bus.emit('game:log', { stream: 'out', line: clean(String(d)) }));
   child.stderr.on('data', d => bus.emit('game:log', { stream: 'err', line: clean(String(d)) }));
@@ -1185,7 +1197,7 @@ function clean(s) {
 module.exports = {
   getManifest, buildPlan, install, installedVersions, isInstalled, fetchVersionJson,
   versionComplete, versionParId, buildArgs, matchOs, mavenPath,
-  findJava, javaCandidates, javaDuRegistre, javaDuPath,
+  findJava, javaCompatible, javaCandidates, javaDuRegistre, javaDuPath,
   launch, killGame, downloadUrlAdoptium, downloadUrlAdoptiumZip,
   installJava, javaDir, allowRules, OUR_ARCH, OUR_OS
 };
