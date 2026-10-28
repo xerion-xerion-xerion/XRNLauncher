@@ -113,10 +113,11 @@ public class MenuEcran extends Screen {
         if (pw >= 260) Theme.texte(c,font,"XRN CLIENT",px+24,py+10,Theme.TEXTE);
         button(c,"×",px+pw-23,py+5,18,18,this::onClose,mx,my);
         String[] tabs={"Tous les mods","HUD","Visuels","Outils","Apparence","Reglages","Garde-robe"};
+        int navStep=Math.max(13,Math.min(24,bodyH/tabs.length)),navHeight=Math.max(12,navStep-3);
         for(int i=0;i<tabs.length;i++){final int index=i;boolean active=i==5?settings:!settings&&category==i;
-            int ty=bodyY+i*24;
-            button(c,tabs[i],px+9,ty,navWidth-4,21,()->{if(index==6){minecraft.gui.setScreen(new EcranGardeRobe(this));return;}settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
-            if(active)Theme.rect(c,px+9,ty,2,21,Theme.ACCENT);
+            int ty=bodyY+i*navStep;
+            button(c,tabs[i],px+9,ty,navWidth-4,navHeight,()->{if(index==6){minecraft.gui.setScreen(new EcranGardeRobe(this));return;}settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
+            if(active)Theme.rect(c,px+9,ty,2,navHeight,Theme.ACCENT);
         }
         Theme.rect(c,px+8,py+30,pw-16,1,Theme.BORDURE);
         Theme.rect(c,px+navWidth+10,bodyY,1,bodyH,Theme.BORDURE);
@@ -183,7 +184,8 @@ public class MenuEcran extends Screen {
         case "Inventaire","Durabilite","Nether","Rappel de pause"->Placement.UTILITAIRES;default->null;};}
 
     private void renderSettings(GuiGraphicsExtractor c,int mx,int my) {
-        int x=contentX,w=contentWidth,y=bodyY+3;
+        int x=contentX,w=contentWidth;maxScroll=Math.max(0,224-bodyH);targetScroll=Math.clamp(targetScroll,0,maxScroll);scroll=Math.clamp(scroll,0,maxScroll);int y=bodyY+3-scroll;
+        c.enableScissor(contentX,bodyY,contentX+contentWidth,bodyY+bodyH);
         setting(c,"Profil FPS Plus",Performance.actif?"Actif":"Inactif",x,y,w,()->{Reglages.boostNote();Performance.basculer();},mx,my);
         setting(c,"Distance d'affichage",Options.distance()+" chunks",x,y+28,w,()->Options.distance(Options.distance()>=16?4:Options.distance()+2),mx,my);
         setting(c,"Boussole",Hud.boussole?"Visible":"Masquee",x,y+56,w,()->Hud.boussole=!Hud.boussole,mx,my);
@@ -193,7 +195,7 @@ public class MenuEcran extends Screen {
     }
 
     private void setting(GuiGraphicsExtractor c,String name,String value,int x,int y,int w,Runnable action,int mx,int my) {
-        if(y+23>bodyY+bodyH)return;
+        if(y<bodyY||y+23>bodyY+bodyH)return;
         boolean hover=mx>=x&&mx<x+w&&my>=y&&my<y+23;
         Theme.rect(c,x,y,w,23,hover?Theme.nuance(0xFF2A2332):Theme.nuance(0xFF201B26));
         Theme.texte(c,font,fit(name,w-95),x+7,y+7,Theme.TEXTE);
@@ -240,7 +242,7 @@ public class MenuEcran extends Screen {
     @Override public void mouseMoved(double x,double y) { super.mouseMoved(x/uiScale,y/uiScale); }
     @Override public boolean mouseScrolled(double x,double y,double h,double v) {
         x/=uiScale;y/=uiScale;
-        if(settings||x<contentX||x>contentX+contentWidth||y<bodyY||y>bodyY+bodyH)return false;
+        if(x<contentX||x>contentX+contentWidth||y<bodyY||y>bodyY+bodyH)return false;
         targetScroll=Math.max(0,Math.min(maxScroll,targetScroll-v*32));return true;
     }
 }
