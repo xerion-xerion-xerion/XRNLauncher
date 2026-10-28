@@ -54,7 +54,7 @@ export class Directory {
     const token=(request.headers.get('Authorization')||'').replace(/^Bearer /,'');
     if(!/^[a-f0-9]{64}$/.test(token))return json({error:'session_required'},401);
     const b=await body(request),key=await hash(token);
-    const ok=await this.store.transaction(async tx=>{const session=await tx.get('s:'+key);if(!session||session.until<=now)return false;const p=await tx.get('p:'+session.uuid);if(!p||p.sessionHash!==key)return false;p.style=style(b.style);p.expiresAt=now+90000;await tx.put('p:'+p.uuid,p);return true;});
+    const ok=await this.store.transaction(async tx=>{const session=await tx.get('s:'+key);if(!session||session.until<=now)return false;const p=await tx.get('p:'+session.uuid);if(!p||p.sessionHash!==key)return false;p.style=style(b.style);p.expiresAt=now+90000;session.until=now+3600000;await tx.put('s:'+key,session);await tx.put('p:'+p.uuid,p);return true;});
     return ok?json({ok:true}):json({error:'session_expired'},401);
    }
    return json({error:'not_found'},404);

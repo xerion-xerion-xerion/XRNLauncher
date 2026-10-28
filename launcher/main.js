@@ -64,6 +64,7 @@ function pseudoSession() {
 }
 const bus = new EventEmitter();
 bus.setMaxListeners(64);
+bus.on('game:exit',()=>{session.game=null;presence.afterGameExit();});
 
 /* Etat de session en memoire ---------------------------------------- */
 const session = {
@@ -786,14 +787,16 @@ const XRN = {
       if(pose.echecs.length)throw new Error(pose.echecs.map(e=>e.nom+' : '+e.raison).join('\n'));
       if(!pose.compatibility.supported)bus.emit('mods:notice',{text:pose.compatibility.reason});
 
-      const res = await game.launch({
+      await presence.beforeGameStart(session.account).catch(()=>XRN.report('PRESENCE','Apparence partagée indisponible ; lancement du jeu maintenu.'));
+      let res;
+      try { res = await game.launch({
         version: entry.id,
         versionUrl: entry.url,
         username, uuid, accessToken, userType,
         ramGB: opts.ramGB,
         world: opts.world || null,
         extraJavaArgs
-      }, bus);
+      }, bus); } catch(error) { presence.afterGameExit();throw error; }
       session.game = res;
       cfgm.save({ lastVersion: entry.id, lastProfile: username });
       return res;

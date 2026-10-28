@@ -39,22 +39,36 @@ async function register(account){
  session=/^[a-f0-9]{64}$/.test(result.json.session||'')?result.json.session:'';sessionUntil=Date.now()+3500000;sessionUuid=account.id;lastStyle=JSON.stringify(style);lastHeartbeat=Date.now();
  await refresh();lastRefresh=Date.now();return {registered:true};
 }
-let busy=false,retryAfter=0;
-async function sync(account){
- if(busy||Date.now()<retryAfter||!base())return;
+let busy=false,retryAfter=0,inFlight=null,gameRunning=false;
+async function syncNow(account,preLaunch=false){
+ if(busy||(!preLaunch&&Date.now()<retryAfter)||!base())return;
  busy=true;
  try{
   if(configuredSharing()&&account?.minecraftVerified&&account.mcToken){
-   if(!session||sessionUntil<Date.now()||sessionUuid!==account.id)await register(account);
+   if(!session||sessionUntil<Date.now()||sessionUuid!==account.id){
+    // Never replace Minecraft's join proof while the game may be joining a server.
+    if(gameRunning&&!preLaunch){if(Date.now()-lastRefresh>15000){await refresh();lastRefresh=Date.now();}return;}
+    await register(account);
+   }
    const style=selectedStyle(),fingerprint=JSON.stringify(style);
    if(fingerprint!==lastStyle||Date.now()-lastHeartbeat>25000){
     const result=await http.postJSON(base()+'/v1/style',{style},{Authorization:'Bearer '+session});
     if(result.status!==200){if(result.status===401)session='';throw Error('Mise à jour du style refusée');}
-    lastStyle=fingerprint;lastHeartbeat=Date.now();
+    lastStyle=fingerprint;lastHeartbeat=Date.now();sessionUntil=Date.now()+3500000;
    }
   }else{session='';sessionUuid='';}
   if(Date.now()-lastRefresh>15000){await refresh();lastRefresh=Date.now();}
  }catch(error){retryAfter=Date.now()+60000;throw error;}finally{busy=false;}
 }
-module.exports={base,refresh,register,sync,selectedStyle};
+function sync(account){
+ if(inFlight)return inFlight;
+ inFlight=syncNow(account).finally(()=>{inFlight=null;});return inFlight;
+}
+async function beforeGameStart(account){
+ gameRunning=true;
+ if(inFlight)await inFlight.catch(()=>{});
+ inFlight=syncNow(account,true).finally(()=>{inFlight=null;});return inFlight;
+}
+function afterGameExit(){gameRunning=false;}
+module.exports={base,refresh,register,sync,selectedStyle,beforeGameStart,afterGameExit};
 function configuredSharing(){return cfg.load().shareAppearance!==false;}
