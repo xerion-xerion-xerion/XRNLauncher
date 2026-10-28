@@ -14,7 +14,9 @@
     "CielMixin",
     "MenuButtonMixin",
     "FreeLookEntityMixin",
-    "FreeLookCameraMixin"
+    "FreeLookCameraMixin",
+    "RenderPipelinesAccessor",
+    "MotionBlurMixin"
   ],
   "injectors": {
     "defaultRequire": 0

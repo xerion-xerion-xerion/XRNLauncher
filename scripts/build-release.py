@@ -50,6 +50,10 @@ def main():
   for name in TOOLS:shutil.copy2(APP/'tools'/name,stage/'tools'/name)
   shutil.copy2(APP/'legal/LICENSE-NWJS.txt',stage/'LICENSE-NWJS.txt')
   shutil.copy2(APP/'assets/icon.ico',stage/'assets'/('xrn-launcher-'+version+'.ico'))
+  # Existing Windows shortcuts can reference a versioned icon. Keep those
+  # published paths valid when an in-place update replaces the application.
+  for icon in (runtime/'assets').glob('xrn-launcher-*.ico'):
+   if re.fullmatch(r'xrn-launcher-\d+\.\d+\.\d+\.ico',icon.name) and not (stage/'assets'/icon.name).exists():shutil.copy2(icon,stage/'assets'/icon.name)
   subprocess.run(['powershell','-NoProfile','-ExecutionPolicy','Bypass','-File',str(APP/'tools/set-exe-icon.ps1'),'-Exe',str(stage/'XRNLauncher.exe'),'-Ico',str(APP/'assets/icon.ico')],check=True)
   full={p.relative_to(stage).as_posix():p for p in stage.rglob('*')if p.is_file()};new=managed(stage)
   archive(out/'XRNLauncher-win-x64.zip',full,'XRNLauncher/')

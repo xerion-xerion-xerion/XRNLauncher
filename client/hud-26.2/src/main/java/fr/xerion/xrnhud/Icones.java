@@ -10,6 +10,7 @@ final class Icones {
  static void draw(GuiGraphicsExtractor c,String name,int x,int y,int color){
   int tint=Theme.alpha(color,.16);Theme.arrondi(c,x-5,y-4,34,32,tint,0);
   switch(name){
+   case "Motion Blur"->{Theme.cadre(c,x+10,y+3,13,18,0,color);Theme.cadre(c,x+6,y+5,10,14,0,color);line(c,x,y,0,8,4,8,color);line(c,x,y,0,12,4,12,color);line(c,x,y,0,16,4,16,color);}
    case "Free Look"->{Theme.arrondi(c,x+2,y+6,21,13,0,color);Theme.cadre(c,x+9,y+9,7,7,0,color);line(c,x,y,5,2,19,2,color);line(c,x,y,19,2,22,5,color);}
    case "Auto Text"->{Theme.arrondi(c,x+1,y+3,22,15,0,color);path(c,x,y,color,5,17,5,22,11,17);for(int i=0;i<3;i++)Theme.rect(c,x+5+i*5,y+9,2,2,color);}
    case "Auto Connect"->{Theme.cadre(c,x+2,y+3,13,17,0,color);path(c,x,y,color,10,11,23,11,19,7,23,11,19,15);}

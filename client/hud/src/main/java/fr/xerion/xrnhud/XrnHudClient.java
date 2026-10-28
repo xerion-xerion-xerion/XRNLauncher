@@ -47,7 +47,7 @@ public class XrnHudClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        Raccourcis.installer();FreeLook.install();
+        Raccourcis.installer();FreeLook.install();MotionBlur.init();
         toucheMenu = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.xrnhud.menu",
                 InputUtil.Type.KEYSYM,

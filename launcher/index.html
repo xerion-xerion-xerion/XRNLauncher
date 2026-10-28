@@ -289,16 +289,19 @@
         </div></details>
 
         <div class="panel catalog-panel">
-          <div class="panel-h"><h4>Explorer Modrinth</h4><span class="tag">Version et chargeur vérifiés</span></div>
+          <div class="panel-h"><h4>Découvrir des mods</h4><span class="tag">Version et chargeur vérifiés</span></div>
           <div class="panel-b">
             <form id="catalogForm" class="catalog-controls">
               <div class="catalog-source">Modrinth<input id="catalogProvider" type="hidden" value="modrinth"></div>
               <label>Installation<select class="input" id="catalogInstallation"></select></label>
               <label>Rechercher<input class="input" id="catalogQuery" type="search" maxlength="100" placeholder="Sodium, Iris, minimap…"></label>
+              <label>Trier par<select class="input" id="catalogSort"><option value="downloads">Popularité</option><option value="relevance">Pertinence</option><option value="updated">Mise à jour</option></select></label>
               <button class="btn primary" id="catalogSearch" type="submit">Rechercher</button>
             </form>
             <p class="catalog-note" id="catalogContext">Choisissez une installation avec un chargeur de mods.</p>
-            <div id="catalogResults" class="catalog-results" role="status" aria-live="polite"></div>
+            <p id="catalogCount" class="catalog-count" role="status" aria-live="polite"></p>
+            <div id="catalogResults" class="catalog-results" role="list"></div>
+            <div id="catalogPagination" class="catalog-pagination" hidden><button id="catalogPrev" class="btn sm" type="button">← Précédent</button><span id="catalogPage"></span><button id="catalogNext" class="btn sm" type="button">Suivant →</button></div>
           </div>
         </div>
 

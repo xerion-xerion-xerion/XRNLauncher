@@ -1,5 +1,5 @@
 CONFIDENTIALITÉ — XRN LAUNCHER
-Version du 28 octobre 2026 — distribution 4.8.0
+Version du 28 octobre 2026 — distribution 4.8.1
 
 Responsable et contact
 Xerion, développeur du projet XRN Launcher. Pour toute question ou demande concernant vos données : xrnlauncher@gmail.com.

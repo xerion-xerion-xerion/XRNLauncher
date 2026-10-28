@@ -1,4 +1,4 @@
-﻿#define AppVersion "4.8.0"
+﻿#define AppVersion "4.8.1"
 #include "payload.iss"
 #ifndef SetupRevision
   #define SetupRevision "1"

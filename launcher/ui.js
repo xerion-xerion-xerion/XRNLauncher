@@ -1353,6 +1353,7 @@ const Splash = {
         {nom:'Balises',txt:'Points nommés par monde, serveur et dimension, avec distance en jeu.'},
         {nom:'Inventaire et totems',txt:'Grille des 27 cases, places libres et compteur de totems.'},
         {nom:'Informations de jeu',txt:'FPS, coordonnées, ping, jour, mémoire, vitesse et session.'},
+        {nom:'Motion Blur',txt:'Flou de mouvement GPU, intensité réglable de 0 à 100 %, HUD net.'},
         {nom:'Free Look',txt:'Maintenir V pour déplacer la caméra sans tourner le personnage. Touche configurable.'},
         {nom:'Touches et CPS',txt:'Clavier, souris et clics sur une seconde glissante.'},
         {nom:'Armure et effets',txt:'Équipement, durabilité, potions et durées.'},
@@ -1533,30 +1534,43 @@ const Splash = {
 
   $('#modFilter').addEventListener('input', () => Mods.renderList());
   const Catalog = {
-    generation:0,busy:false,
+    generation:0,offset:0,lastKey:'',
     async refresh(){
       const profiles=await api(x=>x.modCatalog.contexts(),{soft:true})||[];
       const select=$('#catalogInstallation'),previous=select.value||STATE.selected;
       select.innerHTML=profiles.map(p=>`<option value="${esc(p.id)}">${esc(p.version)} · ${esc(p.loader)}</option>`).join('');
       if(profiles.some(p=>p.id===previous))select.value=previous;
-      $('#catalogSearch').disabled=!profiles.length;
-      this.profiles=profiles;this.describe();
+      this.profiles=profiles;$('#catalogSearch').disabled=!profiles.length;this.describe();
+      if(!profiles.length){$('#catalogResults').replaceChildren();$('#catalogCount').textContent='';$('#catalogPagination').hidden=true;return;}
+      const key=this.key();if(key!==this.lastKey)await this.search(0);
     },
+    key(){return [$('#catalogInstallation').value,$('#catalogQuery').value.trim(),$('#catalogSort').value].join('|');},
     describe(){
       const p=(this.profiles||[]).find(p=>p.id===$('#catalogInstallation').value);
-      $('#catalogContext').textContent=p?`Fichiers pour Minecraft ${p.version} / ${p.loader}. Dépendances obligatoires incluses. Les fichiers vont dans le dossier Mods affiché ci-dessous.`:'Installez d’abord Fabric ou un autre chargeur dans la section ci-dessous.';
+      $('#catalogContext').textContent=p?`Pour Minecraft ${p.version} · ${p.loader}. Les dépendances requises sont proposées avant le téléchargement.`:'Installez d’abord Fabric ou un autre chargeur dans la section ci-dessous.';
     },
-    async search(){
-      if(this.busy)return;const generation=++this.generation,provider=$('#catalogProvider').value,installation=$('#catalogInstallation').value;
-      if(!installation)return;this.busy=true;$('#catalogSearch').disabled=true;
-      const box=$('#catalogResults');box.textContent='Recherche des mods compatibles…';
+    async search(offset=0){
+      const installation=$('#catalogInstallation').value;if(!installation)return;
+      const generation=++this.generation,key=this.key();this.offset=offset;$('#catalogSearch').disabled=true;
+      const box=$('#catalogResults');box.textContent='Recherche des mods compatibles…';$('#catalogPagination').hidden=true;
       try{
-        const result=await X.modCatalog.search(provider,$('#catalogQuery').value,installation);
-        if(generation!==this.generation)return;
-        box.innerHTML=result.items.length?result.items.map((p,i)=>`<article class="catalog-card"><div class="catalog-heading"><span class="catalog-initial" aria-hidden="true">${esc(p.title.slice(0,1))}</span><div><h5>${esc(p.title)}</h5><small>${esc(p.author)}</small></div></div><p>${esc(p.description)}</p><div class="catalog-actions"><span>${Number(p.downloads||0).toLocaleString('fr-FR')} téléchargements</span><button class="btn sm" data-catalog="${i}">Installer…</button></div></article>`).join(''):'<p class="empty">Aucun mod pour cette recherche et cette installation.</p>';
-        $$('[data-catalog]',box).forEach(b=>b.onclick=()=>this.install(provider,result.items[Number(b.dataset.catalog)],installation,b));
-      }catch(e){box.textContent=e.message||'Le catalogue est indisponible.';}
-      finally{this.busy=false;$('#catalogSearch').disabled=!$('#catalogInstallation').value;}
+        const result=await X.modCatalog.search('modrinth',$('#catalogQuery').value,installation,{sort:$('#catalogSort').value,offset});
+        if(generation!==this.generation)return;this.lastKey=key;this.result=result;
+        const compact=n=>Number(n||0).toLocaleString('fr-FR',{notation:'compact',maximumFractionDigits:1});
+        const category=n=>({'library':'Bibliothèque','optimization':'Optimisation','utility':'Utilitaire','decoration':'Décoration','worldgen':'Monde','adventure':'Aventure','technology':'Technique'}[n]||n.replace(/-/g,' '));
+        $('#catalogCount').textContent=Number(result.total||0).toLocaleString('fr-FR')+' mods · '+result.context.version+' / '+result.context.loader;
+        box.innerHTML=result.items.length?result.items.map((p,i)=>`<article class="catalog-row" role="listitem">
+          <span class="catalog-mod-icon" aria-hidden="true"><span>${esc(p.title.slice(0,1))}</span>${p.icon?`<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${esc(p.icon)}">`:''}</span>
+          <div class="catalog-mod-main"><h5>${esc(p.title)}</h5><p>${esc(p.description)}</p><div class="catalog-mod-meta"><span class="catalog-author"><i aria-hidden="true">${esc(p.author.slice(0,1).toUpperCase())}</i>${esc(p.author)}</span><span class="catalog-loader">${esc(result.context.loader)}</span>${(p.categories||[]).filter(v=>!['fabric','forge','quilt','neoforge','minecraft','liteloader','rift','babric'].includes(v)).slice(0,2).map(v=>`<span class="catalog-category">${esc(category(v))}</span>`).join('')}</div></div>
+          <div class="catalog-mod-side"><div class="catalog-mod-stats"><span title="Téléchargements">${ic('i-download',12)} ${compact(p.downloads)}</span>${p.updated?`<span title="Dernière mise à jour">${esc(relative(Date.parse(p.updated)))}</span>`:''}</div><div class="catalog-row-actions"><button class="btn sm catalog-view" data-catalog-view="${i}">Voir ↗</button><button class="btn sm catalog-install" data-catalog="${i}">Installer</button></div></div>
+        </article>`).join(''):'<p class="empty">Aucun mod pour cette recherche et cette installation.</p>';
+        $$('img',box).forEach(img=>img.addEventListener('error',()=>{img.hidden=true;},{once:true}));
+        $$('[data-catalog]',box).forEach(b=>b.onclick=()=>this.install('modrinth',result.items[Number(b.dataset.catalog)],installation,b));
+        $$('[data-catalog-view]',box).forEach(b=>b.onclick=()=>api(x=>x.env.openUrl(result.items[Number(b.dataset.catalogView)].url)));
+        const end=offset+result.items.length;$('#catalogPage').textContent=result.items.length?`${offset+1}–${end} sur ${Number(result.total).toLocaleString('fr-FR')}`:'';
+        $('#catalogPrev').disabled=offset===0;$('#catalogNext').disabled=end>=result.total;$('#catalogPagination').hidden=!result.items.length||result.total<=20;
+      }catch(e){if(generation===this.generation){box.textContent=e.message||'Le catalogue est indisponible.';$('#catalogCount').textContent='';this.lastKey='';}}
+      finally{if(generation===this.generation)$('#catalogSearch').disabled=!$('#catalogInstallation').value;}
     },
     async install(provider,project,installation,button){
       if(this.installing)return;this.installing=true;button.disabled=true;button.textContent='Vérification…';
@@ -1567,11 +1581,13 @@ const Splash = {
         const result=await X.modCatalog.install(plan.token);Mods.renderList(result.mods);
         Toast.show('Mods installés',result.installed.length+' fichier(s). Disponibles au prochain lancement du jeu.','ok',6000);button.textContent='Installé';
       }catch(e){Toast.show('Installation impossible',e.message||String(e),'err',7000);}
-      finally{this.installing=false;button.disabled=false;if(button.textContent!=='Installé')button.textContent='Installer…';}
+      finally{this.installing=false;button.disabled=false;if(button.textContent!=='Installé')button.textContent='Installer';}
     }
   };
   $('#catalogForm').addEventListener('submit',event=>{event.preventDefault();if(DESKTOP)Catalog.search();});
-  ['catalogProvider','catalogInstallation'].forEach(id=>$('#'+id).addEventListener('change',()=>{Catalog.generation++;$('#catalogResults').replaceChildren();Catalog.describe();}));
+  ['catalogInstallation','catalogSort'].forEach(id=>$('#'+id).addEventListener('change',()=>{Catalog.describe();if(DESKTOP)Catalog.search(0);}));
+  $('#catalogPrev').addEventListener('click',()=>Catalog.search(Math.max(0,Catalog.offset-20)));
+  $('#catalogNext').addEventListener('click',()=>Catalog.search(Catalog.offset+20));
   const btnModsFolder = $('#btnModsFolder');
   if (btnModsFolder) btnModsFolder.addEventListener('click', () => api(x => x.mods.openFolder()));
   const btnModsPlay = $('#btnModsPlay');

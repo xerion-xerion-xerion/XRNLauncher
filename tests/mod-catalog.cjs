@@ -10,6 +10,11 @@ const root=v('root','root1',[{project_id:'dep',dependency_type:'required'}]),dep
 http.getJSON=async url=>url.includes('/root/')?[root]:url.includes('/dep/')?[dep]:[];
 http.download=async(url,file)=>fs.writeFileSync(file,url.endsWith('root')?'rootroot1':'depdep1');
 (async()=>{
+ const resolveVersions=http.getJSON;
+ http.getJSON=async()=>({hits:[{project_id:'Abcd1234',slug:'a.mod+unusual',title:'Example',icon_url:'https://cdn.modrinth.com/data/icon.png'},{project_id:'../invalid',slug:'unsafe'}],total_hits:2});
+ const unusual=await catalog.search('modrinth','','fabric-test',{sort:'downloads',offset:20});
+ assert.equal(unusual.items.length,1);assert.equal(unusual.items[0].url,'https://modrinth.com/mod/Abcd1234');assert.equal(unusual.offset,20);assert.equal(unusual.items[0].icon,'https://cdn.modrinth.com/data/icon.png');
+ http.getJSON=resolveVersions;
  assert.throws(()=>catalog.fileUrl('https://evil.example/test.jar'));assert.throws(()=>catalog.fileUrl('http://cdn.modrinth.com/a'));
  const beta={...root,id:'beta',version_type:'beta',date_published:'2027-01-01'};assert.equal(catalog.pick([beta,root],{version:'1.21.11',loader:'forge'}),undefined);
  assert.equal(catalog.pick([beta,root],{version:'1.21.11',loader:'fabric'}).id,'root1');

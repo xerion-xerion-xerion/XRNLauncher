@@ -5,16 +5,21 @@ const MR='https://api.modrinth.com/v2',plans=new Map();let installing=false;
 const loaderTypes={forge:1,fabric:4,quilt:5,neoforge:6};
 function context(id){const p=mods.profilsMod().find(p=>p.version===id);if(!p||!loaderTypes[p.loader.id])throw Error('Sélectionne une installation Fabric, Forge, Quilt ou NeoForge.');return {installation:id,version:p.base,loader:p.loader.id,gameDir:path.resolve(config.load().gameDir)};}
 function contexts(){return mods.profilsMod().map(p=>({id:p.version,version:p.base,loader:p.loader.id}));}
-function id(value){if(!/^[\w-]{1,100}$/.test(String(value)))throw Error('Identifiant de projet invalide');return encodeURIComponent(value);}
+function id(value){if(typeof value!=='string'||!/^[A-Za-z0-9_.+-]{1,100}$/.test(value))throw Error('Identifiant de projet invalide');return encodeURIComponent(value);}
+function iconUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='cdn.modrinth.com'&&!u.username&&!u.password?u.href:'';}catch{return '';}}
 function compatible(v,c){return Array.isArray(v.game_versions)&&v.game_versions.includes(c.version)&&v.loaders.includes(c.loader)&&v.environment!=='server_only'&&v.environment!=='dedicated_server_only';}
 function pick(versions,c){return versions.filter(v=>compatible(v,c)).sort((a,b)=>(a.version_type==='release'?0:1)-(b.version_type==='release'?0:1)||Date.parse(b.date_published)-Date.parse(a.date_published))[0];}
 async function mrVersion(project,c){const q=new URLSearchParams({loaders:JSON.stringify([c.loader]),game_versions:JSON.stringify([c.version]),include_changelog:'false'});const v=pick(await http.getJSON(MR+'/project/'+id(project)+'/version?'+q),c);if(!v)throw Error('Aucun fichier compatible pour '+project+' ('+c.version+', '+c.loader+').');return v;}
-async function search(provider,query,installation){
+async function search(provider,query,installation,options={}){
  const c=context(installation);query=String(query||'').trim().slice(0,100);
  if(provider==='modrinth'){
-  const q=new URLSearchParams({query,limit:'12',facets:JSON.stringify([['project_type:mod'],['versions:'+c.version],['categories:'+c.loader],['client_side:required','client_side:optional']])});
+  const offset=Math.max(0,Math.min(10000,Math.floor(Number(options.offset)||0))),sort=['downloads','relevance','updated'].includes(options.sort)?options.sort:'downloads';
+  const q=new URLSearchParams({query,index:sort,offset:String(offset),limit:'20',facets:JSON.stringify([['project_type:mod'],['versions:'+c.version],['categories:'+c.loader],['client_side:required','client_side:optional']])});
   const data=await http.getJSON(MR+'/search?'+q);
-  return {context:c,items:(data.hits||[]).map(p=>({id:p.project_id,title:p.title,description:p.description,author:p.author,url:'https://modrinth.com/mod/'+id(p.slug),downloads:p.downloads}))};
+  // Slugs are display metadata, not trusted identifiers. A malformed hit must
+  // never break the whole catalogue or become a filesystem/download parameter.
+  const items=(data.hits||[]).filter(p=>typeof p.project_id==='string'&&/^[A-Za-z0-9]{8}$/.test(p.project_id)).map(p=>({id:p.project_id,title:String(p.title||'Mod'),description:String(p.description||''),author:String(p.author||''),url:'https://modrinth.com/mod/'+id(p.project_id),icon:iconUrl(p.icon_url),downloads:Number(p.downloads)||0,updated:p.date_modified||'',categories:(p.display_categories||p.categories||[]).filter(v=>typeof v==='string').slice(0,4)}));
+  return {context:c,items,offset,total:Number(data.total_hits)||items.length};
  }
  throw Error('Catalogue inconnu');
 }
