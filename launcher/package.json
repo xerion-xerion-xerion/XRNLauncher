@@ -1,6 +1,6 @@
 {
   "name": "xrn-launcher",
-  "version": "4.8.1",
+  "version": "4.8.2",
   "description": "XRN Launcher â€” Minecraft Java",
   "main": "index.html",
   "chromium-args": "--disable-features=CalculateNativeWinOcclusion",

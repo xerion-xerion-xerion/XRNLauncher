@@ -2,6 +2,10 @@
 
 Launcher Minecraft Java pour Windows, développé par Xerion. Interface violette, installations classiques et Fabric, gestion des mods, captures F2 et client au HUD personnalisable.
 
+## Nouveautés 4.8.2
+
+- Logo Modrinth vectoriel à la place du texte dans le catalogue.
+
 ## Nouveautés 4.8.1
 
 - Catalogue en liste avec icônes, auteurs, catégories, tri et pagination. Les identifiants de projet stables sont utilisés pour éviter les erreurs liées aux slugs.
@@ -16,7 +20,7 @@ Launcher Minecraft Java pour Windows, développé par Xerion. Interface violette
 
 ## Télécharger
 
-**[Télécharger XRN-Setup.exe](https://github.com/xerion-xerion-xerion/XRNLauncher/releases/download/v4.8.1/XRN-Setup.exe)** — le setup s’occupe du téléchargement, de l’installation et des raccourcis. Aucun dossier à décompresser sur le Bureau.
+**[Télécharger XRN-Setup.exe](https://github.com/xerion-xerion-xerion/XRNLauncher/releases/download/v4.8.2/XRN-Setup.exe)** — le setup s’occupe du téléchargement, de l’installation et des raccourcis. Aucun dossier à décompresser sur le Bureau.
 
 [Site du projet](https://xerion-xerion-xerion.github.io/XRNLauncher/) · [Conditions](https://xerion-xerion-xerion.github.io/XRNLauncher/conditions.html) · [Confidentialité](https://xerion-xerion-xerion.github.io/XRNLauncher/confidentialite.html)
 
