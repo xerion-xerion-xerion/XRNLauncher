@@ -2,38 +2,66 @@
   "schema": 1,
   "products": [
     {
-      "id": "cape_xrn",
-      "name": "XRN",
-      "description": "Le signe du client, entre orbite violette et ciel profond.",
+      "id": "cape_job",
+      "name": "Job Application",
+      "description": "Le mème Employment / Job Application, en cape fixe.",
       "animated": false,
-      "preview": "assets/cosmetics/cape_xrn.png",
+      "preview": "assets/cosmetics/cape_job.png",
       "free": true,
       "paymentUrl": "",
-      "commercialReady": true
+      "commercialReady": false,
+      "amount": 0,
+      "currency": "eur"
     },
     {
-      "id": "cape_orbite",
-      "name": "Orbite",
-      "description": "Deux horizons qui tournent dans la nuit.",
+      "id": "cape_space",
+      "name": "Singularité",
+      "description": "Ton animation spatiale bleue, sur toute la cape.",
       "animated": true,
-      "frames": 64,
-      "frameMillis": 80,
-      "preview": "assets/cosmetics/cape_orbite.gif",
+      "frames": 15,
+      "frameMillis": 60,
+      "preview": "assets/cosmetics/cape_space.gif",
       "free": false,
       "paymentUrl": "",
-      "commercialReady": false
+      "commercialReady": false,
+      "amount": 299,
+      "currency": "eur"
     },
     {
-      "id": "cape_nova",
-      "name": "Nova",
-      "description": "Une explosion stellaire, puis le retour au calme.",
-      "animated": true,
-      "frames": 64,
-      "frameMillis": 80,
-      "preview": "assets/cosmetics/cape_nova.gif",
+      "id": "cape_scream",
+      "name": "Scream",
+      "description": "Le masque en noir et blanc.",
+      "animated": false,
+      "preview": "assets/cosmetics/cape_scream.png",
       "free": false,
       "paymentUrl": "",
-      "commercialReady": false
+      "commercialReady": false,
+      "amount": 199,
+      "currency": "eur"
+    },
+    {
+      "id": "cape_spine",
+      "name": "Spine",
+      "description": "Une silhouette blanche sur fond noir.",
+      "animated": false,
+      "preview": "assets/cosmetics/cape_spine.png",
+      "free": false,
+      "paymentUrl": "",
+      "commercialReady": false,
+      "amount": 199,
+      "currency": "eur"
+    },
+    {
+      "id": "cape_crimson",
+      "name": "Crimson Knight",
+      "description": "Un chevalier sous un ciel rouge.",
+      "animated": false,
+      "preview": "assets/cosmetics/cape_crimson.png",
+      "free": false,
+      "paymentUrl": "",
+      "commercialReady": false,
+      "amount": 199,
+      "currency": "eur"
     }
   ]
 }

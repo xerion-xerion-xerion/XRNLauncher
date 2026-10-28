@@ -22,8 +22,22 @@ async function catalogue(account){
  const state=presence.status();
  const own=state.registered&&state.uuid===account?.id;
  if(own)await presence.refreshRights().catch(()=>{});
- return {products:collection.map(p=>({...p,paymentUrl:''})),equipped:selection(),rights:own?presence.status().rights:['cape_xrn'],presence:{...presence.status(),registered:own},connected:account?.minecraftVerified===true,paymentAvailable:false};
+ let shop={mode:'unavailable',products:[]};try{shop=await require('./http').getJSON(presence.base()+'/v2/shop/catalogue');}catch{}
+ let gifts={available:false,canGenerate:false};if(own)try{gifts=await presence.shop('gifts/status',{});}catch{}
+ return {gifts,products:collection.map(p=>({...p,paymentUrl:'',purchasable:shop.products?.find(s=>s.id===p.id)?.purchasable===true,amount:shop.products?.find(s=>s.id===p.id)?.amount??p.amount})),equipped:selection(),rights:own?presence.status().rights:['cape_job'],presence:{...presence.status(),registered:own},connected:account?.minecraftVerified===true,paymentAvailable:['test','live'].includes(shop.mode),paymentMode:shop.mode};
 }
+function requireSession(account){if(!account?.minecraftVerified||!presence.status().registered||presence.status().uuid!==account.id)throw Error('Connectez votre compte Minecraft au relais avant de tester un achat.');}
+async function checkout(account,id){
+ requireSession(account);if(!collection.some(p=>p.id===id&&!p.free))throw Error('Cape inconnue.');
+ const result=await presence.shop('checkout',{product:id}),url=new URL(result.url);
+ if(!['test','live'].includes(result.mode)||result.test!==(result.mode==='test')||!/^[a-f0-9]{40}$/.test(result.order||'')||url.protocol!=='https:'||url.hostname!=='checkout.stripe.com'||url.username||url.password)throw Error('Lien de paiement refusé.');
+ return {order:result.order,url:url.href,test:result.test,mode:result.mode};
+}
+async function paymentStatus(account,order){
+ requireSession(account);if(!/^[a-f0-9]{40}$/.test(order||''))throw Error('Commande invalide.');
+ const result=await presence.shop('status',{order});await presence.refreshRights();return result;
+}
+async function orders(account){requireSession(account);return presence.shop('orders',{});}
 async function equip(account,id){
  const product=collection.find(p=>p.id===id);if(id&&!product)throw Error('Cape inconnue.');
  if(id&&!product.free){
@@ -35,4 +49,5 @@ async function equip(account,id){
  await presence.sync(account).catch(()=>{});
  return {equipped:id,presence:presence.status()};
 }
-module.exports={catalogue,equip,selection,wardrobeFile,skin};
+async function gift(account,action,body){requireSession(account);const r=await presence.shop('gifts/'+action,body);if(action==='redeem'){await presence.refreshRights();await presence.sync(account);}return r;}
+module.exports={gift,catalogue,equip,selection,wardrobeFile,skin,checkout,paymentStatus,orders};

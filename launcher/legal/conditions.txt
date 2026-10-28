@@ -1,5 +1,5 @@
 CONDITIONS D’UTILISATION — XRN LAUNCHER
-Version du 28 octobre 2026 — distribution 4.8.2
+Version du 28 octobre 2026 — distribution 4.9.0
 
 1. Le projet
 XRN Launcher est un logiciel indépendant développé par Xerion. Contact : xrnlauncher@gmail.com. Il n’est ni développé, ni approuvé par Mojang ou Microsoft. Minecraft et leurs autres marques appartiennent à leurs titulaires.
@@ -22,3 +22,7 @@ Les composants tiers et leurs licences restent applicables : les notices de dist
 
 6. Désinstallation
 Vous pouvez désinstaller XRN dans les applications Windows. Les données du jeu et les comptes enregistrés sont conservés séparément pour éviter de supprimer vos mondes. Vous pouvez les effacer vous-même après sauvegarde depuis le dossier de données indiqué dans les paramètres.
+
+
+Cosmétiques et codes cadeaux
+Les cosmétiques sont des éléments visuels numériques liés au compte Minecraft connecté, sans achat de Minecraft inclus. Le prix en euros est présenté avant paiement. Chaque achat donne la seule cape choisie après confirmation par Stripe ; Job Application reste gratuite. Un code d’ami offre une seule cape premium au choix et devient inutilisable après attribution. Vérifiez votre compte et le produit avant de confirmer. Pour un achat non reçu ou une demande de remboursement, contactez xrnlauncher@gmail.com avec la référence de commande, sans données de carte ni secret. Un remboursement ou une contestation peut retirer le droit correspondant. Vos droits légaux restent applicables.

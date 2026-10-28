@@ -1,4 +1,5 @@
 import {verifyCertificateProof} from './certificate.mjs';
+import {handleShop,purchaseRights,PRODUCTS} from './shop.mjs';
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 const random=n=>hex(crypto.getRandomValues(new Uint8Array(n)));
@@ -25,9 +26,11 @@ export class Directory {
  async fetch(request){
   const u=new URL(request.url),now=Date.now(),ip=request.headers.get('CF-Connecting-IP')||'unknown';
   let stage='request';try {
+   if(u.pathname.startsWith('/v2/shop/'))return await handleShop(request,this);
    if(['/v1/players','/v2/players'].includes(u.pathname)&&request.method==='GET'){
     const all=await this.store.list({prefix:'p:',limit:2000});
-    return json({pseudos:[...all.values()].filter(p=>p.expiresAt>now).map(({uuid,pseudo,style,cosmetic,expiresAt})=>({uuid,pseudo,style,cosmetic:cosmetic||'',expiresAt,verified:true}))});
+    const pseudos=await Promise.all([...all.values()].filter(p=>p.expiresAt>now).map(async({uuid,pseudo,style,cosmetic,expiresAt})=>({uuid,pseudo,style,cosmetic:(await this.rights(uuid)).includes(cosmetic)?cosmetic:'',expiresAt,verified:true})));
+    return json({pseudos});
    }
    if(u.pathname==='/v2/challenge'&&request.method==='GET'){
     if(!await this.rate(ip,'challenge',12))return json({error:'rate_limit'},429);
@@ -91,14 +94,15 @@ export class Directory {
   }catch(error){console.warn('presence_request_failed',stage,error.name);return json({error:stage==='minecraft'?'minecraft_unavailable':'invalid_request'},stage==='minecraft'?503:400);}
  }
  async rights(uuid,store=this.store){
-  const granted=await store.get('e:'+uuid)||[];
-  return ['cape_xrn',...['cape_orbite','cape_nova'].filter(id=>Array.isArray(granted)&&granted.includes(id))];
+  const granted=[...(await store.get('e:'+uuid)||[]),...await purchaseRights(store,this.env,uuid)];
+  return PRODUCTS.filter(p=>p.amount===0||(Array.isArray(granted)&&granted.includes(p.id))).map(p=>p.id);
  }
  async alarm(){
   const now=Date.now();const all=await this.store.list({limit:10000});
-  const dead=[...all].filter(([k,v])=>k.startsWith('e:')?false:k.startsWith('p:')?v.expiresAt<now:(v.until||0)<now).map(([k])=>k);
+  const ephemeral=k=>['p:','c:','s:','r:'].some(prefix=>k.startsWith(prefix));
+  const dead=[...all].filter(([k,v])=>!ephemeral(k)?false:k.startsWith('p:')?v.expiresAt<now:(v.until||0)<now).map(([k])=>k);
   if(dead.length)await this.store.delete(dead);
-  if([...all].some(([k])=>!k.startsWith('e:'))&&all.size>dead.length)await this.store.setAlarm(now+180000);
+  if([...all].some(([k])=>ephemeral(k)&&!dead.includes(k)))await this.store.setAlarm(now+180000);
  }
 }
 export default {async fetch(request,env){

@@ -58,6 +58,7 @@ public abstract class PlayerEntityRendererMixin {
             state.skin = new net.minecraft.world.entity.player.PlayerSkin(
                     skin.body(), notreCape, skin.elytra(), skin.model(), skin.secure());
             state.showCape = true;
+            if(!fr.xerion.xrnhud.CapeMouvement.naturel){state.capeFlap=6;state.capeLean=0;state.capeLean2=0;}
         } catch (Throwable t) {
             /*  Une cape absente n est pas un jeu casse. */
         }

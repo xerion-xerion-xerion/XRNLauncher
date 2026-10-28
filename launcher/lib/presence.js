@@ -2,7 +2,11 @@
 const fs=require('fs'),path=require('path');
 const http=require('./http'),cfg=require('./config'),util=require('./util');
 function base(){
- const raw=String(cfg.load().presenceUrl||cfg.shipped().presenceUrl||'').replace(/\/+$/,'');if(!raw)return '';
+ try{const file=path.join(util.appRoot(),'production-service.json');if(fs.statSync(file).size<=2048){const marker=JSON.parse(fs.readFileSync(file,'utf8'));if(marker.enabled===true&&marker.origin==='https://xrn-shop-live.schianotom667.workers.dev')return marker.origin;}}catch{}
+ let raw=String(cfg.load().presenceUrl||cfg.shipped().presenceUrl||'').replace(/\/+$/,'');if(!raw)return '';
+ // Existing user preferences may still contain the official pre-shop relay.
+ // Move only this known endpoint; preserve custom/private service choices.
+ if(raw==='https://xrn-presence.schianotom667.workers.dev')raw='https://xrn-shop-live.schianotom667.workers.dev';
  const url=new URL(raw);
  if(url.protocol!=='https:'&&!(cfg.load().developerMode&&['127.0.0.1','localhost'].includes(url.hostname)))throw Error('Le service de présence doit utiliser HTTPS.');
  return raw;
@@ -16,10 +20,11 @@ async function refresh(){
  return {configured:true,total:players.length};
 }
 let session='',sessionUntil=0,certificateUntil=0,sessionUuid='',lastStyle='',lastRefresh=0,lastHeartbeat=0,lastError='';
-let rights=['cape_xrn'];
-function selectedCosmetic(){try{const file=path.join(util.appRoot(),'cosmetique.json');if(fs.existsSync(file)){const r=JSON.parse(fs.readFileSync(file,'utf8'));return ['cape_xrn','cape_orbite','cape_nova'].includes(r.equipe)?r.equipe:'';}const r=JSON.parse(fs.readFileSync(path.join(cfg.load().gameDir,'config','xrnhud.json'),'utf8')).reglages||{};return ['cape_xrn','cape_orbite','cape_nova'].includes(r.equipe)?r.equipe:'';}catch{return '';}}
+const capeIds=require('../cosmetics.json').products.map(p=>p.id);
+let rights=['cape_job'];
+function selectedCosmetic(){try{const file=path.join(util.appRoot(),'cosmetique.json');if(fs.existsSync(file)){const r=JSON.parse(fs.readFileSync(file,'utf8'));return capeIds.includes(r.equipe)?r.equipe:'';}const r=JSON.parse(fs.readFileSync(path.join(cfg.load().gameDir,'config','xrnhud.json'),'utf8')).reglages||{};return capeIds.includes(r.equipe)?r.equipe:'';}catch{return '';}}
 function saveRights(list){
- rights=['cape_xrn',...['cape_orbite','cape_nova'].filter(id=>Array.isArray(list)&&list.includes(id))];
+ rights=[...new Set(['cape_job',...capeIds.filter(id=>Array.isArray(list)&&list.includes(id))])];
  const file=path.join(util.appRoot(),'droits.json');util.ensureDir(path.dirname(file));
  fs.writeFileSync(file+'.tmp',JSON.stringify({droits:rights,misAJour:new Date().toISOString()}));fs.renameSync(file+'.tmp',file);
 }
@@ -76,5 +81,6 @@ async function beforeGameStart(account){
 }
 function afterGameExit(){gameRunning=false;}
 async function refreshRights(){if(!session)return rights;const r=await http.getJSON(base()+'/v2/me',{headers:{Authorization:'Bearer '+session}});saveRights(r.rights);return rights;}
-module.exports={base,refresh,register,sync,selectedStyle,selectedCosmetic,beforeGameStart,afterGameExit,refreshRights,status(){return {configured:!!base(),private:!!cfg.load().developerMode&&base()==='http://127.0.0.1:8789',sharing:configuredSharing(),registered:!!session&&sessionUntil>Date.now(),uuid:sessionUuid,lastRefresh,lastHeartbeat,error:lastError,rights:[...rights]};}};
+async function shop(path,data){if(!session||sessionUntil<Date.now())throw Error('Connectez votre compte Microsoft pour acheter une cape.');const r=await http.postJSON(base()+'/v2/shop/'+path,data,{Authorization:'Bearer '+session});if(r.status!==200){const errors={invalid_or_used_code:'Code invalide, expiré ou déjà utilisé.',gift_rate_limit:'Trop de tentatives. Réessayez plus tard.',gifts_unavailable:'Codes cadeaux indisponibles.',admin_required:'Seul le propriétaire peut générer des codes.',already_owned:'Cette cape appartient déjà à votre compte. Choisissez-en une autre : le code reste valable.',shop_disabled:'Les achats sont fermés.',rate_limit:'Patientez avant de réessayer.',session_required:'Reconnectez votre compte Minecraft.'};throw Error(errors[r.json?.error]||'Le paiement n’a pas pu être vérifié. Aucun droit ajouté.');}return r.json;}
+module.exports={base,shop,refresh,register,sync,selectedStyle,selectedCosmetic,beforeGameStart,afterGameExit,refreshRights,status(){return {configured:!!base(),private:!!cfg.load().developerMode&&base()==='http://127.0.0.1:8789',sharing:configuredSharing(),registered:!!session&&sessionUntil>Date.now(),uuid:sessionUuid,lastRefresh,lastHeartbeat,error:lastError,rights:[...rights]};}};
 function configuredSharing(){return cfg.load().shareAppearance!==false;}

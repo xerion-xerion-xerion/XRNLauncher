@@ -83,7 +83,7 @@
     </div>
 
     <div class="title-right">
-      
+
       <div class="clock" id="clock">--:--</div>
       <button class="account-chip" id="accountChip">
         <span class="acc-avatar" id="accAvatarMini"></span>
@@ -115,7 +115,7 @@
       <button class="nav-item" data-view="shots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><use href="#i-image"></use></svg>Captures</button>
       <button class="nav-item" data-view="files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"></use></svg>Fichiers</button>
       <button class="nav-item" data-view="servers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-globe"></use></svg>Serveurs</button>
-      
+
 
       <div class="nav-label" style="margin-top:10px">Compte &amp; système</div>
       <button class="nav-item" data-view="login"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-user"></use></svg>Connexion</button>
@@ -267,20 +267,32 @@
       <!-- ========== SAUVEGARDES ========== -->
       <!-- ========== MODS ========== -->
       <section class="view" id="view-boutique">
-        <header class="shop-heading"><div><p class="shop-kicker">XRN / COSMÉTIQUES</p><h2>La première collection.</h2><p>Une signature. Deux horizons.</p></div><span class="shop-development">Aperçu de la collection · Achats fermés</span></header>
+        <header class="shop-heading"><div><p class="shop-kicker">XRN / COSMÉTIQUES</p><h2>La première collection.</h2><p>Job Application offerte. Quatre capes premium.</p></div><span class="shop-development" id="shopMode">Paiement sécurisé par Stripe</span></header>
         <div class="shop-layout">
           <div class="shop-preview">
             <div class="shop-preview-top"><span id="shopPreviewLabel">XRN</span><span id="shopAnimationLabel">Cape originale</span></div>
             <div class="shop-stage" id="shopStage" aria-label="Votre personnage Minecraft portant la cape, faites glisser pour tourner"><canvas id="shopPlayer" aria-label="Aperçu 3D du personnage avec la cape"></canvas><div class="shop-floor"></div></div>
             <div class="shop-rotation"><label for="shopAngle">Rotation</label><input id="shopAngle" type="range" min="0" max="360" value="180" aria-label="Rotation du personnage"><button class="btn sm" id="shopPause" type="button">Pause</button></div>
+            <label class="shop-motion"><input id="shopCapeMotion" type="checkbox" checked> Mouvement naturel de la cape</label>
             <p class="shop-preview-caption" id="shopSkinCaption">Votre skin Minecraft · Glissez pour tourner</p>
           </div>
           <div class="shop-details">
-            <p class="shop-kicker">01 / COLLECTION ESPACE</p><div id="shopProducts" class="shop-products" role="group" aria-label="Choisir une cape"></div>
-            <div class="shop-description"><h3 id="shopProductTitle">XRN</h3><p id="shopProductDescription">Le signe du client, entre orbite violette et ciel profond.</p><div class="shop-product-info"><span id="shopProductType">Cape fixe</span><span id="shopProductPrice">Offerte</span></div><button class="btn primary" id="shopEquip" type="button">Équiper la cape XRN</button><p id="shopActionStatus" role="status" aria-live="polite"></p></div>
+            <p class="shop-kicker">01 / LES CAPES</p><div id="shopProducts" class="shop-products" role="group" aria-label="Choisir une cape"></div>
+            <div class="shop-description"><h3 id="shopProductTitle">XRN</h3><p id="shopProductDescription">Le signe du client, entre orbite violette et ciel profond.</p><div class="shop-product-info"><span id="shopProductType">Cape fixe</span><span id="shopProductPrice">Offerte</span></div><button class="btn primary" id="shopEquip" type="button">Équiper Job Application</button><button class="btn" id="shopBuy" type="button" hidden>Tester l’achat · 2,99 €</button><button class="btn sm" id="shopCheckPayment" type="button" hidden>Vérifier le paiement</button><p id="shopActionStatus" role="status" aria-live="polite"></p></div>
             <div class="shop-sharing"><div><span id="shopPresenceDot" class="shop-status-dot"></span><b id="shopPresenceTitle">Partage entre joueurs</b></div><p id="shopPresenceDescription">Connectez votre compte Microsoft dans XRN pour partager votre apparence.</p><button class="btn sm" type="button" id="shopRefresh">Actualiser le partage</button></div>
           </div>
         </div>
+        <section class="shop-gifts" aria-labelledby="shopGiftTitle">
+          <h3 id="shopGiftTitle">Un code d’ami ?</h3><p>Choisissez une cape premium. Un code offre une seule cape à un seul compte.</p>
+          <form id="shopGiftForm"><input id="shopGiftCode" aria-label="Code d’ami" placeholder="Votre code d’ami" maxlength="90" autocomplete="off" spellcheck="false"><select id="shopGiftProduct" aria-label="Cape à recevoir"></select><button class="btn primary" id="shopGiftRedeem" type="submit">Recevoir cette cape</button></form>
+          <p id="shopGiftStatus" role="status" aria-live="polite"></p>
+        </section>
+        <section class="shop-gifts" id="shopGiftAdmin" hidden>
+          <h3>Vos codes cadeaux</h3><p>Chaque code offre une cape premium au choix. Il expire après 30 jours et ne fonctionne qu’une fois.</p>
+          <form id="shopGiftCreateForm"><input id="shopGiftPrefix" aria-label="Préfixe du code" placeholder="Préfixe facultatif, ex. KOZO" maxlength="16" pattern="[a-zA-Z0-9]*"><button class="btn" id="shopGiftCreate" type="submit">Générer un code</button></form>
+          <div id="shopGiftResult" hidden><input id="shopGiftGenerated" aria-label="Code généré" readonly><button class="btn" id="shopGiftCopy" type="button">Copier</button><p>Copiez-le maintenant : le code complet ne sera plus affiché après fermeture.</p></div>
+          <p id="shopGiftAdminStatus" role="status"></p><div id="shopGiftHistory"></div>
+        </section>
       </section>
       <section class="view" id="view-mods">
         <div class="view-head">
@@ -392,27 +404,27 @@
       </section>
 
             <!-- ========== VIDEOS ========== -->
-      
+
 
       <!-- ========== CONNEXION ========== -->
       <section class="view" id="view-login"><div class="login-view-title"><h2>Votre compte Minecraft</h2><p>Connectez le compte Microsoft qui possède Minecraft Java.</p></div>
         <div class="login-wrap">
 
           <!-- Connexion : Microsoft puis profil hors-ligne -->
-          
+
 
           <!-- Écran de connexion Microsoft -->
-          
+
 
           <!-- Profil hors-ligne : action principale -->
           <!-- Mode solo -->
-          
+
 
           <!-- Compte connecté -->
-          
+
 
           <!-- Comptes enregistrés -->
-          
+
 
         <div class="login-layout"><div class="login-main"><div class="choice">
             <button class="choice-card primary" id="pickMicrosoft">
@@ -476,8 +488,8 @@
                 <input type="range" id="setRam" min="1" max="32" step="0.5" value="4">
                 <div class="chips" id="ramChips"><button class="chip" data-ram="2">2 Go</button><button class="chip" data-ram="4">4 Go</button><button class="chip" data-ram="6">6 Go</button><button class="chip" data-ram="8">8 Go</button><button class="chip" data-ram="12">12 Go</button><button class="chip" data-ram="16">16 Go</button></div>
               </div>
-              
-              
+
+
             </div>
           </div><div class="panel"><div class="panel-h"><h4>Java et affichage</h4></div><div class="panel-b"><div class="field"><label>GUI scale</label><select class="input" id="setGui"><option>1</option><option>2</option><option selected="">3</option><option>4</option></select></div><div class="field">
                 <label for="setJava">Chemin de java.exe / javaw.exe</label>
@@ -499,8 +511,8 @@
                 <div class="field"><label>Largeur du jeu</label><input class="input" id="setGw" type="number" min="640" max="7680" step="10"></div>
                 <div class="field"><label>Hauteur du jeu</label><input class="input" id="setGh" type="number" min="480" max="4320" step="10"></div>
               </div>
-              
-              
+
+
               <div class="switch-row"><div><b style="font-size:13px">Annonces XRN</b><p>Afficher les annonces du projet au lancement. Les annonces générales restent disponibles sans suivi technique.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Recevoir les annonces XRN" data-switch="notificationsEnabled"></button></div>
               <div class="switch-row"><div><b style="font-size:13px">Identifiant technique de cette installation</b><p><code id="technicalInstallationId">Disponible dans l’application Windows</code></p></div><button class="btn sm" id="copyTechnicalId" type="button">Copier</button></div>
               <div class="switch-row"><div><b style="font-size:13px">Réception ciblée des annonces</b><p>Partager un identifiant aléatoire d’installation et la version XRN. Aucun mot de passe ni jeton de compte.</p></div><button class="switch" type="button" role="switch" aria-checked="false" aria-label="Réception ciblée des annonces" data-switch="shareInstallationStatus"></button></div>

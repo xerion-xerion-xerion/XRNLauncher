@@ -1,0 +1,19 @@
+# Production payment service. Secrets are stored in Cloudflare, never in this file.
+name = "xrn-shop-live"
+main = "worker.mjs"
+compatibility_date = "2026-10-27"
+workers_dev = true
+
+[vars]
+XRN_SHOP_MODE = "live"
+XRN_ALLOW_LIVE = "true"
+XRN_SHOP_RETURN_ORIGIN = "https://xrn-shop-live.schianotom667.workers.dev"
+XRN_LIVE_PRODUCT_IDS = "cape_space,cape_scream,cape_spine,cape_crimson"
+
+[[durable_objects.bindings]]
+name = "DIRECTORY"
+class_name = "Directory"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Directory"]

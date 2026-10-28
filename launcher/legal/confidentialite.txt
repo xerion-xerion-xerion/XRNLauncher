@@ -1,5 +1,5 @@
 CONFIDENTIALITÉ — XRN LAUNCHER
-Version du 28 octobre 2026 — distribution 4.8.2
+Version du 28 octobre 2026 — distribution 4.9.0
 
 Responsable et contact
 Xerion, développeur du projet XRN Launcher. Pour toute question ou demande concernant vos données : xrnlauncher@gmail.com.
@@ -31,3 +31,7 @@ Cloudflare : https://www.cloudflare.com/privacypolicy/
 Modrinth : https://modrinth.com/legal/privacy
 Adoptium : https://adoptium.net/about/privacy
 Google : https://policies.google.com/privacy
+
+
+Boutique et cadeaux
+Pour les cosmétiques, le relais conserve les droits par UUID Minecraft, les références de commande, le produit, le montant, la devise et les états de paiement. Stripe héberge le paiement et traite les données de carte ; XRN ne reçoit pas le numéro de carte. Les droits et preuves sont durables pour retrouver les achats après réinstallation. Les cadeaux conservent l’émetteur, le destinataire après utilisation, la cape choisie et les dates ; le code complet n’est pas conservé côté serveur. Contact pour vos demandes : xrnlauncher@gmail.com. Politique Stripe : https://stripe.com/privacy.

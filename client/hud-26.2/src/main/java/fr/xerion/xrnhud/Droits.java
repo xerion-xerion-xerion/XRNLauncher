@@ -59,9 +59,11 @@ public final class Droits {
         Un seul type de cosmetique, pour l instant : les capes. La
         cape de l auteur est offerte, les autres se paient.              */
     public static final List<Cosmetique> CATALOGUE = List.of(
-      new Cosmetique("cape_xrn", "XRN", "cape", 0, "#A78BFA", true),
-      new Cosmetique("cape_orbite", "Orbite", "cape", 0, "#8BAEFF", false),
-      new Cosmetique("cape_nova", "Nova", "cape", 0, "#8DEAFF", false));
+      new Cosmetique("cape_job", "Job Application", "cape", 0, "#E4ECF2", true),
+      new Cosmetique("cape_space", "Singularite", "cape", 0, "#75DAEE", false),
+      new Cosmetique("cape_scream", "Scream", "cape", 0, "#E4ECF2", false),
+      new Cosmetique("cape_spine", "Spine", "cape", 0, "#E4ECF2", false),
+      new Cosmetique("cape_crimson", "Crimson Knight", "cape", 0, "#E4ECF2", false));
     private static final java.util.Map<String,Identifier[]> ANIMATIONS = new java.util.HashMap<>();
     static {
       for(String id : List.of("cape_orbite","cape_nova")) {
@@ -70,10 +72,19 @@ public final class Droits {
         ANIMATIONS.put(id,frames);
       }
     }
+    static {
+      Identifier[] frames=new Identifier[15];
+      for(int i=0;i<frames.length;i++)frames[i]=Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_space/"+String.format(java.util.Locale.ROOT,"%02d",i)+".png");
+      ANIMATIONS.put("cape_space",frames);
+    }
     public static Identifier texture(String id) {
-      if("cape_xrn".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_xrn.png");
+      if("cape_scream".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_scream.png");
+      if("cape_spine".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_spine.png");
+      if("cape_crimson".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_crimson.png");
+
+      if("cape_job".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_job.png");
       Identifier[] frames=ANIMATIONS.get(id);
-      return frames==null?null:frames[(int)((System.nanoTime()/80_000_000L)%frames.length)];
+      return frames==null?null:frames[(int)((System.nanoTime()/("cape_space".equals(id)?60_000_000L:80_000_000L))%frames.length)];
     }
     private static final Set<String> ACQUIS = new LinkedHashSet<>();
     private static String equipe = "";
@@ -89,7 +100,7 @@ public final class Droits {
      * d'appeler le serveur lui-meme.
      */
     static void charger() {
-        ACQUIS.clear(); ACQUIS.add("cape_xrn");
+        ACQUIS.clear(); ACQUIS.add("cape_job");
         String chemin = cheminFichier();
         if (chemin == null || chemin.isEmpty()) {
             LOGGER.info("Droits : aucun fichier trouve (ni la propriete, ni le dossier du jeu)");
@@ -155,7 +166,7 @@ public final class Droits {
 
     /** Le joueur possede-t-il ce cosmetique ? */
     public static boolean possede(String id) {
-        return "cape_xrn".equals(id) || (id != null && ACQUIS.contains(id));
+        return "cape_job".equals(id) || (id != null && ACQUIS.contains(id));
     }
 
     /** Les cosmetiques que le joueur possede, dans l ordre du catalogue. */

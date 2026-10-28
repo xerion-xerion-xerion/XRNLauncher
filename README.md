@@ -2,6 +2,13 @@
 
 Launcher Minecraft Java pour Windows, développé par Xerion. Interface violette, installations classiques et Fabric, gestion des mods, captures F2 et client au HUD personnalisable.
 
+## Nouveautés 4.9.0
+
+- Boutique avec aperçu 3D de votre skin : Job Application offerte, Singularité animée à 2,99 €, Scream, Spine et Crimson Knight à 1,99 € chacune.
+- Paiement Stripe hébergé. Les droits sont attribués côté serveur au compte Minecraft après vérification du paiement, puis partagés entre clients compatibles.
+- Code d’ami : une seule cape premium au choix, une seule utilisation globale. Les codes sont générés par le compte propriétaire vérifié, avec expiration et annulation avant utilisation.
+- Rotation bornée, mouvement naturel des capes et correction des terminaux auxiliaires à l’ouverture.
+
 ## Nouveautés 4.8.2
 
 - Logo Modrinth vectoriel à la place du texte dans le catalogue.
@@ -20,7 +27,7 @@ Launcher Minecraft Java pour Windows, développé par Xerion. Interface violette
 
 ## Télécharger
 
-**[Télécharger XRN-Setup.exe](https://github.com/xerion-xerion-xerion/XRNLauncher/releases/download/v4.8.2/XRN-Setup.exe)** — le setup s’occupe du téléchargement, de l’installation et des raccourcis. Aucun dossier à décompresser sur le Bureau.
+**[Télécharger XRN-Setup.exe](https://github.com/xerion-xerion-xerion/XRNLauncher/releases/download/v4.9.0/XRN-Setup.exe)** — le setup s’occupe du téléchargement, de l’installation et des raccourcis. Aucun dossier à décompresser sur le Bureau.
 
 [Site du projet](https://xerion-xerion-xerion.github.io/XRNLauncher/) · [Conditions](https://xerion-xerion-xerion.github.io/XRNLauncher/conditions.html) · [Confidentialité](https://xerion-xerion-xerion.github.io/XRNLauncher/confidentialite.html)
 

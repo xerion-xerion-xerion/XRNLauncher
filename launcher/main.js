@@ -222,11 +222,16 @@ const XRN = {
     },
     config() { return cfgm.load(); },
     cosmetics: {
+      gift(action,body){if(!['redeem','create','list','revoke'].includes(action))throw Error('Action inconnue.');return cosmetics.gift(session.account,action,body);},
+      gift(action,body){if(!['redeem','create','list','revoke'].includes(action))throw Error('Action inconnue.');return cosmetics.gift(session.account,action,body);},
+      async checkout(id){const r=await cosmetics.checkout(session.account,id);nw.Shell.openExternal(r.url);return {order:r.order,test:r.test};},
+      paymentStatus(order){return cosmetics.paymentStatus(session.account,order);},
+      orders(){return cosmetics.orders(session.account);},
       skin(){return cosmetics.skin(session.account);},
-      catalogue(){return cosmetics.catalogue(session.account);},
+      async catalogue(){await require('./lib/private-relay').start().catch(()=>{});await presence.sync(session.account).catch(()=>{});return cosmetics.catalogue(session.account);},
       equip(id){return cosmetics.equip(session.account,id);},
       status(){return presence.status();},
-      async refresh(){await presence.sync(session.account);return cosmetics.catalogue(session.account);}
+      async refresh(){await require('./lib/private-relay').start().catch(()=>{});await presence.sync(session.account);return cosmetics.catalogue(session.account);}
     },
     shippedClientId() { return cfgm.shipped().microsoftClientId || ''; },
 
