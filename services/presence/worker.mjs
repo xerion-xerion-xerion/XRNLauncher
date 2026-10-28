@@ -42,7 +42,7 @@ export class Directory {
     const proofUrl=new URL('https://sessionserver.mojang.com/session/minecraft/hasJoined');proofUrl.searchParams.set('username',b.username);proofUrl.searchParams.set('serverId',b.challenge);
     stage='minecraft';
     const response=await fetch(proofUrl,{redirect:'manual',signal:AbortSignal.timeout(10000)});
-    if(response.status!==200)return json({error:'minecraft_proof_required'},401);
+    if(response.status!==200)return json({error:'minecraft_proof_required',upstreamStatus:response.status},401);
     const proof=await response.json();
     if(!/^[a-f0-9]{32}$/i.test(proof.id)||String(proof.name).toLowerCase()!==b.username.toLowerCase())return json({error:'invalid_proof'},401);
     stage='publish';const uuid=proof.id.toLowerCase(),session=random(32),sessionHash=await hash(session),player={uuid,pseudo:proof.name,style:style(b.style),expiresAt:now+90000,sessionHash};
