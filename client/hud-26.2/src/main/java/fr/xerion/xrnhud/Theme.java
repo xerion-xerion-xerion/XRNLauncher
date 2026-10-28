@@ -30,14 +30,21 @@ final class Theme {
     static final int SURVOL = 0xFF2B2533;       /*  survole discret d'une ligne */
     static final int COMMUT = 0xFF3A3442;       /*  interrupteur eteint     */
     static final int BORDURE = 0xFF3B3444;
-    static final int ACCENT = 0xFFC4AEFF;      /*  violet clair            */
-    static final int ACCENT_FORT = 0xFFA78BFA; /*  violet marque           */
+    static int ACCENT = 0xFFC4AEFF;      /*  violet clair            */
+    static int ACCENT_FORT = 0xFFA78BFA; /*  violet marque           */
     static final int TEXTE = 0xFFE9E5EF;
     static final int TEXTE_DOUX = 0xFFA59DB0;
     static final int TEXTE_FAIBLE = 0xFF776F83;
     static final int VERT = 0xFFA078D7;
     static final int ROUGE = 0xFFE9A38E;
 
+    static int couleur=0xFFA78BFA;
+    static void appliquerCouleur(int c){couleur=0xFF000000|(c&0xFFFFFF);ACCENT_FORT=couleur;ACCENT=melange(couleur,0xFFFFFFFF,.3f);}
+    static int nuance(int c){if(couleur==0xFFA78BFA)return c;float[] h=java.awt.Color.RGBtoHSB(c>>16&255,c>>8&255,c&255,null),a=java.awt.Color.RGBtoHSB(couleur>>16&255,couleur>>8&255,couleur&255,null);return (c&0xFF000000)|(java.awt.Color.HSBtoRGB(a[0],h[1],h[2])&0xFFFFFF);}
+    static void engrenage(GuiGraphicsExtractor c,int x,int y,int color){
+        for(int a=0;a<8;a++){double t=a*Math.PI/4;rect(c,x+8+(int)Math.round(Math.cos(t)*7),y+8+(int)Math.round(Math.sin(t)*7),3,3,color);}
+        arrondi(c,x+4,y+4,12,12,color,0);arrondi(c,x+7,y+7,6,6,nuance(0xFF282130),0);
+    }
     /** Melange deux couleurs, t = 0 renvoie a, t = 1 renvoie b. */
     static int melange(int a, int b, float t) {
         t = Anime.borne(t);
@@ -157,9 +164,9 @@ final class Theme {
     static void boutons(GuiGraphicsExtractor c,Font font,java.util.List<? extends Object> children,int mx,int my){
         for(Object child:children)if(child instanceof net.minecraft.client.gui.components.Button b&&b.visible){
             boolean hover=b.active&&(mx>=b.getX()&&mx<b.getX()+b.getWidth()&&my>=b.getY()&&my<b.getY()+b.getHeight());
-            arrondi(c,b.getX(),b.getY(),b.getWidth(),b.getHeight(),hover?0xFF3C2E50:0xFF26212F,hover||b.isFocused()?ACCENT:0xFF544661);
-            texteCentre(c,font,b.getMessage().getString(),b.getX()+b.getWidth()/2,b.getY()+(b.getHeight()-font.lineHeight)/2,b.active?TEXTE:TEXTE_FAIBLE);
+            arrondi(c,b.getX(),b.getY(),b.getWidth(),b.getHeight(),hover?nuance(0xFF3C2E50):nuance(0xFF26212F),hover||b.isFocused()?ACCENT:nuance(0xFF544661));
+            texteCentre(c,font,b.getMessage().getString(),b.getX()+b.getWidth()/2,b.getY()+(b.getHeight()-font.lineHeight)/2+1,b.active?TEXTE:TEXTE_FAIBLE);
         }
     }
-    static void champs(GuiGraphicsExtractor c,java.util.List<? extends Object> children){for(Object child:children)if(child instanceof net.minecraft.client.gui.components.EditBox f&&f.visible)arrondi(c,f.getX()-5,f.getY()-2,f.getWidth()+10,f.getHeight()+4,0xFF141119,f.isFocused()?ACCENT:0xFF55475E);}
+    static void champs(GuiGraphicsExtractor c,java.util.List<? extends Object> children){for(Object child:children)if(child instanceof net.minecraft.client.gui.components.EditBox f&&f.visible)arrondi(c,f.getX()-5,f.getY()-2,f.getWidth()+10,f.getHeight()+4,nuance(0xFF141119),f.isFocused()?ACCENT:nuance(0xFF55475E));}
 }

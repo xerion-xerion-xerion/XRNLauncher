@@ -832,7 +832,7 @@ const XRN = {
     add(chemins) { return mods.add(chemins || []); },
     remove(nom) { return mods.remove(nom); },
     setEnabled(nom, enabled) { return mods.setEnabled(nom, enabled); },
-    openFolder() { return mods.openFolder(); },
+    openFolder() { const folder=mods.modsDir();util.ensureDir(folder);nw.Shell.openItem(folder);return {ok:true}; },
     loaders(versionId) { return mods.loadersDe(versionId); },
     async fabricInfo(mcVersion) { return mods.fabricInstallateur(mcVersion); },
     async installFabric(mcVersion) { return mods.installFabric(mcVersion, bus); },

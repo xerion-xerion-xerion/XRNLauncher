@@ -44,7 +44,8 @@ final class Icones {
    case "Durabilite"->{path(c,x,y,color,3,20,19,4,19,1,23,1,23,5,20,5);line(c,x,y,6,14,11,19,color);line(c,x,y,1,18,7,24,color);}
    case "Session"->{Theme.cadre(c,x+4,y+1,17,3,0,color);Theme.cadre(c,x+4,y+21,17,3,0,color);path(c,x,y,color,5,4,19,20,19,22,5,22,5,20,19,4);}
    case "Rappel de pause"->{Theme.arrondi(c,x+3,y+5,15,17,0,color);path(c,x,y,color,18,8,23,8,23,16,18,16);line(c,x,y,6,1,6,3,color);line(c,x,y,13,1,13,3,color);}
-   case "Name Tag"->{path(c,x,y,color,1,7,7,1,22,1,22,17,16,23,1,8);Theme.cadre(c,x+6,y+5,4,4,0,color);line(c,x,y,10,13,17,6,color);line(c,x,y,7,16,14,9,color);}
+   case "Name Tag"->{Theme.arrondi(c,x,y+3,24,18,0,color);Theme.cadre(c,x+3,y+7,6,8,0,color);for(int n=0;n<4;n++)Theme.rect(c,x+11+n*3,y+8,2,8,Theme.melange(NameTag.debut,NameTag.fin,n/3f));}
+   case "Taille des objets"->{path(c,x,y,color,4,20,20,4,20,1,23,1,23,4,7,20,4,20);path(c,x,y,color,2,9,2,2,9,2);path(c,x,y,color,15,23,23,23,23,15);}
    case "Ciel XRN"->{Theme.arrondi(c,x+2,y+11,22,10,0,color);path(c,x,y,color,6,11,6,7,10,4,15,4,19,8,19,11);path(c,x,y,color,3,1,3,7,0,4,6,4);}
    default->{Theme.marque(c,x+4,y+4,2);}
   }

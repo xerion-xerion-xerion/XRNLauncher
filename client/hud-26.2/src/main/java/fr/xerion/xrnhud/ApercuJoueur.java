@@ -15,7 +15,7 @@ final class ApercuJoueur {
   state.bodyRot=180;state.yRot=0;state.xRot=0;state.walkAnimationSpeed=0;state.walkAnimationPos=0;
   state.isCrouching=false;state.isFallFlying=false;state.isVisuallySwimming=false;state.pose=net.minecraft.world.entity.Pose.STANDING;
   state.headEquipment=net.minecraft.world.item.ItemStack.EMPTY;state.chestEquipment=net.minecraft.world.item.ItemStack.EMPTY;state.legsEquipment=net.minecraft.world.item.ItemStack.EMPTY;state.feetEquipment=net.minecraft.world.item.ItemStack.EMPTY;
-  state.capeFlap=CapeMouvement.apercu();state.capeLean=0;state.capeLean2=0;
+  state.capeFlap=6;state.capeLean=0;state.capeLean2=0;
   var skin=state.skin;Identifier texture=Droits.texture(cape);
   if(skin!=null)state.skin=new net.minecraft.world.entity.player.PlayerSkin(skin.body(),texture==null?null:new Cape(texture),skin.elytra(),skin.model(),skin.secure());
   state.showCape=texture!=null;

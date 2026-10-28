@@ -2,6 +2,15 @@
 
 Launcher Minecraft Java pour Windows, développé par Xerion. Interface violette, installations classiques et Fabric, gestion des mods, captures F2 et client au HUD personnalisable.
 
+## Nouveautés 4.9.1
+
+- Fenêtre du menu en jeu déplaçable par son en-tête, position mémorisée et recentrage disponible.
+- Couleur du menu personnalisable ; dégradé du pseudo animé ou arc-en-ciel en option, partagé par le relais entre clients compatibles.
+- Taille des objets par identifiant : réglages séparés en main et dans l’inventaire, raccourcis pour pommes dorées et épée de Netherite.
+- Garde-robe dans la navigation latérale, roues dentées pour les réglages, textes des boutons recentrés et bouton XRN du menu Échap en violet.
+- Textures des capes sur les élytres. Suppression de l’option « Cape souple ».
+- Champs des codes cadeaux espacés, menus déroulants adaptés au thème, ouverture du dossier des mods corrigée et PvP HQ ajouté.
+
 ## Nouveautés 4.9.0
 
 - Boutique avec aperçu 3D de votre skin : Job Application offerte, Singularité animée à 2,99 €, Scream, Spine et Crimson Knight à 1,99 € chacune.
@@ -27,7 +36,7 @@ Launcher Minecraft Java pour Windows, développé par Xerion. Interface violette
 
 ## Télécharger
 
-**[Télécharger XRN-Setup.exe](https://github.com/xerion-xerion-xerion/XRNLauncher/releases/download/v4.9.0/XRN-Setup.exe)** — le setup s’occupe du téléchargement, de l’installation et des raccourcis. Aucun dossier à décompresser sur le Bureau.
+**[Télécharger XRN-Setup.exe](https://github.com/xerion-xerion-xerion/XRNLauncher/releases/download/v4.9.1/XRN-Setup.exe)** — le setup s’occupe du téléchargement, de l’installation et des raccourcis. Aucun dossier à décompresser sur le Bureau.
 
 [Site du projet](https://xerion-xerion-xerion.github.io/XRNLauncher/) · [Conditions](https://xerion-xerion-xerion.github.io/XRNLauncher/conditions.html) · [Confidentialité](https://xerion-xerion-xerion.github.io/XRNLauncher/confidentialite.html)
 

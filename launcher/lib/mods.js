@@ -86,7 +86,7 @@ function setEnabled(name, enabled) {
   } catch (e) { return { ok: false, message: e.message }; }
 }
 
-function openFolder() { return util.openExplorer(modsDir()); }
+function openFolder() { const folder=modsDir();util.ensureDir(folder);return util.openExplorer(folder); }
 
 /* ------------------------------------------------------------------ */
 /*  Detection des chargeurs installes                                   */

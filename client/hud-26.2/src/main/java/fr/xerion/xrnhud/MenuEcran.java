@@ -30,11 +30,17 @@ public class MenuEcran extends Screen {
     private long lastFrame=System.nanoTime();
     private double targetScroll, smoothScroll;
     private long closing;
+    private static float fenetreX=.5f,fenetreY=.5f;
+    private int baseY;private boolean dragging;private double dragX,dragY;
+    static void chargerFenetre(com.google.gson.JsonObject o){if(o.has("menuWindowX"))fenetreX=Math.clamp(o.get("menuWindowX").getAsFloat(),0,1);if(o.has("menuWindowY"))fenetreY=Math.clamp(o.get("menuWindowY").getAsFloat(),0,1);}
+    static void sauverFenetre(com.google.gson.JsonObject o){o.addProperty("menuWindowX",fenetreX);o.addProperty("menuWindowY",fenetreY);}
+    static void recentrer(){fenetreX=fenetreY=.5f;}
+
 
     public MenuEcran() { super(Component.literal("XRN Client")); }
     @Override public boolean isPauseScreen() { return false; }
     @Override public void extractBackground(GuiGraphicsExtractor c, int x, int y, float delta) {
-        if(minecraft.level!=null){super.extractBlurredBackground(c);c.fill(0,0,minecraft.getWindow().getGuiScaledWidth(),minecraft.getWindow().getGuiScaledHeight(),0x550B0812);}
+        if(minecraft.level!=null){super.extractBlurredBackground(c);c.fill(0,0,minecraft.getWindow().getGuiScaledWidth(),minecraft.getWindow().getGuiScaledHeight(),Theme.nuance(0x550B0812));}
     }
     boolean enFermeture() { return closing!=0; }
     void rouvrir() { closing=0; }
@@ -46,7 +52,7 @@ public class MenuEcran extends Screen {
         virtualWidth=Math.round(width/uiScale);virtualHeight=Math.round(height/uiScale);
         pw = Math.min(virtualWidth-18, Math.max(220, Math.min(730, (int)(virtualWidth * .87))));
         ph = Math.min(virtualHeight-18, Math.max(164, Math.min(410, (int)(virtualHeight * .84))));
-        px = (virtualWidth-pw)/2; py = (virtualHeight-ph)/2;
+        px = Math.clamp(Math.round((virtualWidth-pw)*fenetreX),8,Math.max(8,virtualWidth-pw-8)); baseY=Math.clamp(Math.round((virtualHeight-ph)*fenetreY),8,Math.max(8,virtualHeight-ph-8));py=baseY;
         navWidth=pw>=400?100:84;contentX=px+navWidth+16;contentWidth=pw-navWidth-26;
         bodyY = py+38; bodyH = ph-68;
         int searchWidth = pw >= 300 ? 117 : 80;
@@ -74,6 +80,7 @@ public class MenuEcran extends Screen {
         modules.add(new Module("Shader Monitor","Etat Iris si installe",()->ModulesPlus.shaders,()->{ModulesPlus.shaders=!ModulesPlus.shaders;ModulesPlus.SHADERS.hidden=false;},0));
         modules.add(new Module("Memoire","Utilisation de la JVM",()->Hud.memoire,()->{Hud.memoire=!Hud.memoire;Placement.MEMOIRE.hidden=false;},5));
 
+        modules.add(new Module("Taille des objets","En main et inventaire",()->TailleObjets.actif,()->TailleObjets.actif=!TailleObjets.actif,0));
         modules.add(new Module("Motion Blur","Flou de mouvement reglable",()->MotionBlur.enabled,()->MotionBlur.setEnabled(!MotionBlur.enabled),0));
         modules.add(new Module("Free Look","Maintenir V · touche configurable",()->FreeLook.enabled,()->FreeLook.enabled=!FreeLook.enabled,0));
         modules.add(new Module("Informations", "Coordonnees et FPS", ()->Hud.informations, ()->Hud.informations=!Hud.informations, 0));
@@ -98,17 +105,17 @@ public class MenuEcran extends Screen {
         double dt=Math.min(.1,(now-lastFrame)/1_000_000_000.0);lastFrame=now;
         smoothScroll+=(targetScroll-smoothScroll)*(1-Math.exp(-18*dt));frameEase=(float)(1-Math.exp(-20*dt));
         scroll=(int)Math.round(smoothScroll);
-        py=(virtualHeight-ph)/2+Math.round(14*(closing==0?1-Anime.sortie((now-opened)/240_000_000f):Anime.sortie((now-closing)/140_000_000f)));
+        py=baseY+Math.round(14*(closing==0?1-Anime.sortie((now-opened)/240_000_000f):Anime.sortie((now-closing)/140_000_000f)));
         bodyY=py+38;search.setY(py+7);
         hits.clear();
-        Theme.arrondi(c,px,py,pw,ph,0xF516141B,0xFF40354F);
+        Theme.arrondi(c,px,py,pw,ph,Theme.nuance(0xF516141B),Theme.nuance(0xFF40354F));
         Theme.marque(c,px+10,py+10,1);
         if (pw >= 260) Theme.texte(c,font,"XRN CLIENT",px+24,py+10,Theme.TEXTE);
         button(c,"×",px+pw-23,py+5,18,18,this::onClose,mx,my);
-        String[] tabs={"Tous les mods","HUD","Visuels","Outils","Apparence","Reglages"};
+        String[] tabs={"Tous les mods","HUD","Visuels","Outils","Apparence","Reglages","Garde-robe"};
         for(int i=0;i<tabs.length;i++){final int index=i;boolean active=i==5?settings:!settings&&category==i;
             int ty=bodyY+i*24;
-            button(c,tabs[i],px+9,ty,navWidth-4,21,()->{settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
+            button(c,tabs[i],px+9,ty,navWidth-4,21,()->{if(index==6){minecraft.gui.setScreen(new EcranGardeRobe(this));return;}settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
             if(active)Theme.rect(c,px+9,ty,2,21,Theme.ACCENT);
         }
         Theme.rect(c,px+8,py+30,pw-16,1,Theme.BORDURE);
@@ -121,7 +128,6 @@ public class MenuEcran extends Screen {
             Placement.sauver();minecraft.gui.setScreen(new EcranEdition());
         },mx,my);
         if(pw>=360)button(c,"Balises",px+122,py+ph-22,72,16,()->minecraft.gui.setScreen(new BalisesEcran(this)),mx,my);
-        if(pw>=500)button(c,"Garde-robe",px+202,py+ph-22,90,16,()->minecraft.gui.setScreen(new EcranGardeRobe(this)),mx,my);
         if (pw >= 500) Theme.texte(c,font,"Maj droite / Echap",px+pw-111,py+ph-18,Theme.TEXTE_FAIBLE);
         Theme.champs(c,children());
         super.extractRenderState(c,mx,my,delta);
@@ -140,15 +146,15 @@ public class MenuEcran extends Screen {
             if(y+ch<=bodyY||y>=bodyY+bodyH)continue;
             Placement.Element element=element(m.name);
             boolean on=m.enabled.getAsBoolean()&&(element==null||!element.hidden),hover=mx>=x&&mx<x+cw&&my>=Math.max(y,bodyY)&&my<Math.min(y+ch,bodyY+bodyH);
-            Theme.arrondi(c,x,y,cw,ch,hover?0xFF292332:0xFF1E1B24,on?0xFF68517E:0xFF39323F);
+            Theme.arrondi(c,x,y,cw,ch,hover?Theme.nuance(0xFF292332):Theme.nuance(0xFF1E1B24),on?Theme.nuance(0xFF68517E):Theme.nuance(0xFF39323F));
             Theme.texteCentre(c,font,fit(m.name,cw-35),x+cw/2,y+8,on?Theme.TEXTE:Theme.TEXTE_DOUX);
-            Icones.draw(c,m.name,x+cw/2-12,y+26,on?0xFFD9C5FF:0xFFA89EBA);
+            Icones.draw(c,m.name,x+cw/2-12,y+26,on?Theme.nuance(0xFFD9C5FF):Theme.nuance(0xFFA89EBA));
             Theme.texteCentre(c,font,fit(m.detail,cw-18),x+cw/2,y+64,Theme.TEXTE_DOUX);
             Theme.texte(c,font,on?"Actif":"Inactif",x+9,y+ch-16,on?Theme.ACCENT:Theme.TEXTE_FAIBLE);
             float progress=animations.getOrDefault(m.name,on?1f:0f);progress+=((on?1:0)-progress)*frameEase;animations.put(m.name,progress);
             Theme.interrupteur(c,x+cw-35,y+ch-18,progress,1);
             Runnable configure=configuration(m.name);
-            if(configure!=null&&y>=bodyY&&y+21<bodyY+bodyH){button(c,"",x+cw-25,y+4,20,14,configure,mx,my);Theme.cadre(c,x+cw-19,y+8,7,6,0,Theme.TEXTE_DOUX);Theme.rect(c,x+cw-16,y+6,1,10,Theme.TEXTE_DOUX);Theme.rect(c,x+cw-21,y+10,11,1,Theme.TEXTE_DOUX);}
+            if(configure!=null&&y>=bodyY&&y+21<bodyY+bodyH){button(c,"",x+cw-26,y+4,22,20,configure,mx,my);Theme.engrenage(c,x+cw-24,y+5,Theme.TEXTE_DOUX);}
             // Only the visible part may receive input.
             int top=Math.max(y,bodyY),bottom=Math.min(y+ch,bodyY+bodyH);
             hits.add(new Hit(x,top,cw,bottom-top,()->{if(element!=null&&element.hidden){element.hidden=false;}else m.toggle.run();Placement.sauver();}));
@@ -157,13 +163,14 @@ public class MenuEcran extends Screen {
         c.disableScissor();
         if(maxScroll>0) {
             int thumb=Math.max(12,bodyH*bodyH/(bodyH+maxScroll));
-            Theme.rect(c,px+pw-5,bodyY,2,bodyH,0xFF322A3B);
+            Theme.rect(c,px+pw-5,bodyY,2,bodyH,Theme.nuance(0xFF322A3B));
             Theme.rect(c,px+pw-5,bodyY+(bodyH-thumb)*scroll/maxScroll,2,thumb,Theme.ACCENT_FORT);
         }
     }
 
-    private int groupe(String name){return switch(name){case "Name Tag","Ciel XRN"->4;case "Motion Blur","Hitboxes","Contours blocs","Shader Monitor"->2;case "Free Look","FPS Plus","Balises","Auto Text","Auto Connect","Nether","Rappel de pause"->3;default->1;};}
+    private int groupe(String name){return switch(name){case "Name Tag","Ciel XRN"->4;case "Taille des objets","Motion Blur","Hitboxes","Contours blocs","Shader Monitor"->2;case "Free Look","FPS Plus","Balises","Auto Text","Auto Connect","Nether","Rappel de pause"->3;default->1;};}
     private Runnable configuration(String name){return switch(name){
+        case "Taille des objets"->()->minecraft.gui.setScreen(new TailleObjetsEcran(this));
         case "Motion Blur"->()->minecraft.gui.setScreen(new MotionBlurEcran(this));
         case "Ciel XRN"->()->minecraft.gui.setScreen(new CielEcran(this));
         case "Name Tag"->()->minecraft.gui.setScreen(new NameTagEcran(this));
@@ -188,7 +195,7 @@ public class MenuEcran extends Screen {
     private void setting(GuiGraphicsExtractor c,String name,String value,int x,int y,int w,Runnable action,int mx,int my) {
         if(y+23>bodyY+bodyH)return;
         boolean hover=mx>=x&&mx<x+w&&my>=y&&my<y+23;
-        Theme.rect(c,x,y,w,23,hover?0xFF2A2332:0xFF201B26);
+        Theme.rect(c,x,y,w,23,hover?Theme.nuance(0xFF2A2332):Theme.nuance(0xFF201B26));
         Theme.texte(c,font,fit(name,w-95),x+7,y+7,Theme.TEXTE);
         Theme.texte(c,font,value,x+w-7-font.width(value),y+7,Theme.ACCENT);
         hits.add(new Hit(x,y,w,23,()->{action.run();Placement.sauver();}));
@@ -199,8 +206,8 @@ public class MenuEcran extends Screen {
     }
     private void button(GuiGraphicsExtractor c,String text,int x,int y,int w,int h,Runnable action,int mx,int my) {
         boolean hover=mx>=x&&mx<x+w&&my>=y&&my<y+h;
-        Theme.arrondi(c,x,y,w,h,hover?0xFF3B2F49:0xFF282130,0);
-        Theme.texteCentre(c,font,text,x+w/2,y+(h-font.lineHeight)/2,Theme.TEXTE);
+        Theme.arrondi(c,x,y,w,h,hover?Theme.nuance(0xFF3B2F49):Theme.nuance(0xFF282130),0);
+        Theme.texteCentre(c,font,text,x+w/2,y+(h-font.lineHeight)/2+1,Theme.TEXTE);
         hits.add(new Hit(x,y,w,h,action));
     }
     private String fit(String text,int width) {
@@ -218,13 +225,16 @@ public class MenuEcran extends Screen {
     }
     @Override public boolean mouseClicked(MouseButtonEvent click,boolean twice) {
         click=new MouseButtonEvent(click.x()/uiScale,click.y()/uiScale,click.buttonInfo());
+        if(click.button()==0&&click.x()>=px&&click.x()<px+pw-25&&click.y()>=py&&click.y()<py+27&&!search.isMouseOver(click.x(),click.y())){dragging=true;dragX=click.x()-px;dragY=click.y()-py;search.setFocused(false);return true;}
         for(Hit hit:hits)if(hit.contains(click.x(),click.y())){hit.action.run();return true;}
         return super.mouseClicked(click,twice);
     }
     @Override public boolean mouseReleased(MouseButtonEvent click) {
+        if(dragging){dragging=false;Placement.sauver();return true;}
         return super.mouseReleased(new MouseButtonEvent(click.x()/uiScale,click.y()/uiScale,click.buttonInfo()));
     }
     @Override public boolean mouseDragged(MouseButtonEvent click,double dx,double dy) {
+        if(dragging){double x=click.x()/uiScale,y=click.y()/uiScale;px=(int)Math.clamp(x-dragX,8,Math.max(8,virtualWidth-pw-8));baseY=(int)Math.clamp(y-dragY,8,Math.max(8,virtualHeight-ph-8));py=baseY;contentX=px+navWidth+16;search.setX(px+pw-search.getWidth()-29);search.setY(py+7);fenetreX=px/(float)Math.max(1,virtualWidth-pw);fenetreY=baseY/(float)Math.max(1,virtualHeight-ph);hits.clear();return true;}
         return super.mouseDragged(new MouseButtonEvent(click.x()/uiScale,click.y()/uiScale,click.buttonInfo()),dx/uiScale,dy/uiScale);
     }
     @Override public void mouseMoved(double x,double y) { super.mouseMoved(x/uiScale,y/uiScale); }

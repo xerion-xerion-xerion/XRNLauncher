@@ -34,7 +34,7 @@ function selectedStyle(){
   if(fs.statSync(file).size>256*1024)return {};
   const r=JSON.parse(fs.readFileSync(file,'utf8')).reglages||{};
   const rgb=(v,f)=>Number.isInteger(v)?(v&0xFFFFFF):f;
-  return {enabled:r.nameStyle===true,badge:r.ownBadge!==false,gradient:r.nameGradient!==false,start:rgb(r.nameStart,0xA78BFA),end:rgb(r.nameEnd,0xF4EEFF)};
+  return {animate:r.nameAnimate===true,rainbow:r.nameRainbow===true,enabled:r.nameStyle===true,badge:r.ownBadge!==false,gradient:r.nameGradient!==false,start:rgb(r.nameStart,0xA78BFA),end:rgb(r.nameEnd,0xF4EEFF)};
  }catch{return {enabled:false,badge:true,gradient:true,start:0xA78BFA,end:0xF4EEFF};}
 }
 async function register(account){

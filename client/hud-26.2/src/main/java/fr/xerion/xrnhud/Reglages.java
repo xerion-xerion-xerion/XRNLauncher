@@ -27,8 +27,7 @@ final class Reglages {
         defaut. */
     static void appliquer(JsonObject o) {
         if (o == null) return;
-        CapeMouvement.naturel=!o.has("capeNaturelle")||o.get("capeNaturelle").getAsBoolean();
-        MotionBlur.load(o);FreeLook.load(o);Ciel.charger(o);NameTag.charger(o);Visuels.charger(o);Raccourcis.charger(o);
+        if(o.has("menuColor"))Theme.appliquerCouleur(o.get("menuColor").getAsInt());MenuEcran.chargerFenetre(o);TailleObjets.charger(o);MotionBlur.load(o);FreeLook.load(o);Ciel.charger(o);NameTag.charger(o);Visuels.charger(o);Raccourcis.charger(o);
         ModulesPlus.charger(o);
         ModulesUtiles.charger(o);
         Performance.charger(o);
@@ -93,7 +92,7 @@ final class Reglages {
     }
 
     /** Ecrit les reglages. */
-    static void ecrire(JsonObject o) { o.addProperty("capeNaturelle",CapeMouvement.naturel); MotionBlur.save(o);FreeLook.save(o);Ciel.sauver(o);NameTag.sauver(o); Visuels.sauver(o);Raccourcis.sauver(o); ModulesPlus.sauver(o); ModulesUtiles.sauver(o); Performance.sauvegarder(o);        o.addProperty("fullbright", Fonctions.fullbright);
+    static void ecrire(JsonObject o) { o.addProperty("menuColor",Theme.couleur);MenuEcran.sauverFenetre(o);TailleObjets.sauver(o); MotionBlur.save(o);FreeLook.save(o);Ciel.sauver(o);NameTag.sauver(o); Visuels.sauver(o);Raccourcis.sauver(o); ModulesPlus.sauver(o); ModulesUtiles.sauver(o); Performance.sauvegarder(o);        o.addProperty("fullbright", Fonctions.fullbright);
         o.addProperty("logo", Logo.actif);
         o.addProperty("boost", Performance.actif);
         o.addProperty("boostChoisi", boostEcrit);

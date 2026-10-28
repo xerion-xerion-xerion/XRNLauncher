@@ -32,10 +32,7 @@
    if(p.animated){const loaded=await Promise.all(Array.from({length:frames-1},(_,i)=>image(folder+'/'+String(i+1).padStart(2,'0')+'.png')));if(g===generation)images=[first,...loaded];}
   }catch{if(g===generation)$('shopSkinCaption').textContent='Texture de cape indisponible.';}
  }
- let motion=true,lastMotion=0;
- $('shopCapeMotion').onchange=()=>{motion=$('shopCapeMotion').checked;if(!motion&&viewer){viewer.playerObject.cape.rotation.x=.16;viewer.playerObject.cape.rotation.z=0;viewer.render();}try{localStorage.setItem('xrnCapeMotion',String(motion));}catch{}};try{motion=localStorage.getItem('xrnCapeMotion')!=='false';$('shopCapeMotion').checked=motion;}catch{}
  function update(now){
-  if(viewer&&motion&&$('view-boutique').classList.contains('active')&&!document.hidden&&now-lastMotion>32){viewer.playerObject.cape.rotation.x=.2+Math.sin(now*.0018)*.09;viewer.playerObject.cape.rotation.z=Math.sin(now*.0013)*.015;viewer.render();lastMotion=now;}
   if(viewer&&images.length&&$('view-boutique').classList.contains('active')&&!document.hidden&&now-lastTime>=frameMillis){
    const i=paused?0:Math.floor(now/frameMillis)%images.length;if(i!==frameIndex){const c=viewer.capeCanvas;c.getContext('2d').drawImage(images[i],0,0,c.width,c.height);if(viewer.capeTexture)viewer.capeTexture.needsUpdate=true;viewer.render();frameIndex=i;}lastTime=now;
   }

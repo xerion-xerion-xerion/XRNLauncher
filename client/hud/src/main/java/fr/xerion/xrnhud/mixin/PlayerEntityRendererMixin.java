@@ -58,9 +58,8 @@ public abstract class PlayerEntityRendererMixin {
             if (skin == null) return;
             AssetCape notreCape = new AssetCape(texture);
             state.skinTextures = new net.minecraft.entity.player.SkinTextures(
-                    skin.body(), notreCape, skin.elytra(), skin.model(), skin.secure());
+                    skin.body(), notreCape, notreCape, skin.model(), skin.secure());
             state.capeVisible = true;
-            if(!fr.xerion.xrnhud.CapeMouvement.naturel){state.field_53536=6;state.field_53537=0;state.field_53538=0;}
         } catch (Throwable t) {
             /*  Une cape absente n est pas un jeu casse. */
         }

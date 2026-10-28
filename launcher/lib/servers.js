@@ -1,6 +1,7 @@
  'use strict';
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),util=require('./util'),network=require('./server-status');
 const DEFAULT_SERVERS=[
+ {name:'PvP HQ',host:'play.pvphq.com',port:25565,website:''},
  {name:'PvPHub',host:'pvphub.me',port:25565,website:'https://store.pvphub.me/'},
  {name:'Vanilla Practice',host:'vanillapractice.com',port:25565,website:'https://www.vanillapractice.com/'},
  {name:'Nimlot',host:'nimlot.xyz',port:25565,website:'https://discord.gg/nRGHPepKPd'},
@@ -11,11 +12,12 @@ const DEFAULT_SERVERS=[
 function serverFile(){return path.join(util.appRoot(),'servers.json');}
 function iconFile(host,port){return path.join(util.appRoot(),'cache/server-icons',crypto.createHash('sha256').update(host+':'+port).digest('hex')+'.png');}
 function cachedIcon(host,port){try{return 'data:image/png;base64,'+fs.readFileSync(iconFile(host,port)).toString('base64');}catch{return '';}}
-function saveServers(list){util.writeJSON(serverFile(),{schema:3,list:(list||[]).map(({icon,...s})=>s)});}
+function saveServers(list){util.writeJSON(serverFile(),{schema:4,list:(list||[]).map(({icon,...s})=>s)});}
 function loadServers(){
  const data=util.readJSON(serverFile(),null);
  if(data&&data.schema>=2&&Array.isArray(data.list)){
-  if(data.schema===2){for(const preset of DEFAULT_SERVERS.slice(0,3))if(!data.list.some(s=>s.host.toLowerCase()===preset.host))data.list.push({...preset});saveServers(data.list);}
+  if(data.schema===2){for(const preset of DEFAULT_SERVERS.filter(s=>['pvphub.me','vanillapractice.com','nimlot.xyz'].includes(s.host)))if(!data.list.some(s=>s.host.toLowerCase()===preset.host))data.list.push({...preset});saveServers(data.list);}
+  if(data.schema<4){if(!data.list.some(s=>s.host.toLowerCase()==='play.pvphq.com'))data.list.push({...DEFAULT_SERVERS[0]});saveServers(data.list);}
   return data.list.map(s=>({...s,icon:cachedIcon(s.host,s.port)}));
  }
  const list=Array.isArray(data)?data:[];

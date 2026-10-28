@@ -6,7 +6,7 @@ const random=n=>hex(crypto.getRandomValues(new Uint8Array(n)));
 const hash=async s=>hex(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s))));
 export function style(s={}) {
  const rgb=(n,f)=>Number.isInteger(n)&&n>=0&&n<=0xFFFFFF?n:f;
- return {enabled:s.enabled===true,badge:s.badge!==false,gradient:s.gradient!==false,start:rgb(s.start,0xA78BFA),end:rgb(s.end,0xF4EEFF)};
+ return {animate:s.animate===true,rainbow:s.rainbow===true,enabled:s.enabled===true,badge:s.badge!==false,gradient:s.gradient!==false,start:rgb(s.start,0xA78BFA),end:rgb(s.end,0xF4EEFF)};
 }
 async function body(request,max=4096) {
  if(Number(request.headers.get('Content-Length'))>max)throw Error('body');

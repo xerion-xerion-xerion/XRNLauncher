@@ -156,7 +156,7 @@ public class XrnHudClient implements ClientModInitializer {
             }
             if (!(screen instanceof PauseScreen)) return;
             Button bouton = Button
-                    .builder(Component.literal("XRN Client"), b -> client.gui.setScreen(new MenuEcran()))
+                    .builder(Component.literal("XRN Client").withStyle(s->s.withColor(0xA78BFA)), b -> client.gui.setScreen(new MenuEcran()))
                     .bounds(6, 6, 104, 20)
                     .build();
             @SuppressWarnings("unchecked")

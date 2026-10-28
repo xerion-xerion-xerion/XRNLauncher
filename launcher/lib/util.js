@@ -170,8 +170,12 @@ function run(cmd, args, timeoutMs) {
 
 /* Ouvre un dossier / selectionne un fichier dans l'explorateur Windows */
 function openExplorer(target, select) {
+  target=path.resolve(String(target));
+  if(!fs.existsSync(target))throw new Error('Ce dossier n’existe pas.');
+  try{const shell=require('nw.gui').Shell;if(select)shell.showItemInFolder(target);else shell.openItem(target);return true;}catch(error){if(!/Cannot find module/.test(error.message))throw error;}
   const args = select ? ['/select,' + target] : [target];
-  require('child_process').spawn('explorer.exe', args, { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  const child=require('child_process').spawn(path.join(process.env.WINDIR||'C:\\Windows','explorer.exe'), args, { detached: true, stdio: 'ignore', windowsHide: true });
+  child.on('error',()=>{});child.unref();
   return true;
 }
 

@@ -158,7 +158,7 @@ public class XrnHudClient implements ClientModInitializer {
             }
             if (!(screen instanceof GameMenuScreen)) return;
             ButtonWidget bouton = ButtonWidget
-                    .builder(Text.literal("XRN Client"), b -> client.setScreen(new MenuEcran()))
+                    .builder(Text.literal("XRN Client").styled(s->s.withColor(0xA78BFA)), b -> client.setScreen(new MenuEcran()))
                     .dimensions(6, 6, 104, 20)
                     .build();
             @SuppressWarnings("unchecked")

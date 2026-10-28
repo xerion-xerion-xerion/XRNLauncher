@@ -1589,7 +1589,7 @@ const Splash = {
   $('#catalogPrev').addEventListener('click',()=>Catalog.search(Math.max(0,Catalog.offset-20)));
   $('#catalogNext').addEventListener('click',()=>Catalog.search(Catalog.offset+20));
   const btnModsFolder = $('#btnModsFolder');
-  if (btnModsFolder) btnModsFolder.addEventListener('click', () => api(x => x.mods.openFolder()));
+  if (btnModsFolder) btnModsFolder.addEventListener('click', async () => {try{await api(x => x.mods.openFolder());}catch(error){Toast.show('Dossier des mods',error.message||'Ouverture impossible.','err');}});
   const btnModsPlay = $('#btnModsPlay');
   if (btnModsPlay) btnModsPlay.addEventListener('click', () => play(null));
 
