@@ -1,0 +1,30 @@
+XRN proprietary rights notice
+
+Copyright (c) 2026 Xerion. All rights reserved.
+
+Except as expressly stated below, no permission is granted to copy, modify,
+adapt, remix, redistribute, sublicense, sell, or create derivative works from
+the original XRN Launcher and XRN Client code or original XRN assets without
+prior written permission from Xerion.
+
+Users may download, install and run official XRN binaries distributed by
+Xerion for their intended purpose, subject to the terms supplied with those
+binaries. This permission does not grant ownership of paid cosmetics or
+permission to bypass purchase or entitlement checks.
+
+Third-party code, libraries, artwork, trademarks and other third-party
+materials are excluded from this notice and remain subject to their own
+licences and rights. See launcher/legal/ and the relevant upstream notices.
+This notice does not grant Xerion exclusive rights in third-party materials.
+
+This notice does not withdraw permissions already granted under an earlier
+licence, including any applicable MIT licence for previously distributed
+versions. Such permissions remain governed by the licence under which those
+materials were obtained. This notice does not restrict rights that cannot
+be restricted under applicable law.
+
+While this repository is public on GitHub, GitHub's terms concerning viewing
+and forking a public repository continue to apply. Public visibility is not
+an additional licence to redistribute XRN or market a derivative client.
+
+Permission requests: xrnlauncher@gmail.com

@@ -7,7 +7,7 @@
   "authors": [
     "Xerion"
   ],
-  "license": "MIT",
+  "license": "LicenseRef-XRN-Proprietary",
   "environment": "client",
   "mixins": [
     {

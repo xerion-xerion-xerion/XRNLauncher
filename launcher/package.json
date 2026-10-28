@@ -1,6 +1,7 @@
 {
   "name": "xrn-launcher",
   "version": "4.9.1",
+  "license": "LicenseRef-XRN-Proprietary",
   "description": "XRN Launcher — Minecraft Java",
   "main": "index.html",
   "chromium-args": "--disable-features=CalculateNativeWinOcclusion",

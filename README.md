@@ -75,4 +75,8 @@ Le moteur natif n’est pas stocké dans Git. Pour reconstruire, fournir un doss
 
 Contact du projet : **xrnlauncher@gmail.com**. Ne publiez ni mot de passe ni jeton dans une issue GitHub.
 
-XRN est indépendant de Mojang et Microsoft. Les licences des composants tiers sont conservées dans `launcher/legal/`. Les marques et ressources tierces restent la propriété de leurs titulaires. La publication du dépôt n’accorde pas de licence supplémentaire sur les éléments XRN.
+Le code et les créations originales XRN sont propriétaires : leur modification, leur remix et leur redistribution nécessitent l’autorisation écrite de Xerion. L’utilisation des versions officielles du launcher reste permise selon les conditions fournies avec l’application. Voir [LICENSE](LICENSE). Le projet n’est pas proposé sous une licence open source.
+
+Cette politique ne retire pas les autorisations déjà accordées sur d’anciennes versions, notamment lorsqu’une licence MIT était applicable. Tant que le dépôt est public, les droits de consultation et de fork prévus par les conditions GitHub restent applicables.
+
+XRN est indépendant de Mojang et Microsoft. Les licences des composants tiers sont conservées dans `launcher/legal/`. Les marques et ressources tierces restent la propriété de leurs titulaires et sont exclues de la licence propriétaire XRN.
