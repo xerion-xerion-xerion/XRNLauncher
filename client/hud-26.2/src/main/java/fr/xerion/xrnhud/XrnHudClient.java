@@ -45,7 +45,7 @@ public class XrnHudClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        Raccourcis.installer();
+        Raccourcis.installer();FreeLook.install();
         toucheMenu = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.xrnhud.menu",
                 InputConstants.Type.KEYSYM,
@@ -137,7 +137,7 @@ public class XrnHudClient implements ClientModInitializer {
             }
             if(client.gui.screen() instanceof net.minecraft.client.gui.screens.TitleScreen&&!AccueilEcran.classique)client.gui.setScreen(new AccueilEcran());
             Visuels.tick(client);Raccourcis.tick(client);
-            ModulesPlus.tick(client);
+            FreeLook.tick(client);ModulesPlus.tick(client);
             ModulesUtiles.tick(client);
             if (++annuaireTicks % 40 == 0) Connus.chargerAnnuaire();
             Hud.suivreSession(client);

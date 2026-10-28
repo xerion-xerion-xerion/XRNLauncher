@@ -1336,6 +1336,7 @@ const Splash = {
       this.renderIntegre(etat.integres || []);
       this.renderList(etat.mods);
       this.renderLoader(etat);
+      await Catalog.refresh();
     },
 
     /*  Le mod embarque : la version vient du nom du jar integre et la
@@ -1352,10 +1353,11 @@ const Splash = {
         {nom:'Balises',txt:'Points nommés par monde, serveur et dimension, avec distance en jeu.'},
         {nom:'Inventaire et totems',txt:'Grille des 27 cases, places libres et compteur de totems.'},
         {nom:'Informations de jeu',txt:'FPS, coordonnées, ping, jour, mémoire, vitesse et session.'},
+        {nom:'Free Look',txt:'Maintenir V pour déplacer la caméra sans tourner le personnage. Touche configurable.'},
         {nom:'Touches et CPS',txt:'Clavier, souris et clics sur une seconde glissante.'},
         {nom:'Armure et effets',txt:'Équipement, durabilité, potions et durées.'},
         {nom:'Contours et hitboxes',txt:'Couleurs et épaisseur de l’affichage personnalisables.'},
-        {nom:'Auto Text et Auto Connect',txt:'Texte sur une touche et serveur au démarrage, désactivés par défaut.'},
+        {nom:'Auto Text et Auto Connect',txt:'Texte après élimination ou mort et serveur au démarrage, désactivés par défaut.'},
         {nom:'Musique et Shader Monitor',txt:'Lecture Windows et état des shaders Iris si installé.'},
         {nom:'Éditeur HUD',txt:'Déplacer, redimensionner par les bords et masquer au survol.'}
       ];
@@ -1530,6 +1532,46 @@ const Splash = {
   }
 
   $('#modFilter').addEventListener('input', () => Mods.renderList());
+  const Catalog = {
+    generation:0,busy:false,
+    async refresh(){
+      const profiles=await api(x=>x.modCatalog.contexts(),{soft:true})||[];
+      const select=$('#catalogInstallation'),previous=select.value||STATE.selected;
+      select.innerHTML=profiles.map(p=>`<option value="${esc(p.id)}">${esc(p.version)} · ${esc(p.loader)}</option>`).join('');
+      if(profiles.some(p=>p.id===previous))select.value=previous;
+      $('#catalogSearch').disabled=!profiles.length;
+      this.profiles=profiles;this.describe();
+    },
+    describe(){
+      const p=(this.profiles||[]).find(p=>p.id===$('#catalogInstallation').value);
+      $('#catalogContext').textContent=p?`Fichiers pour Minecraft ${p.version} / ${p.loader}. Dépendances obligatoires incluses. Les fichiers vont dans le dossier Mods affiché ci-dessous.`:'Installez d’abord Fabric ou un autre chargeur dans la section ci-dessous.';
+    },
+    async search(){
+      if(this.busy)return;const generation=++this.generation,provider=$('#catalogProvider').value,installation=$('#catalogInstallation').value;
+      if(!installation)return;this.busy=true;$('#catalogSearch').disabled=true;
+      const box=$('#catalogResults');box.textContent='Recherche des mods compatibles…';
+      try{
+        const result=await X.modCatalog.search(provider,$('#catalogQuery').value,installation);
+        if(generation!==this.generation)return;
+        box.innerHTML=result.items.length?result.items.map((p,i)=>`<article class="catalog-card"><div class="catalog-heading"><span class="catalog-initial" aria-hidden="true">${esc(p.title.slice(0,1))}</span><div><h5>${esc(p.title)}</h5><small>${esc(p.author)}</small></div></div><p>${esc(p.description)}</p><div class="catalog-actions"><span>${Number(p.downloads||0).toLocaleString('fr-FR')} téléchargements</span><button class="btn sm" data-catalog="${i}">Installer…</button></div></article>`).join(''):'<p class="empty">Aucun mod pour cette recherche et cette installation.</p>';
+        $$('[data-catalog]',box).forEach(b=>b.onclick=()=>this.install(provider,result.items[Number(b.dataset.catalog)],installation,b));
+      }catch(e){box.textContent=e.message||'Le catalogue est indisponible.';}
+      finally{this.busy=false;$('#catalogSearch').disabled=!$('#catalogInstallation').value;}
+    },
+    async install(provider,project,installation,button){
+      if(this.installing)return;this.installing=true;button.disabled=true;button.textContent='Vérification…';
+      try{
+        const plan=await X.modCatalog.prepare(provider,project.id,installation);
+        const accepted=await Dialog.open({title:'Installer '+project.title+' ?',html:`<p>Minecraft ${esc(plan.context.version)} · ${esc(plan.context.loader)} · ${human(plan.bytes)}</p><ul>${plan.files.map(f=>`<li>${esc(f.filename)}</li>`).join('')}</ul>`,ok:'Télécharger et installer',cancel:'Annuler'});
+        if(!accepted)return;button.textContent='Téléchargement…';
+        const result=await X.modCatalog.install(plan.token);Mods.renderList(result.mods);
+        Toast.show('Mods installés',result.installed.length+' fichier(s). Disponibles au prochain lancement du jeu.','ok',6000);button.textContent='Installé';
+      }catch(e){Toast.show('Installation impossible',e.message||String(e),'err',7000);}
+      finally{this.installing=false;button.disabled=false;if(button.textContent!=='Installé')button.textContent='Installer…';}
+    }
+  };
+  $('#catalogForm').addEventListener('submit',event=>{event.preventDefault();if(DESKTOP)Catalog.search();});
+  ['catalogProvider','catalogInstallation'].forEach(id=>$('#'+id).addEventListener('change',()=>{Catalog.generation++;$('#catalogResults').replaceChildren();Catalog.describe();}));
   const btnModsFolder = $('#btnModsFolder');
   if (btnModsFolder) btnModsFolder.addEventListener('click', () => api(x => x.mods.openFolder()));
   const btnModsPlay = $('#btnModsPlay');
@@ -2057,6 +2099,8 @@ const Login = {
         const key = s.dataset.switch;
         if (key in cfg) {s.classList.toggle('on', !!cfg[key]);s.setAttribute('aria-checked',String(!!cfg[key]));}
       });
+      const technicalId=await api(x=>x.env.installationId(),{soft:true});
+      if(technicalId)$("#technicalInstallationId").textContent=technicalId;
       renderQuickLinks(cfg);
     },
     openJavaHelp(detail) {
@@ -2163,6 +2207,7 @@ const Login = {
       Toast.show('Erreur', String((e && e.message) || e).slice(0, 200), 'err', 6000);
     }
   });
+  $('#copyTechnicalId').addEventListener('click',async()=>{const id=await api(x=>x.env.installationId(),{soft:true});if(!id)return;try{await navigator.clipboard.writeText(id);Toast.show('Identifiant copié','Identifiant technique de cette installation.','ok');}catch{Toast.show('Identifiant',id,'info',10000);}});
   $$('[data-switch]').forEach(s => s.addEventListener('click', () => {
     s.classList.toggle('on');s.setAttribute('aria-checked',String(s.classList.contains('on')));
     const patch = {}; patch[s.dataset.switch] = s.classList.contains('on');

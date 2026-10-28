@@ -44,7 +44,8 @@ function defaults() {
     presenceUrl: '',
     developerMode: false,
     notificationsEnabled: true,
-    shareInstallationStatus: false,
+    shareInstallationStatus: true,
+    shareAppearance: true,
     serviceUrl: ''
   };
 }

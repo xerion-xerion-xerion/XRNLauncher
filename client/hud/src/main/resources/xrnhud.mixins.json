@@ -12,7 +12,9 @@
     "HitboxRendererMixin",
     "HitboxColorMixin",
     "CielMixin",
-    "MenuButtonMixin"
+    "MenuButtonMixin",
+    "FreeLookEntityMixin",
+    "FreeLookCameraMixin"
   ],
   "injectors": {
     "defaultRequire": 0

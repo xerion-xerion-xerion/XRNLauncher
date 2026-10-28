@@ -1,5 +1,5 @@
 CONFIDENTIALITÉ — XRN LAUNCHER
-Version du 27 octobre 2026 — distribution 4.7.3
+Version du 28 octobre 2026 — distribution 4.8.0
 
 Responsable et contact
 Xerion, développeur du projet XRN Launcher. Pour toute question ou demande concernant vos données : xrnlauncher@gmail.com.
@@ -9,16 +9,16 @@ XRN conserve vos préférences, vos installations, vos journaux techniques et vo
 Les mondes, mods, captures F2 et réglages du jeu restent dans le dossier de jeu choisi. Ils ne sont pas envoyés automatiquement à Xerion. Les données locales restent jusqu’à votre suppression ; supprimer un compte dans XRN efface son enregistrement local. La désinstallation conserve les données du jeu.
 
 Connexions indispensables aux fonctions choisies
-Pour vous connecter, XRN communique avec Microsoft, Xbox et Minecraft Services. Pour télécharger Minecraft et Java, il utilise les serveurs officiels de distribution de Minecraft et Adoptium. Les recherches et téléchargements de mods peuvent contacter Modrinth. Les recherches de skins peuvent transmettre un pseudo aux services Minecraft et récupérer l’image du skin.
+Pour vous connecter, XRN communique avec Microsoft, Xbox et Minecraft Services. Pour télécharger Minecraft et Java, il utilise les serveurs officiels de distribution de Minecraft et Adoptium. Les recherches et téléchargements de mods contactent Modrinth et ses serveurs de fichiers. Les recherches de skins peuvent transmettre un pseudo aux services Minecraft et récupérer l’image du skin.
 Ces échanges servent à fournir les fonctions que vous demandez. Les hébergeurs voient les informations réseau habituelles, notamment l’adresse IP. Leurs politiques s’appliquent à leurs propres services.
 
 Mises à jour et annonces
-GitHub héberge le site, le setup et les fichiers de mise à jour. Le launcher consulte les releases GitHub pour proposer les nouvelles versions. Le service d’annonces XRN, hébergé chez Cloudflare, reçoit la version du launcher. La version 4.7.3 n’envoie aucun identifiant d’installation par défaut. Vous pouvez désactiver les annonces dans les paramètres.
+GitHub héberge le site, le setup et les fichiers de mise à jour. Le launcher consulte les releases GitHub pour proposer les nouvelles versions. Le service d’annonces XRN, hébergé chez Cloudflare, reçoit la version du launcher. Un identifiant aléatoire propre à chaque installation permet de cibler une annonce ou une proposition de mise à jour. Il ne contient ni pseudo, ni mail, ni mot de passe, ni jeton Minecraft. Son partage est activé pour les nouvelles installations et peut être désactivé dans les paramètres ; les préférences déjà enregistrées sont respectées. Le service conserve cet identifiant, la version et la dernière consultation tant que l’enregistrement existe ; vous pouvez en demander la suppression avec votre identifiant technique. Les annonces générales et la détection des releases GitHub fonctionnent également sans cet identifiant. Vous pouvez désactiver les annonces dans les paramètres.
 Aucun outil publicitaire ou de mesure d’audience n’est intégré au site. Les prestataires techniques peuvent traiter les requêtes et leurs journaux de sécurité selon leurs politiques et leurs durées de conservation. XRN ne dispose pas d’une copie centrale de vos mondes ou de vos jetons de connexion.
 Des versions antérieures ont pu transmettre un identifiant aléatoire d’installation et la date de consultation au service XRN. Pour demander la suppression d’un ancien enregistrement, contactez l’adresse ci-dessus. N’envoyez aucun mot de passe ni jeton.
 
 Présence et apparence partagée
-Le relais de présence vérifiée et le partage public des couleurs ne sont pas activés dans cette distribution. Leur activation future fera l’objet d’une information adaptée avant transmission des informations de présence.
+Avec « Apparence entre joueurs XRN », le launcher publie votre pseudo public, votre UUID Minecraft, vos couleurs et la présence du badge auprès du relais Cloudflare. Ces informations permettent aux autres utilisateurs XRN de voir votre apparence. Une preuve de session est vérifiée auprès du serveur Minecraft : votre jeton Minecraft est envoyé uniquement à Minecraft, jamais au relais XRN. Le relais utilise ensuite un jeton temporaire propre à XRN, conservé en mémoire par le launcher. La présence expire après 90 secondes sans renouvellement et les données expirées sont supprimées périodiquement ; la session du relais expire après une heure. Des compteurs temporaires calculés à partir de la connexion limitent les abus et sont purgés après expiration. Le partage est activé par défaut et peut être désactivé dans les paramètres. Un profil solo non authentifié ne peut pas publier une identité vérifiée. Les deux joueurs doivent utiliser une version XRN compatible, avec le launcher actif pour actualiser la présence.
 
 Support et exercice de vos droits
 Si vous nous écrivez, les informations transmises servent à traiter votre demande et sont conservées pendant le temps nécessaire à son suivi. Le service de messagerie utilisé est Gmail. Évitez d’envoyer des fichiers contenant des secrets ou des informations sur d’autres personnes.

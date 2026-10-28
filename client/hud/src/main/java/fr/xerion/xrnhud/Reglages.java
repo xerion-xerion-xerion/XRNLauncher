@@ -27,7 +27,7 @@ final class Reglages {
         defaut. */
     static void appliquer(JsonObject o) {
         if (o == null) return;
-        Ciel.charger(o);NameTag.charger(o);Visuels.charger(o);Raccourcis.charger(o);
+        FreeLook.load(o);Ciel.charger(o);NameTag.charger(o);Visuels.charger(o);Raccourcis.charger(o);
         ModulesPlus.charger(o);
         ModulesUtiles.charger(o);
         Performance.charger(o);
@@ -92,7 +92,7 @@ final class Reglages {
     }
 
     /** Ecrit les reglages. */
-    static void ecrire(JsonObject o) { Ciel.sauver(o);NameTag.sauver(o); Visuels.sauver(o);Raccourcis.sauver(o); ModulesPlus.sauver(o); ModulesUtiles.sauver(o); Performance.sauvegarder(o);        o.addProperty("fullbright", Fonctions.fullbright);
+    static void ecrire(JsonObject o) { FreeLook.save(o);Ciel.sauver(o);NameTag.sauver(o); Visuels.sauver(o);Raccourcis.sauver(o); ModulesPlus.sauver(o); ModulesUtiles.sauver(o); Performance.sauvegarder(o);        o.addProperty("fullbright", Fonctions.fullbright);
         o.addProperty("logo", Logo.actif);
         o.addProperty("boost", Performance.actif);
         o.addProperty("boostChoisi", boostEcrit);

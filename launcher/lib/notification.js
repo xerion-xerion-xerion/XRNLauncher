@@ -5,8 +5,8 @@
     que l installation existe.
 
     La version du launcher est transmise pour recevoir les annonces.
-    Aucun identifiant d'installation n'est envoyé par défaut. Le suivi
-    technique facultatif peut être activé explicitement par configuration.
+    Un identifiant aléatoire permet de cibler une annonce par installation.
+    Son partage peut être désactivé dans les paramètres.
     Le serveur et son hébergeur voient l'adresse IP de la connexion.
 
     Le message porte un identifiant : on ne le montre qu une fois, et
@@ -37,12 +37,12 @@ function config() {
   return {};
 }
 
-/*  Un identifiant anonyme, tire une fois et conserve sur le poste. */
+/*  Un identifiant aléatoire propre à cette installation, sans compte associé. */
 function idInstallation() {
   const fichier = path.join(util.appRoot(), 'notification-id.txt');
   try {
     const v = fs.readFileSync(fichier, 'utf8').trim();
-    if (v) return v;
+    if (/^[a-f0-9]{32}$/.test(v)) return v;
   } catch (e) { }
   const id = crypto.randomBytes(16).toString('hex');
   try { fs.writeFileSync(fichier, id, 'utf8'); } catch (e) { }

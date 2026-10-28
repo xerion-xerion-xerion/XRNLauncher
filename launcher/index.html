@@ -288,6 +288,20 @@
           </div>
         </div></details>
 
+        <div class="panel catalog-panel">
+          <div class="panel-h"><h4>Explorer Modrinth</h4><span class="tag">Version et chargeur vérifiés</span></div>
+          <div class="panel-b">
+            <form id="catalogForm" class="catalog-controls">
+              <div class="catalog-source">Modrinth<input id="catalogProvider" type="hidden" value="modrinth"></div>
+              <label>Installation<select class="input" id="catalogInstallation"></select></label>
+              <label>Rechercher<input class="input" id="catalogQuery" type="search" maxlength="100" placeholder="Sodium, Iris, minimap…"></label>
+              <button class="btn primary" id="catalogSearch" type="submit">Rechercher</button>
+            </form>
+            <p class="catalog-note" id="catalogContext">Choisissez une installation avec un chargeur de mods.</p>
+            <div id="catalogResults" class="catalog-results" role="status" aria-live="polite"></div>
+          </div>
+        </div>
+
         <div class="panel">
           <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-chip"></use></svg><h4>Chargeur de mods</h4></div>
           <div class="panel-b" id="loaderBox"><p class="empty">Chargement…</p></div>
@@ -466,7 +480,11 @@
               </div>
               
               
-              <div class="switch-row"><div><b style="font-size:13px">Annonces XRN</b><p>Afficher les annonces du projet au lancement. Aucun identifiant d’installation envoyé par défaut.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Recevoir les annonces XRN" data-switch="notificationsEnabled"></button></div>
+              <div class="switch-row"><div><b style="font-size:13px">Annonces XRN</b><p>Afficher les annonces du projet au lancement. Les annonces générales restent disponibles sans suivi technique.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Recevoir les annonces XRN" data-switch="notificationsEnabled"></button></div>
+              <div class="switch-row"><div><b style="font-size:13px">Identifiant technique de cette installation</b><p><code id="technicalInstallationId">Disponible dans l’application Windows</code></p></div><button class="btn sm" id="copyTechnicalId" type="button">Copier</button></div>
+              <div class="switch-row"><div><b style="font-size:13px">Réception ciblée des annonces</b><p>Partager un identifiant aléatoire d’installation et la version XRN. Aucun mot de passe ni jeton de compte.</p></div><button class="switch" type="button" role="switch" aria-checked="false" aria-label="Réception ciblée des annonces" data-switch="shareInstallationStatus"></button></div>
+              <div class="switch-row"><div><b style="font-size:13px">Apparence entre joueurs XRN</b><p>Partager votre présence, votre pseudo public, votre UUID Minecraft et le style de votre nom avec les autres utilisateurs.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Partager mon apparence XRN" data-switch="shareAppearance"></button></div>
+
               <div class="switch-row"><div><b style="font-size:13px">XRN Client en jeu</b><p>Prépare Fabric et les modules pour les versions prises en charge.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Activer XRN Client en jeu" data-switch="clientEnabled"></button></div>
               <div class="switch-row"><div><b style="font-size:13px">Vérification SHA-1</b><p>Contrôle l'intégrité de chaque fichier téléchargé</p></div><button class="switch on" type="button" role="switch" aria-label="Activer cette option" data-switch="verifySha1"></button></div>
               <div class="switch-row"><div><b style="font-size:13px">Téléchargements parallèles</b><p><b id="dlConc">6</b> fichiers en même temps</p></div><div class="stepper"><button data-step="-1">−</button><span id="dlConcVal">6</span><button data-step="1">+</button></div></div>

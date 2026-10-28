@@ -16,5 +16,7 @@
   "ambientSound": false,
   "ambientVolume": 0.3,
   "notificationsEnabled": true,
-  "shareInstallationStatus": false
+  "shareInstallationStatus": true,
+  "presenceUrl": "https://xrn-presence.schianotom667.workers.dev",
+  "shareAppearance": true
 }

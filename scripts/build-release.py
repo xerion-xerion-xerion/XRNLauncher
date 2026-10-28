@@ -25,11 +25,17 @@ def managed(folder):
 def archive(path,files,prefix):
  with zipfile.ZipFile(path,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
   for name,p in sorted(files.items()):z.write(p,prefix+name)
+
+def source_snapshot():
+ files=managed(APP)
+ for name in TOOLS:files['tools/'+name]=APP/'tools'/name
+ return {name:digest(p)for name,p in files.items()}
 def main():
  ap=argparse.ArgumentParser();ap.add_argument('--runtime',type=P,required=True);ap.add_argument('--runtime-version',required=True);ap.add_argument('--previous',type=P);ap.add_argument('--output',type=P,default=ROOT/'dist');ap.add_argument('--iscc',type=P);args=ap.parse_args()
  version=json.loads((APP/'package.json').read_text(encoding='utf-8'))['version'];assert re.fullmatch(r'\d+\.\d+\.\d+',version)
  runtime=args.runtime.resolve();assert (runtime/'nw.dll').is_file() and (runtime/'XRNLauncher.exe').is_file(),'Provide a complete XRN runtime folder'
  out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
+ source_before=source_snapshot()
  temp=tempfile.TemporaryDirectory(prefix='xrn-release-');work=P(temp.name).resolve();assert work.parent==P(tempfile.gettempdir()).resolve() and work.name.startswith('xrn-release-')
  try:
   stage=work/'XRNLauncher';stage.mkdir()
@@ -58,6 +64,7 @@ def main():
    with zipfile.ZipFile(out/'XRNLauncher-patch.zip','a',zipfile.ZIP_DEFLATED)as z:z.writestr('patch/_supprimes.txt','\n'.join(removed))
   (out/'XRNLauncher-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
   payload=out/'XRNLauncher-win-x64.zip';unpacked=sum(p.stat().st_size for p in full.values());sha=digest(payload)
+  if source_snapshot()!=source_before:raise RuntimeError('Launcher sources changed during packaging. Rebuild before publishing.')
   if args.iscc:subprocess.run([__import__('sys').executable,str(ROOT/'scripts/build-installer.py'),'--payload',str(payload),'--iscc',str(args.iscc.resolve()),'--output',str(out)],check=True)
   files=[p for p in out.iterdir()if p.is_file() and (p.name.startswith('XRNLauncher-') or p.name in {'XRN-Setup.exe','XRN-Setup-build.json'})]
   (out/'SHA256SUMS.txt').write_text(''.join(digest(p)+'  '+p.name+'\n'for p in sorted(files)),encoding='ascii')

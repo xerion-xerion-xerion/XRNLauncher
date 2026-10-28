@@ -6,5 +6,6 @@
   "key.xrnhud.autotext": "XRN · Auto Text",
   "key.xrnhud.waypoints": "XRN · Balises",
   "key.category.xrnhud.controls": "XRN Client",
-  "key.categories.xrnhud.controls": "XRN Client"
+  "key.categories.xrnhud.controls": "XRN Client",
+  "key.xrnhud.freelook": "Vue libre (maintenir)"
 }

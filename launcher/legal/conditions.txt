@@ -1,5 +1,5 @@
 CONDITIONS D’UTILISATION — XRN LAUNCHER
-Version du 27 octobre 2026 — distribution 4.7.3
+Version du 28 octobre 2026 — distribution 4.8.0
 
 1. Le projet
 XRN Launcher est un logiciel indépendant développé par Xerion. Contact : xrnlauncher@gmail.com. Il n’est ni développé, ni approuvé par Mojang ou Microsoft. Minecraft et leurs autres marques appartiennent à leurs titulaires.

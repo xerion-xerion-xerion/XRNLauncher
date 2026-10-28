@@ -22,6 +22,7 @@ const screenshots = require('./lib/screenshots');
 const servers = require('./lib/servers');
 const alib   = require('./lib/authlib');
 const mods   = require('./lib/mods');
+const catalog = require('./lib/mod-catalog');
 const skins  = require('./lib/skins');
 const notif  = require('./lib/notification');
 const media  = require('./lib/media');
@@ -382,6 +383,7 @@ const XRN = {
       return { ok: true };
     },
 
+    installationId() { return notif.idInstallation(); },
     async notification() {
       try {
         const r = await notif.verifier();
@@ -804,6 +806,7 @@ const XRN = {
   /* ---------------------------------------------------------------- */
   /*  Mods et mod loaders                                              */
   /* ---------------------------------------------------------------- */
+  modCatalog: {contexts:catalog.contexts,search:catalog.search,prepare:catalog.prepare,install:catalog.install},
   mods: {
     etat() { return mods.etat(); },
     list() { return mods.list(); },
