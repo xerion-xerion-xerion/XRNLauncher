@@ -1,11 +1,11 @@
 {
   "name": "xrn-launcher",
-  "version": "4.8.2",
+  "version": "4.9.0-dev",
   "description": "XRN Launcher â€” Minecraft Java",
   "main": "index.html",
   "chromium-args": "--disable-features=CalculateNativeWinOcclusion",
   "window": {
-    "title": "XRNLauncher",
+    "title": "XRN — Atelier cosmétiques",
     "icon": "assets/icon.png",
     "width": 1440,
     "height": 860,

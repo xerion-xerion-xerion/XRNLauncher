@@ -62,22 +62,22 @@ public final class Droits {
         Un seul type de cosmetique, pour l instant : les capes. La
         cape de l auteur est offerte, les autres se paient.              */
     public static final List<Cosmetique> CATALOGUE = List.of(
-            new Cosmetique("cape_xrn", "Cape XRN", "cape", 0, "#7b5cff", true),
-            new Cosmetique("cape_aurore", "Cape Glacier", "cape", 120, "#9de8ff", false),
-            new Cosmetique("cape_braises", "Cape Com\u00e8te", "cape", 160, "#ff9a5a", false)
-    );
-
-    /** La texture d un cosmetique, ou null s'il n en a pas. */
-    public static Identifier texture(String id) {
-        if (id == null) return null;
-        switch (id) {
-            case "cape_xrn": return Identifier.of("xrnhud", "textures/cape_xrn.png");
-            case "cape_aurore": return Identifier.of("xrnhud", "textures/cape_aurore.png");
-            case "cape_braises": return Identifier.of("xrnhud", "textures/cape_braises.png");
-            default: return null;
-        }
+      new Cosmetique("cape_xrn", "XRN", "cape", 0, "#A78BFA", true),
+      new Cosmetique("cape_orbite", "Orbite", "cape", 0, "#8BAEFF", false),
+      new Cosmetique("cape_nova", "Nova", "cape", 0, "#8DEAFF", false));
+    private static final java.util.Map<String,Identifier[]> ANIMATIONS = new java.util.HashMap<>();
+    static {
+      for(String id : List.of("cape_orbite","cape_nova")) {
+        Identifier[] frames=new Identifier[64];
+        for(int i=0;i<frames.length;i++) frames[i]=Identifier.of("xrnhud","textures/cosmetics/"+id+"/"+String.format(java.util.Locale.ROOT,"%02d",i)+".png");
+        ANIMATIONS.put(id,frames);
+      }
     }
-
+    public static Identifier texture(String id) {
+      if("cape_xrn".equals(id))return Identifier.of("xrnhud","textures/cosmetics/cape_xrn.png");
+      Identifier[] frames=ANIMATIONS.get(id);
+      return frames==null?null:frames[(int)((System.nanoTime()/80_000_000L)%frames.length)];
+    }
     private static final Set<String> ACQUIS = new LinkedHashSet<>();
     private static String equipe = "";
     private static int etoiles = 0;
@@ -92,7 +92,7 @@ public final class Droits {
      * d'appeler le serveur lui-meme.
      */
     static void charger() {
-        ACQUIS.clear();
+        ACQUIS.clear(); ACQUIS.add("cape_xrn");
         String chemin = cheminFichier();
         if (chemin == null || chemin.isEmpty()) {
             LOGGER.info("Droits : aucun fichier trouve (ni la propriete, ni le dossier du jeu)");
@@ -104,6 +104,7 @@ public final class Droits {
                 LOGGER.info("Droits : fichier absent (" + chemin + ")");
                 return;
             }
+            if(Files.size(fichier)>65536)return;
             String texte = Files.readString(fichier, StandardCharsets.UTF_8);
             /*  Les outils de Windows ecrivent parfois une marque d ordre
                 des octets en tete de fichier. Le parseur JSON la
@@ -142,7 +143,7 @@ public final class Droits {
      * On tente les deux, pour ne pas dependre de la premiere seule.
      */
     private static String cheminFichier() {
-        String prop = System.getProperty("DXRNDroits", "");
+        String prop = System.getProperty("XRNDroits", System.getProperty("DXRNDroits", ""));
         if (prop != null && !prop.isEmpty()) return prop;
         try {
             java.nio.file.Path jeu = java.nio.file.Path.of(System.getProperty("user.dir", ""));
@@ -157,7 +158,7 @@ public final class Droits {
 
     /** Le joueur possede-t-il ce cosmetique ? */
     public static boolean possede(String id) {
-        return id != null && ACQUIS.contains(id);
+        return "cape_xrn".equals(id) || (id != null && ACQUIS.contains(id));
     }
 
     /** Les cosmetiques que le joueur possede, dans l ordre du catalogue. */
@@ -182,6 +183,9 @@ public final class Droits {
         String n = id == null ? "" : id.trim();
         if (!n.isEmpty() && !possede(n)) return;
         equipe = n;
+        try {
+          Path file=choixFichier();if(file!=null){Files.createDirectories(file.getParent());JsonObject o=new JsonObject();o.addProperty("schema",1);o.addProperty("equipe",n);Path temp=file.resolveSibling(file.getFileName()+".game.tmp");Files.writeString(temp,o.toString(),StandardCharsets.UTF_8);Files.move(temp,file,java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
+        }catch(IOException|RuntimeException ignored){}
         Placement.sauver();
     }
 
@@ -189,6 +193,25 @@ public final class Droits {
     public static void memoriserEquipe(String id) {
         String n = id == null ? "" : id.trim();
         equipe = (!n.isEmpty() && possede(n)) ? n : "";
+    }
+
+
+    private static long droitsStamp=Long.MIN_VALUE,choixStamp=Long.MIN_VALUE;
+    private static Path choixFichier(){
+      String prop=System.getProperty("XRNWardrobe","");if(!prop.isEmpty())return Path.of(prop);
+      String droits=cheminFichier();return droits==null||droits.isEmpty()?null:Path.of(droits).resolveSibling("cosmetique.json");
+    }
+    static void synchroniser(){
+      try{
+        String droits=cheminFichier();if(droits!=null&&!droits.isEmpty()){
+          Path f=Path.of(droits);long stamp=Files.exists(f)?Files.getLastModifiedTime(f).toMillis():0;
+          if(stamp!=droitsStamp){droitsStamp=stamp;charger();if(!equipe.isEmpty()&&!possede(equipe))equipe="";}
+        }
+        Path f=choixFichier();if(f==null||!Files.exists(f)||Files.size(f)>4096)return;
+        long stamp=Files.getLastModifiedTime(f).toMillis();if(stamp==choixStamp)return;
+        JsonObject o=JsonParser.parseString(Files.readString(f,StandardCharsets.UTF_8)).getAsJsonObject();
+        memoriserEquipe(o.has("equipe")?o.get("equipe").getAsString():"");choixStamp=stamp;
+      }catch(IOException|RuntimeException ignored){}
     }
 
     /** Le solde d etoiles, pour l afficher. */

@@ -30,6 +30,8 @@ const manif  = require('./lib/manifeste');
 const communaute = require('./lib/communaute');
 const presence = require('./lib/presence');
 const boutique = require('./lib/boutique');
+const cosmetics = require('./lib/cosmetics');
+require('./lib/private-relay').start().catch(()=>{});
 
 util.ensureDir(util.appRoot());
 
@@ -219,6 +221,13 @@ const XRN = {
       };
     },
     config() { return cfgm.load(); },
+    cosmetics: {
+      skin(){return cosmetics.skin(session.account);},
+      catalogue(){return cosmetics.catalogue(session.account);},
+      equip(id){return cosmetics.equip(session.account,id);},
+      status(){return presence.status();},
+      async refresh(){await presence.sync(session.account);return cosmetics.catalogue(session.account);}
+    },
     shippedClientId() { return cfgm.shipped().microsoftClientId || ''; },
 
     /*  La communaute : l'annuaire des pseudos qui utilisent le client.

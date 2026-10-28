@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "products": [
+    {
+      "id": "cape_xrn",
+      "name": "XRN",
+      "description": "Le signe du client, entre orbite violette et ciel profond.",
+      "animated": false,
+      "preview": "assets/cosmetics/cape_xrn.png",
+      "free": true,
+      "paymentUrl": "",
+      "commercialReady": true
+    },
+    {
+      "id": "cape_orbite",
+      "name": "Orbite",
+      "description": "Deux horizons qui tournent dans la nuit.",
+      "animated": true,
+      "frames": 64,
+      "frameMillis": 80,
+      "preview": "assets/cosmetics/cape_orbite.gif",
+      "free": false,
+      "paymentUrl": "",
+      "commercialReady": false
+    },
+    {
+      "id": "cape_nova",
+      "name": "Nova",
+      "description": "Une explosion stellaire, puis le retour au calme.",
+      "animated": true,
+      "frames": 64,
+      "frameMillis": 80,
+      "preview": "assets/cosmetics/cape_nova.gif",
+      "free": false,
+      "paymentUrl": "",
+      "commercialReady": false
+    }
+  ]
+}

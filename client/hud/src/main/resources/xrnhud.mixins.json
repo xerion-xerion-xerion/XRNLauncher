@@ -16,7 +16,8 @@
     "FreeLookEntityMixin",
     "FreeLookCameraMixin",
     "RenderPipelinesAccessor",
-    "MotionBlurMixin"
+    "MotionBlurMixin",
+    "PlayerEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 0

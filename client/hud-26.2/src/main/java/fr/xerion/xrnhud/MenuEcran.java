@@ -121,6 +121,7 @@ public class MenuEcran extends Screen {
             Placement.sauver();minecraft.gui.setScreen(new EcranEdition());
         },mx,my);
         if(pw>=360)button(c,"Balises",px+122,py+ph-22,72,16,()->minecraft.gui.setScreen(new BalisesEcran(this)),mx,my);
+        if(pw>=500)button(c,"Garde-robe",px+202,py+ph-22,90,16,()->minecraft.gui.setScreen(new EcranGardeRobe(this)),mx,my);
         if (pw >= 500) Theme.texte(c,font,"Maj droite / Echap",px+pw-111,py+ph-18,Theme.TEXTE_FAIBLE);
         Theme.champs(c,children());
         super.extractRenderState(c,mx,my,delta);

@@ -1,211 +1,45 @@
 package fr.xerion.xrnhud;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.client.texture.TextureManager;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-
-/**
- * La garde-robe.
- *
- * <p>Un ecran a part entiere, et non un onglet de plus dans le menu :
- * un cosmetique se juge sur le personnage, pas sur une ligne de
- * texte. A gauche, le personnage, en vrai, avec ce qu il porte. A
- * droite, ce qu on possede, et ce qu on peut mettre.
- *
- * <p>Le personnage affiche est le joueur local. C est le seul dont on
- * sait qu il possede ce qu il porte : le serveur ne dit rien des
- * droits des autres joueurs.
- */
+/** Wardrobe with the module browser's scale and theme, and an actual player preview. */
 public class EcranGardeRobe extends Screen {
-
-    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("XRN HUD");
-
-    private static final int LARGEUR = 380;
-    private static final int HAUTEUR = 236;
-    private static final int APERCU_L = 132;
-    private static final int APERCU_H = 200;
-
-    /*  Les cosmetiques possedes, regroupes par type. */
-    private final List<Droits.Cosmetique> liste = new ArrayList<>();
-
-    /*  Les cartes, calculees a chaque image, pour que le clic sache
-        sur quoi il est tombe. */
-    private record Carte(int x, int y, int w, int h, Droits.Cosmetique cosmetique) {}
-
-    private final List<Carte> cartes = new ArrayList<>();
-    private int survole = -1;
-
-    /*  L'angle de rotation de l apercu : le personnage tourne
-        lentement, comme sur un转动 presenter. */
-    private float rotation = 0f;
-
-    public EcranGardeRobe() {
-        super(Text.literal("Garde-robe"));
-        liste.addAll(Droits.acquis());
-    }
-
-    @Override
-    public boolean shouldPause() {
-        return false;
-    }
-
-    @Override
-    public void render(DrawContext c, int mouseX, int mouseY, float delta) {
-        super.render(c, mouseX, mouseY, delta);
-        rotation += delta * 22f;
-
-        int l = this.width, h = this.height;
-        int x = (l - LARGEUR) / 2;
-        int y = (h - HAUTEUR) / 2;
-
-        /*  Le fond de l ecran, et la carte. */
-        c.fill(0, 0, l, h, Theme.alpha(0xC0070510, 0.86f));
-        Theme.cadre(c, x, y, LARGEUR, HAUTEUR,
-                Theme.alpha(Theme.PANNEAU, 0.98f), Theme.alpha(Theme.BORDURE, 0.9f));
-
-        TextRenderer tr = MinecraftClient.getInstance().textRenderer;
-        Theme.texte(c, tr, "GARDE-ROBE", x + 16, y + 12, Theme.alpha(Theme.ACCENT, 1f));
-
-        /*  L apercu : le personnage, avec ce qu il porte. */
-        int ax = x + 14, ay = y + 30;
-        /*  Le fond de l apercu est clair : le personnage est dessine
-            avec la lumiere du monde, et sur un fond noir il disparait. */
-        Theme.cadre(c, ax, ay, APERCU_L, APERCU_H,
-                Theme.alpha(0x2E2842, 0.95f), Theme.alpha(Theme.BORDURE, 0.6f));
-
-        /*  Le visuel du cosmetique : ce qu on survole, sinon ce qu on
-            porte. C est l image reelle que le jeu affiche sur le
-            personnage ; le personnage, lui, se voit en jeu.             */
-        String porte = Droits.equipe();
-        String montre = porte;
-        if (survole >= 0 && survole < liste.size()) montre = liste.get(survole).id;
-        if (!montre.isEmpty()) {
-            for (Droits.Cosmetique co : liste) {
-                if (!co.id.equals(montre)) continue;
-                if (dessinerApercu(c, co, ax + 12, ay + 14, APERCU_L - 24)) break;
-            }
-        }
-        Theme.texte(c, tr, montre.equals(porte) ? "Tu le portes en jeu" : "Apercu",
-                ax + 10, ay + APERCU_H - 16, Theme.alpha(Theme.TEXTE_FAIBLE, 1f));
-
-        /*  Ce qu on porte, et ce qu on pourrait porter. */
-        int dx = ax + APERCU_L + 14;
-        int dw = LARGEUR - (dx - x) - 16;
-        Theme.texte(c, tr, "PORTE", dx, ay, Theme.alpha(Theme.TEXTE_DOUX, 1f));
-
-        Theme.texte(c, tr, porte.isEmpty() ? "Aucun cosmetique" : Droits.nom(porte),
-                dx, ay + 12, Theme.alpha(Theme.TEXTE, 1f));
-
-        /*  La liste, en cartes. */
-        cartes.clear();
-        int cy = ay + 30;
-        for (int i = 0; i < liste.size(); i++) {
-            Droits.Cosmetique co = liste.get(i);
-            int ch = 34;
-            boolean surv = survole == i;
-            Theme.cadre(c, dx, cy, dw, ch,
-                    Theme.alpha(surv ? Theme.ACCENT : 0x171129, 0.55f),
-                    Theme.alpha(porte.equals(co.id) ? Theme.ACCENT : Theme.BORDURE, 0.9f));
-
-            /*  L icone : la vraie image du cosmetique quand on l a,
-                sinon une pastille aux couleurs du produit.              */
-            int ix = dx + 6, iy = cy + 7;
-            if (!dessinerApercu(c, co, ix, iy, 20)) {
-                c.fill(ix, iy, ix + 20, iy + 20, Theme.alpha(0x000000, 0.3f));
-                c.fill(ix + 1, iy + 1, ix + 19, iy + 19, hex(co.couleur));
-            }
-
-            Theme.texte(c, tr, co.nom, ix + 28, cy + 8, Theme.alpha(Theme.TEXTE, 1f));
-            Theme.texte(c, tr, porte.equals(co.id) ? "Equipe" : "Porter",
-                    ix + 28, cy + 19, Theme.alpha(Theme.TEXTE_FAIBLE, 1f));
-
-            cartes.add(new Carte(dx, cy, dw, ch, co));
-            cy += ch + 6;
-        }
-
-        if (liste.isEmpty()) {
-            Theme.texte(c, tr, "Aucun cosmetique pour le moment.", dx, cy,
-                    Theme.alpha(Theme.TEXTE_FAIBLE, 1f));
-            Theme.texte(c, tr, "La boutique du launcher en propose.", dx, cy + 11,
-                    Theme.alpha(Theme.TEXTE_FAIBLE, 1f));
-        }
-
-        /*  Le survol. */
-        survole = -1;
-        for (int i = 0; i < cartes.size(); i++) {
-            Carte ca = cartes.get(i);
-            if (mouseX >= ca.x() && mouseX < ca.x() + ca.w()
-                    && mouseY >= ca.y() && mouseY < ca.y() + ca.h()) {
-                survole = i;
-                break;
-            }
-        }
-
-        Theme.texte(c, tr, "Echap pour fermer", x + LARGEUR - 92, y + HAUTEUR - 16,
-                Theme.alpha(Theme.TEXTE_FAIBLE, 1f));
-    }
-
-    /**
-     * Dessine l image du cosmetique depuis sa miniature.
-     *
-     * <p>On montre le vrai visuel, pas un symbole : une cape se juge
-     * sur son image.
-     */
-    private boolean dessinerApercu(DrawContext c, Droits.Cosmetique co, int x, int y, int taille) {
-        /*  Les miniatures stylees, au lieu des textures brutes. */
-        Identifier preview = Identifier.of("xrnhud", "textures/preview/" + co.id + ".png");
-        return dessinerTexture(c, preview, 0, 0, 128, 128, x, y, taille, taille);
-    }
-
-    /*  L ancien apercu 3D est retire : la camera du jeu n est pas
-        pilotable proprement depuis un ecran, et le rendu restait
-        derriere le modele. L image reelle du cosmetique suffit.      */
-
-    /**
-     * Dessine une zone d une texture du mod.
-     */
-    private boolean dessinerTexture(DrawContext c, Identifier texture, int u, int v,
-                                    int l, int h, int x, int y, int largeur, int hauteur) {
-        try {
-            c.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, texture,
-                    x, y, (float) u, (float) v, largeur, hauteur, l, h);
-            return true;
-        } catch (Throwable t) {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean mouseClicked(Click click, boolean doubled) {
-        int mx = (int) click.x();
-        int my = (int) click.y();
-        for (Carte ca : cartes) {
-            if (mx >= ca.x() && mx < ca.x() + ca.w() && my >= ca.y() && my < ca.y() + ca.h()) {
-                String id = ca.cosmetique().id;
-                Droits.equiper(Droits.equipe().equals(id) ? "" : id);
-                return true;
-            }
-        }
-        return super.mouseClicked(click, doubled);
-    }
-
-    /** La couleur d une pastille, depuis une chaine hexadecimale. */
-    private static int hex(String couleur) {
-        try {
-            return 0xFF000000 | Integer.parseInt(String.valueOf(couleur).replace("#", ""), 16);
-        } catch (Exception e) {
-            return 0xFF7B5CFF;
-        }
-    }
+ private record Hit(int x,int y,int w,int h,Runnable action){boolean has(double mx,double my){return mx>=x&&mx<x+w&&my>=y&&my<y+h;}}
+ private final List<Hit> hits=new ArrayList<>();private final Screen parent;
+ private String selected;private float angle=195,uiScale=1;private int px,py,pw,ph,ax,ay,aw,ah,sx,sy,sw;
+ private boolean ownedOnly,dragging,slider;private double startX;private float startAngle;
+ private final long opened=System.nanoTime();
+ public EcranGardeRobe(){this(null);}public EcranGardeRobe(Screen parent){super(Text.literal("Garde-robe"));this.parent=parent;selected=Droits.equipe().isEmpty()?"cape_xrn":Droits.equipe();}
+ @Override public boolean shouldPause(){return false;}
+ @Override public void close(){client.setScreen(parent);}
+ @Override public void renderBackground(DrawContext c,int mx,int my,float delta){if(client.world!=null){super.applyBlur(c);c.fill(0,0,width,height,0x550B0812);}}
+ @Override public void render(DrawContext c,int mx,int my,float delta){
+  uiScale=(float)Math.min(1,2.0/client.getWindow().getScaleFactor());int vw=Math.round(width/uiScale),vh=Math.round(height/uiScale);mx=Math.round(mx/uiScale);my=Math.round(my/uiScale);
+  pw=Math.min(vw-18,Math.min(730,(int)(vw*.9)));ph=Math.min(vh-18,Math.min(410,(int)(vh*.87)));px=(vw-pw)/2;py=(vh-ph)/2;
+  int nav=pw>=560?96:78,bodyY=py+38;ax=px+nav+20;ay=bodyY+2;aw=Math.max(120,(pw-nav-42)/2);ah=ph-85;int right=ax+aw+18,rw=px+pw-right-14;
+  sx=ax+18;sw=aw-36;sy=ay+ah-16;
+  if(dragging)angle=slider?Math.max(0,Math.min(360,(mx-sx)*360f/sw)):((startAngle+(float)(mx-startX)*1.1f)%360+360)%360;
+  c.getMatrices().pushMatrix();c.getMatrices().scale(uiScale,uiScale);hits.clear();
+  Theme.arrondi(c,px,py,pw,ph,0xF516141B,0xFF40354F);Theme.marque(c,px+12,py+11,1);Theme.texte(c,textRenderer,"GARDE-ROBE",px+28,py+11,Theme.TEXTE);button(c,"×",px+pw-25,py+6,19,19,this::close,true);
+  Theme.rect(c,px+9,py+31,pw-18,1,Theme.BORDURE);Theme.rect(c,px+nav+8,bodyY,1,ph-76,Theme.BORDURE);
+  button(c,"Collection",px+9,bodyY,nav-7,22,()->ownedOnly=false,true);button(c,"Mes capes",px+9,bodyY+28,nav-7,22,()->ownedOnly=true,true);Theme.rect(c,px+9,bodyY+(ownedOnly?28:0),2,22,Theme.ACCENT);
+  Theme.arrondi(c,ax,ay,aw,ah,0xFF211B29,0xFF3B3048);Theme.texteCentre(c,textRenderer,"Votre personnage",ax+aw/2,ay+10,Theme.TEXTE_DOUX);
+  Theme.arrondi(c,sx,sy,sw,3,0xFF403548,0);int knob=sx+Math.round(sw*angle/360);Theme.arrondi(c,sx,sy,Math.max(1,knob-sx),3,Theme.ACCENT,0);Theme.arrondi(c,knob-3,sy-2,6,7,Theme.TEXTE,0);
+  int cy=bodyY;
+  for(var item:Droits.CATALOGUE){if(ownedOnly&&!Droits.possede(item.id))continue;final String id=item.id;boolean active=id.equals(selected);Theme.arrondi(c,right,cy,rw,43,active?0xFF30243D:0xFF211D28,active?Theme.ACCENT:0xFF40354B);
+   Theme.texte(c,textRenderer,item.nom,right+10,cy+8,Theme.TEXTE);Theme.texte(c,textRenderer,Droits.possede(id)?(Droits.equipe().equals(id)?"Equipee":"Dans votre collection"):"Apercu",right+10,cy+24,Theme.TEXTE_DOUX);hits.add(new Hit(right,cy,rw,43,()->selected=id));cy+=49;
+  }
+  int bottom=py+ph-69;boolean own=Droits.possede(selected),equipped=Droits.equipe().equals(selected);
+  button(c,own?(equipped?"Retirer":"Equiper"):"Bientot disponible",right,bottom,rw,23,()->Droits.equiper(equipped?"":selected),own);
+  if(rw>=140)Theme.texte(c,textRenderer,selected.equals("cape_xrn")?"Cape XRN originale":"Cape animee · Espace",right,bottom-17,Theme.TEXTE_DOUX);
+  Theme.rect(c,px+9,py+ph-31,pw-18,1,Theme.BORDURE);button(c,"Retour",px+10,py+ph-24,66,17,this::close,true);if(pw>=450)Theme.texte(c,textRenderer,"Glissez sur le personnage pour tourner",px+nav+21,py+ph-19,Theme.TEXTE_FAIBLE);
+  c.getMatrices().popMatrix();
+  ApercuJoueur.dessiner(c,Math.round((ax+3)*uiScale),Math.round((ay+22)*uiScale),Math.round((aw-6)*uiScale),Math.round((ah-47)*uiScale),angle,selected);
+ }
+ private void button(DrawContext c,String title,int x,int y,int w,int h,Runnable action,boolean enabled){Theme.arrondi(c,x,y,w,h,enabled?0xFF2A2333:0xFF211D26,0xFF4B3D58);Theme.texteCentre(c,textRenderer,title,x+w/2,y+(h-8)/2,enabled?Theme.TEXTE:Theme.TEXTE_FAIBLE);if(enabled)hits.add(new Hit(x,y,w,h,action));}
+ @Override public boolean mouseClicked(Click e,boolean twice){double mx=e.x()/uiScale,my=e.y()/uiScale;if(mx>=sx-5&&mx<=sx+sw+5&&my>=sy-7&&my<=sy+10){dragging=true;slider=true;return true;}if(mx>=ax&&mx<=ax+aw&&my>=ay+20&&my<=ay+ah-30){dragging=true;slider=false;startX=mx;startAngle=angle;return true;}for(Hit h:hits)if(h.has(mx,my)){h.action.run();return true;}return super.mouseClicked(e,twice);}
+ @Override public boolean mouseReleased(Click e){if(dragging){dragging=false;return true;}return super.mouseReleased(e);}
 }

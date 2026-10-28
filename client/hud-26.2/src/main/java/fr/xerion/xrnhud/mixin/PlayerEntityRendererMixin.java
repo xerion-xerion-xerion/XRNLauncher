@@ -43,7 +43,7 @@ public abstract class PlayerEntityRendererMixin {
                 porte = Droits.equipe();
             } else {
                 /*  Les autres : ce que l annuaire dit qu ils portent. */
-                porte = fr.xerion.xrnhud.Connus.cosmetique(nomDuJoueur(entity));
+                porte = fr.xerion.xrnhud.Connus.cosmetique(entity.getUUID());
             }
 
             /*  Seuls les capes se portent : une texture de cape du jeu. */

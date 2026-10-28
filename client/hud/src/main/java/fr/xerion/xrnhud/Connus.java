@@ -87,6 +87,8 @@ public final class Connus {
                         String uuid=player.get("uuid").getAsString().toLowerCase(Locale.ROOT);
                         if (!uuid.matches("[a-f0-9]{32}")) continue;
                         UUIDS.add(uuid);
+                        String cape=player.has("cosmetic")?player.get("cosmetic").getAsString():"";
+                        if(java.util.List.of("cape_xrn","cape_orbite","cape_nova").contains(cape))COSMÉTIQUES.put(uuid,cape);
                         if(player.has("style")&&player.get("style").isJsonObject()){
                             var style=player.getAsJsonObject("style");
                             try{STYLES.put(uuid,new NameTag.Profil(style.has("enabled")&&style.get("enabled").getAsBoolean(),!style.has("badge")||style.get("badge").getAsBoolean(),!style.has("gradient")||style.get("gradient").getAsBoolean(),false,0xFF000000|(style.get("start").getAsInt()&0xFFFFFF),0xFF000000|(style.get("end").getAsInt()&0xFFFFFF)));}catch(RuntimeException ignored){}
@@ -133,10 +135,8 @@ public final class Connus {
      *
      * <p>Une chaine vide : ce joueur ne porte rien de connu.
      */
-    public static String cosmetique(String nom) {
-        if (nom == null || nom.isEmpty()) return "";
-        String co = COSMÉTIQUES.get(nom.toLowerCase(Locale.ROOT));
-        return co == null ? "" : co;
+    public static String cosmetique(java.util.UUID uuid) {
+        return uuid==null?"":COSMÉTIQUES.getOrDefault(uuid.toString().replace("-", "").toLowerCase(Locale.ROOT),"");
     }
 
     /** Regroupe les deux sources apres un changement de l'une d'elles. */

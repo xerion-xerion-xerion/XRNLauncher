@@ -1024,6 +1024,7 @@ function buildArgs(plan, opts) {
   /*  Les droits de la boutique : les cosmetiques que le joueur
       possede. Le mod en a besoin pour les montrer.                      */
   jvm.push('-DXRNDroits=' + require('./boutique').fichierDroits());
+  jvm.push('-DXRNWardrobe=' + require('./cosmetics').wardrobeFile());
   /*  Le mode Boost FPS : le mod applique le profil de performance au
       demarrage, et sait revenir en arriere si le joueur le desactive.  */
   jvm.push(require('./boost').optionMod(!!cfg.boostFps));

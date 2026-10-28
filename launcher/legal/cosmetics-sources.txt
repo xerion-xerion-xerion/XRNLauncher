@@ -1,0 +1,21 @@
+COLLECTION XRN — APERÇUS DE DÉVELOPPEMENT
+
+Cape XRN : création originale pour XRN Launcher, outil intégré imagegen. L’art complet et le prompt sont conservés dans le dossier de livraison local. La texture Minecraft est un encodage UV de cet art.
+
+Orbite : adaptation de BHW_Supermassive_Black_Hole_Simulation.gif.
+Crédit : NASA’s Goddard Space Flight Center ; arrière-plan : ESA/Gaia/DPAC.
+Source : https://svs.gsfc.nasa.gov/14132
+Fichier : https://svs.gsfc.nasa.gov/vis/a010000/a014100/a014132/BHW_Supermassive_Black_Hole_Simulation.gif
+
+Nova : adaptation de BHW_Gamma-ray_Burst.gif.
+Crédit : NASA’s Goddard Space Flight Center/CI Lab.
+Source : https://svs.gsfc.nasa.gov/14132
+Fichier : https://svs.gsfc.nasa.gov/vis/a010000/a014100/a014132/BHW_Gamma-ray_Burst.gif
+
+Les adaptations conservent la scène dans le format de la cape et rééchantillonnent la boucle en 64 images. La bande de légende inférieure d’Orbite a été retirée ; son crédit complet est conservé ci-dessus. Les images ne sont pas des simulations scientifiques produites par XRN et n’impliquent aucune approbation ou association de NASA avec XRN.
+
+Ces deux animations sont conservées comme prototypes locaux. Ne pas activer leur vente avant vérification des droits et des autorisations commerciales nécessaires :
+https://www.nasa.gov/nasa-brand-center/images-and-media/
+https://www.nasa.gov/nasa-brand-center/merchandise-approvals/
+
+Aucun prix, lien de paiement actif ou autorisation de vente de ces animations n’est revendiqué dans cette version de travail.

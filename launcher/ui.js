@@ -585,7 +585,6 @@ const Splash = {
   const Nav = {
     items: $$('.nav-item'), views: $$('.view'),
     go(name) {
-      if (name === 'boutique') name = 'mods';
       if (name === 'videos') name = 'home';
       const el = document.getElementById('view-' + name);
       if (!el) return;
@@ -605,6 +604,7 @@ const Splash = {
       if (name === 'login') Login.refresh();
       if (name === 'home') Home.refresh();
       if (name === 'mods') setTimeout(() => Mods.refresh(), 0);
+      if (name === 'boutique') window.XrnShop?.refresh();
 
     }
   };

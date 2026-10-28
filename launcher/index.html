@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Orbitron:wght@500;700;900&amp;display=swap" rel="stylesheet">
 <link rel="icon" href="assets/icon.png">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="cosmetics.css">
 <link rel="stylesheet" href="studio.css">
 <link rel="stylesheet" href="refine.css"></head>
 <body>
@@ -109,6 +110,7 @@
       <button class="nav-item" data-view="downloads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-download"></use></svg>Téléchargements<span class="nav-badge" id="dlBadge" hidden="">0</span></button>
       <button class="nav-item" data-view="versions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cube"></use></svg>Installations</button>
       <button class="nav-item" data-view="mods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"></use></svg>Mods</button>
+      <button class="nav-item" data-view="boutique"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gem"></use></svg>Boutique</button>
       <button class="nav-item" data-view="saves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"></use></svg>Sauvegardes</button>
       <button class="nav-item" data-view="shots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><use href="#i-image"></use></svg>Captures</button>
       <button class="nav-item" data-view="files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"></use></svg>Fichiers</button>
@@ -264,6 +266,22 @@
 
       <!-- ========== SAUVEGARDES ========== -->
       <!-- ========== MODS ========== -->
+      <section class="view" id="view-boutique">
+        <header class="shop-heading"><div><p class="shop-kicker">XRN / COSMÉTIQUES</p><h2>La première collection.</h2><p>Une signature. Deux horizons.</p></div><span class="shop-development">Aperçu de la collection · Achats fermés</span></header>
+        <div class="shop-layout">
+          <div class="shop-preview">
+            <div class="shop-preview-top"><span id="shopPreviewLabel">XRN</span><span id="shopAnimationLabel">Cape originale</span></div>
+            <div class="shop-stage" id="shopStage" aria-label="Votre personnage Minecraft portant la cape, faites glisser pour tourner"><canvas id="shopPlayer" aria-label="Aperçu 3D du personnage avec la cape"></canvas><div class="shop-floor"></div></div>
+            <div class="shop-rotation"><label for="shopAngle">Rotation</label><input id="shopAngle" type="range" min="0" max="360" value="180" aria-label="Rotation du personnage"><button class="btn sm" id="shopPause" type="button">Pause</button></div>
+            <p class="shop-preview-caption" id="shopSkinCaption">Votre skin Minecraft · Glissez pour tourner</p>
+          </div>
+          <div class="shop-details">
+            <p class="shop-kicker">01 / COLLECTION ESPACE</p><div id="shopProducts" class="shop-products" role="group" aria-label="Choisir une cape"></div>
+            <div class="shop-description"><h3 id="shopProductTitle">XRN</h3><p id="shopProductDescription">Le signe du client, entre orbite violette et ciel profond.</p><div class="shop-product-info"><span id="shopProductType">Cape fixe</span><span id="shopProductPrice">Offerte</span></div><button class="btn primary" id="shopEquip" type="button">Équiper la cape XRN</button><p id="shopActionStatus" role="status" aria-live="polite"></p></div>
+            <div class="shop-sharing"><div><span id="shopPresenceDot" class="shop-status-dot"></span><b id="shopPresenceTitle">Partage entre joueurs</b></div><p id="shopPresenceDescription">Connectez votre compte Microsoft dans XRN pour partager votre apparence.</p><button class="btn sm" type="button" id="shopRefresh">Actualiser le partage</button></div>
+          </div>
+        </div>
+      </section>
       <section class="view" id="view-mods">
         <div class="view-head">
           <div><div class="eyebrow">Modifications</div><h2>Mods</h2>
@@ -605,6 +623,9 @@
 <script src="ui.js"></script>
 <dialog id="shotViewer"><div class="shot-viewbar"><button class="btn" id="shotPrev" aria-label="Capture précédente">←</button><span id="shotCaption"></span><button class="btn" id="shotNext" aria-label="Capture suivante">→</button><button class="btn" id="shotClose">Fermer</button></div><img id="shotLarge" alt=""></dialog>
 <script src="gallery.js"></script>
+<script src="cosmetics.js"></script>
+<script src="vendor/skinview3d-3.4.2.js"></script>
+<script src="cosmetics-viewer.js"></script>
 
 
 </body></html>

@@ -139,7 +139,7 @@ public class XrnHudClient implements ClientModInitializer {
             Visuels.tick(client);Raccourcis.tick(client);
             FreeLook.tick(client);ModulesPlus.tick(client);
             ModulesUtiles.tick(client);
-            if (++annuaireTicks % 40 == 0) Connus.chargerAnnuaire();
+            if (++annuaireTicks % 40 == 0) {Connus.chargerAnnuaire();Droits.synchroniser();}
             Hud.suivreSession(client);
             Hud.compterClics(client);
             Hud.mesurerVitesse(client);
@@ -175,7 +175,7 @@ public class XrnHudClient implements ClientModInitializer {
             car le choix du cosmetique porte ne vaut que si on le
             possede reellement.                                            */
 
-        fr.xerion.xrnhud.Placement.charger();
+        fr.xerion.xrnhud.Droits.charger();fr.xerion.xrnhud.Placement.charger();fr.xerion.xrnhud.Droits.synchroniser();
         /*  L'annuaire de la communaute : la liste des pseudos qui
             utilisent le client, ecrite par le launcher. Elle est lue
             sur le disque, jamais sur le reseau : le jeu demarre meme

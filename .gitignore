@@ -75,3 +75,6 @@ installer/payload.json
 **/.gradle/
 *.exe
 !launcher/tools/XrnMedia.exe
+.wrangler/
+.dev.vars
+private-runtime.json
