@@ -1,3 +1,7 @@
+## Correctif 4.10.1
+
+Le compte, le sélecteur de langue et les commandes de fenêtre ont des emplacements distincts. Vérification en français et en anglais, avec un pseudo long et une fenêtre de 1100 ou 1400 pixels.
+
 ## Nouveautés 4.10.0
 
 - Version publique sans abonnement Prime. Boutique compacte et codes cadeaux espacés.
