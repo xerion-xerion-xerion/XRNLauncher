@@ -6,7 +6,11 @@ export const PRODUCTS=Object.freeze([
  {id:'cape_space',name:'Singularité',amount:299},
  {id:'cape_scream',name:'Scream',amount:199},
  {id:'cape_spine',name:'Spine',amount:199},
- {id:'cape_crimson',name:'Crimson Knight',amount:199}
+ {id:'cape_crimson',name:'Crimson Knight',amount:199},
+ {id:'cape_eclipse',name:'Éclipse',amount:199},
+ {id:'cape_rose',name:'Rose blanche',amount:199},
+ {id:'cape_seraphine',name:'Séraphine',amount:199},
+ {id:'cape_moonlight',name:'Clair de lune',amount:199}
 ]);
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const enc=new TextEncoder(),hex=b=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');

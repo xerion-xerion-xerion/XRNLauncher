@@ -8,7 +8,7 @@ workers_dev = true
 XRN_SHOP_MODE = "live"
 XRN_ALLOW_LIVE = "true"
 XRN_SHOP_RETURN_ORIGIN = "https://xrn-shop-live.schianotom667.workers.dev"
-XRN_LIVE_PRODUCT_IDS = "cape_space,cape_scream,cape_spine,cape_crimson"
+XRN_LIVE_PRODUCT_IDS = "cape_space,cape_scream,cape_spine,cape_crimson,cape_eclipse,cape_rose,cape_seraphine,cape_moonlight"
 
 [[durable_objects.bindings]]
 name = "DIRECTORY"

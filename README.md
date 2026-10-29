@@ -2,6 +2,12 @@
 
 Launcher Minecraft Java pour Windows, développé par Xerion. Interface violette, installations classiques et Fabric, gestion des mods, captures F2 et client au HUD personnalisable.
 
+## Nouveautés 4.9.2
+
+- Quatre nouvelles capes fixes à 1,99 € chacune : Éclipse, Rose blanche, Séraphine et Clair de lune.
+- Garde-robe avec défilement fluide pour garder une collection lisible.
+- Achats attribués au compte Minecraft après vérification serveur ; codes cadeaux utilisables pour l’une des nouvelles capes.
+
 ## Nouveautés 4.9.1
 
 - Fenêtre du menu en jeu déplaçable par son en-tête, position mémorisée et recentrage disponible.

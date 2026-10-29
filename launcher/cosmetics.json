@@ -62,6 +62,54 @@
       "commercialReady": false,
       "amount": 199,
       "currency": "eur"
+    },
+    {
+      "id": "cape_eclipse",
+      "name": "Éclipse",
+      "description": "Une nuit noire, des etoiles et une lune discrete.",
+      "animated": false,
+      "preview": "assets/cosmetics/cape_eclipse.png",
+      "free": false,
+      "paymentUrl": "",
+      "commercialReady": false,
+      "amount": 199,
+      "currency": "eur"
+    },
+    {
+      "id": "cape_rose",
+      "name": "Rose blanche",
+      "description": "Une rose noire sur un fond blanc minimaliste.",
+      "animated": false,
+      "preview": "assets/cosmetics/cape_rose.png",
+      "free": false,
+      "paymentUrl": "",
+      "commercialReady": false,
+      "amount": 199,
+      "currency": "eur"
+    },
+    {
+      "id": "cape_seraphine",
+      "name": "Séraphine",
+      "description": "Un ange en noir et blanc, entre ailes et aureole.",
+      "animated": false,
+      "preview": "assets/cosmetics/cape_seraphine.png",
+      "free": false,
+      "paymentUrl": "",
+      "commercialReady": false,
+      "amount": 199,
+      "currency": "eur"
+    },
+    {
+      "id": "cape_moonlight",
+      "name": "Clair de lune",
+      "description": "Un croissant de lune dans un ciel bleu etoile.",
+      "animated": false,
+      "preview": "assets/cosmetics/cape_moonlight.png",
+      "free": false,
+      "paymentUrl": "",
+      "commercialReady": false,
+      "amount": 199,
+      "currency": "eur"
     }
   ]
 }

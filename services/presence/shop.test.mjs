@@ -28,7 +28,7 @@ async function call(path,data,token=tokenA){const res=await directory.fetch(new 
 function signedEvent(event,secret=env.STRIPE_WEBHOOK_SECRET,time=Math.floor(Date.now()/1000)){const raw=JSON.stringify(event),sig=createHmac('sha256',secret).update(time+'.'+raw).digest('hex');return {raw,header:'t='+time+',v1='+sig};}
 async function event(data,secret){const {raw,header}=signedEvent(data,secret);const r=await directory.fetch(new Request('http://127.0.0.1:8789/v2/shop/webhook',{method:'POST',headers:{'Stripe-Signature':header},body:raw}));return {status:r.status,body:await r.json()};}
 try{
- assert.equal((await call('catalogue')).body.products.length,5);
+ assert.equal((await call('catalogue')).body.products.length,9);
  assert.equal((await call('checkout',{product:'cape_space'},'')).status,401);
  const legacy='c'.repeat(64);await store.put('s:'+sha(legacy),{uuid:alice,until:Date.now()+3600000});assert.equal((await call('checkout',{product:'cape_space'},legacy)).status,401);
  for(const extra of [{uuid:bob},{amount:1},{quantity:5},{currency:'usd'},{rights:['cape_spine']}])assert.equal((await call('checkout',{product:'cape_space',...extra})).status,400);
@@ -76,5 +76,16 @@ try{
  assert.deepEqual(await gated.rights(bob),['cape_job','cape_scream']);assert.deepEqual(await directory.rights(bob),['cape_job','cape_spine']);
  const unapproved=await liveCall('checkout',{product:'cape_crimson'});assert.equal(unapproved.status,400);
 
+ // Each new fixed cape keeps the same authoritative price and one-product grant.
+ const newCapes=['cape_eclipse','cape_rose','cape_seraphine','cape_moonlight'];
+ for(const id of newCapes){
+  for(const key of [...store.data.keys()])if(key.startsWith('r:'))store.data.delete(key); // Independent test purchases; production limits stay unchanged.
+  const p=catalogue.find(p=>p.id===id);assert.equal(p.amount,199);assert.equal(p.purchasable,true);
+  const tamper=await call('checkout',{product:id,amount:1},tokenB);assert.equal(tamper.status,400);
+  const before=await directory.rights(bob);assert.equal(before.includes(id),false);
+  const order=await call('checkout',{product:id},tokenB);assert.equal(order.status,200);assert.deepEqual(await directory.rights(bob),before,'Unpaid checkout grants nothing');
+  const session=[...sessions.values()].find(s=>!s.livemode&&s.metadata.xrn_product===id);assert.equal(session.amount_total,199);paid(session);
+  assert.equal((await call('status',{order:order.body.order},tokenB)).body.state,'paid');assert.deepEqual(await directory.rights(bob),[...before,id],'Exactly the purchased cape is granted');
+ }
  console.log('PASS Stripe security: authenticated UUID, server price/quantity, concurrent idempotency, account isolation, signed raw-body webhooks, replay/tamper rejection, exactly one cape, refunds, monotonic revocation, test/live separation, durable orders.');
 }finally{globalThis.fetch=realFetch;}

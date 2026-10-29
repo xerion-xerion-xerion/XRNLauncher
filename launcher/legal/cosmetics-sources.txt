@@ -24,3 +24,5 @@ Aucun prix, lien de paiement actif ou autorisation de vente de ces animations n�
 Collection privee actuelle : Singularite (space_xK6Bb1Zt.gif) et Job Application (image fournie). References fournies par le developpeur le 2026-10-28, auteurs et droits commerciaux non confirmes. Paiements desactives. Les anciennes capes restent compatibles pour les choix historiques mais ne sont plus au catalogue.
 
 Trois references supplementaires fournies par le developpeur : Scream, Spine et Crimson Knight. Auteurs et droits commerciaux non confirmes ; achats toujours fermes.
+
+Ajouts du 29 octobre 2026 : Éclipse, Rose blanche, Séraphine et Clair de lune. Images fixes fournies par Xerion ; fichiers cloak_Star_Sky, cloak_Rose_White, cloak_Angel_Anime et cloak_Star_Planet. Les dispositions UV originales sont conservees. Prix configure : 1,99 EUR chacune. La fourniture de ces images ne vaut pas preuve des droits de leurs auteurs.

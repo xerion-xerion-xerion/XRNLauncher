@@ -88,7 +88,7 @@ public final class Connus {
                         if (!uuid.matches("[a-f0-9]{32}")) continue;
                         UUIDS.add(uuid);
                         String cape=player.has("cosmetic")?player.get("cosmetic").getAsString():"";
-                        if(java.util.List.of("cape_space","cape_job","cape_scream","cape_spine","cape_crimson").contains(cape))COSMÉTIQUES.put(uuid,cape);
+                        if(java.util.List.of("cape_space","cape_job","cape_scream","cape_spine","cape_crimson","cape_eclipse","cape_rose","cape_seraphine","cape_moonlight").contains(cape))COSMÉTIQUES.put(uuid,cape);
                         if(player.has("style")&&player.get("style").isJsonObject()){
                             var style=player.getAsJsonObject("style");
                             try{STYLES.put(uuid,new NameTag.Profil(style.has("enabled")&&style.get("enabled").getAsBoolean(),!style.has("badge")||style.get("badge").getAsBoolean(),!style.has("gradient")||style.get("gradient").getAsBoolean(),false,0xFF000000|(style.get("start").getAsInt()&0xFFFFFF),0xFF000000|(style.get("end").getAsInt()&0xFFFFFF),style.has("animate")&&style.get("animate").getAsBoolean(),style.has("rainbow")&&style.get("rainbow").getAsBoolean()));}catch(RuntimeException ignored){}

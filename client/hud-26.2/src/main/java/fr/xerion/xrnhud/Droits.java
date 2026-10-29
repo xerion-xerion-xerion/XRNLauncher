@@ -63,7 +63,11 @@ public final class Droits {
       new Cosmetique("cape_space", "Singularite", "cape", 0, "#75DAEE", false),
       new Cosmetique("cape_scream", "Scream", "cape", 0, "#E4ECF2", false),
       new Cosmetique("cape_spine", "Spine", "cape", 0, "#E4ECF2", false),
-      new Cosmetique("cape_crimson", "Crimson Knight", "cape", 0, "#E4ECF2", false));
+      new Cosmetique("cape_crimson", "Crimson Knight", "cape", 0, "#E4ECF2", false),
+      new Cosmetique("cape_eclipse", "Éclipse", "cape", 0, "#C8CBD4", false),
+      new Cosmetique("cape_rose", "Rose blanche", "cape", 0, "#F2F1F3", false),
+      new Cosmetique("cape_seraphine", "Séraphine", "cape", 0, "#E6E3E9", false),
+      new Cosmetique("cape_moonlight", "Clair de lune", "cape", 0, "#6B9CFF", false));
     private static final java.util.Map<String,Identifier[]> ANIMATIONS = new java.util.HashMap<>();
     static {
       for(String id : List.of("cape_orbite","cape_nova")) {
@@ -78,6 +82,11 @@ public final class Droits {
       ANIMATIONS.put("cape_space",frames);
     }
     public static Identifier texture(String id) {
+      if("cape_eclipse".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_eclipse.png");
+      if("cape_rose".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_rose.png");
+      if("cape_seraphine".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_seraphine.png");
+      if("cape_moonlight".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_moonlight.png");
+
       if("cape_scream".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_scream.png");
       if("cape_spine".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_spine.png");
       if("cape_crimson".equals(id))return Identifier.fromNamespaceAndPath("xrnhud","textures/cosmetics/cape_crimson.png");
