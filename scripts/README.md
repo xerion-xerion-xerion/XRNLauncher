@@ -31,3 +31,12 @@ Avant publication, exécuter `python scripts/verify-release.py --directory dist`
 `--sign-cert-thumbprint EMPREINTE` active une signature Authenticode avec un certificat de signature de code déjà présent dans le magasin Windows de son titulaire. `--signtool CHEMIN` peut préciser le SignTool officiel du SDK Windows. Aucun mot de passe ni clé privée ne va dans le dépôt ou les arguments. Le launcher est signé après intégration de l’icône et avant création de l’archive ; le setup est signé avant calcul de ses empreintes finales. Une erreur de signature ou d’horodatage arrête la construction.
 
 Le certificat doit autoriser la signature de code, posséder sa clé privée et une chaîne de confiance valide. Un certificat Office ou autosigné ne fournit pas la confiance publique nécessaire. Aucune signature de production n’a été créée sans certificat reconnu. La signature n’assure pas la disparition immédiate des alertes SmartScreen. Références Microsoft : [options de signature](https://learn.microsoft.com/windows/apps/package-and-deploy/code-signing-options), [réputation SmartScreen](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation).
+
+
+## Essential automatique et Fullbright
+
+Essential est téléchargé séparément depuis son projet Modrinth officiel, jamais inclus dans le setup ou réhébergé. `launcher/essential-builds.json` épingle les fichiers vérifiés pour les versions principales ; les autres profils sont résolus par version exacte du jeu et chargeur. Le réglage `essentialEnabled` est activé par défaut. Une désactivation dans Mods ou un fichier installé manuellement est respecté. Le cache et les anciennes versions gérées restent dans le dossier de jeu ; une erreur de téléchargement ne remplace pas le fichier actif.
+
+`node scripts/test-essential.cjs` vérifie l'installation, le cache, les changements de version, la désactivation, les fichiers renommés et la conservation des fichiers après erreur avec de petites archives de test. Ce test n'utilise aucune clé et ne télécharge pas Essential.
+
+Le Fullbright remplit la lightmap avec un éclairage blanc maximal, sans modifier le gamma, les textures, le monde ou les effets de potion. Sa désactivation force le recalcul normal de Minecraft. Les ports Fabric 1.21.11 et 26.2 sont distincts ; les autres versions ne sont pas annoncées comme prises en charge par le HUD XRN.

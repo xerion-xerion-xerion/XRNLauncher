@@ -11,6 +11,7 @@ final class ApercuJoueur {
   Minecraft mc=Minecraft.getInstance();if(mc.player==null)return;
   var renderer=(AvatarRenderer)mc.getEntityRenderDispatcher().getRenderer(mc.player);
   var state=new AvatarRenderState();renderer.extractRenderState(mc.player,state,1f);
+  ((CapeApercu)(Object)state).xrn$apercuCape(true);
   state.lightCoords=15728880;state.outlineColor=0;state.shadowPieces.clear();state.nameTag=null;
   state.bodyRot=180;state.yRot=0;state.xRot=0;state.walkAnimationSpeed=0;state.walkAnimationPos=0;
   state.isCrouching=false;state.isFallFlying=false;state.isVisuallySwimming=false;state.pose=net.minecraft.world.entity.Pose.STANDING;

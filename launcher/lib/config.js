@@ -14,6 +14,8 @@ const SESSION_MAX_DAYS = 14;
 
 function defaults() {
   return {
+    language: 'fr',
+    recommendedModsEnabled: true,
     microsoftClientId: '',
     sessionMaxDays: SESSION_MAX_DAYS,
     gameDir: path.join(util.appRoot(), 'minecraft'),
@@ -38,6 +40,7 @@ function defaults() {
         n'a rien a voir avec le compte.                                  */
     boostFps: false,
     clientEnabled:true,
+    essentialEnabled:true,
     /*  L'adresse du service en ligne (annuaire, boutique). Elle vient
         du fichier livre avec l'application, comme celle des
         notifications.                                                    */

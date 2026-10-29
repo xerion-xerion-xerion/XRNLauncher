@@ -139,7 +139,7 @@ public class XrnHudClient implements ClientModInitializer {
             Visuels.tick(client);Raccourcis.tick(client);
             FreeLook.tick(client);ModulesPlus.tick(client);
             ModulesUtiles.tick(client);
-            if (++annuaireTicks % 40 == 0) {Connus.chargerAnnuaire();Droits.synchroniser();}
+            if (++annuaireTicks % 40 == 0) {Connus.chargerAnnuaire();Droits.synchroniser();PrimeClient.rafraichir();PrimeClient.noterProches();}
             Hud.suivreSession(client);
             Hud.compterClics(client);
             Hud.mesurerVitesse(client);

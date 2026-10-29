@@ -39,8 +39,8 @@ async function paymentStatus(account,order){
 }
 async function orders(account){requireSession(account);return presence.shop('orders',{});}
 async function equip(account,id){
- const product=collection.find(p=>p.id===id);if(id&&!product)throw Error('Cape inconnue.');
- if(id&&!product.free){
+ const product=collection.find(p=>p.id===id),custom=/^prime_[a-f0-9]{32}$/.test(id||'');if(id&&!product&&!custom)throw Error('Cape inconnue.');
+ if(id&&(custom||!product.free)){
   if(!account?.minecraftVerified||!presence.status().registered||presence.status().uuid!==account.id)throw Error('Connectez votre compte Minecraft pour vérifier cette cape.');
   if(!(await presence.refreshRights()).includes(id))throw Error('Cette cape ne fait pas partie de votre collection.');
  }

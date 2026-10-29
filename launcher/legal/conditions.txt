@@ -1,5 +1,5 @@
 CONDITIONS D’UTILISATION — XRN LAUNCHER
-Version du 28 octobre 2026 — distribution 4.9.1
+Version du 29 octobre 2026 — XRN 4.10.0
 
 1. Le projet
 XRN Launcher est un logiciel indépendant développé par Xerion. Contact : xrnlauncher@gmail.com. Il n’est ni développé, ni approuvé par Mojang ou Microsoft. Minecraft et leurs autres marques appartiennent à leurs titulaires.
@@ -13,7 +13,7 @@ La connexion s’effectue auprès de Microsoft et Xbox. Ne communiquez jamais vo
 Vos mondes, captures, mods et réglages restent dans votre dossier de jeu. Vous gardez la maîtrise de ces fichiers. Sauvegardez vos mondes avant d’essayer des mods ou de changer de version.
 
 4. Compatibilité et mises à jour
-Le launcher propose plusieurs versions de Minecraft. Le module XRN intégré est fourni pour Fabric 1.21.11 et Fabric 26.2 ; il ne fonctionne pas sur toutes les versions. Les autres mods doivent correspondre à votre installation.
+Le launcher propose plusieurs versions de Minecraft. Le module XRN intégré est fourni pour Fabric 1.21.11, Fabric 26.1.2 et Fabric 26.2 ; il ne fonctionne pas sur toutes les versions. Les autres mods doivent correspondre à votre installation.
 Les mises à jour sont proposées dans le launcher. Lorsqu’un correctif compatible existe, seuls les fichiers nécessaires sont téléchargés. Un changement du moteur peut nécessiter un téléchargement complet. Aucun nombre de FPS n’est garanti.
 
 5. Disponibilité et composants tiers

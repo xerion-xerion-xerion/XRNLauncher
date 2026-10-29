@@ -13,8 +13,8 @@ final class NameTagEcran extends Screen {
   button("Decorations : "+(NameTag.masquerDecorations?"masquees":"conservees"),x+176,y+54,164,()->NameTag.masquerDecorations=!NameTag.masquerDecorations);
   button("Couleur de depart",x,y+84,164,()->client.setScreen(new CouleurEcran(this,NameTag.debut,c->NameTag.debut=c)));
   button("Couleur de fin",x+176,y+84,164,()->client.setScreen(new CouleurEcran(this,NameTag.fin,c->NameTag.fin=c)));
-  button("Degrade anime : "+(NameTag.anime?"oui":"non"),x,y+114,164,()->{NameTag.anime=!NameTag.anime;if(NameTag.anime){NameTag.actif=true;NameTag.gradient=true;NameTag.arcenciel=false;}});
-  button("Arc-en-ciel : "+(NameTag.arcenciel?"oui":"non"),x+176,y+114,164,()->{NameTag.arcenciel=!NameTag.arcenciel;if(NameTag.arcenciel){NameTag.actif=true;NameTag.anime=false;}});
+  button("Degrade anime : "+(!PrimeClient.peutAnimer()?"XRNPrime":NameTag.anime?"oui":"non"),x,y+114,164,()->{if(!PrimeClient.peutAnimer())return;NameTag.anime=!NameTag.anime;if(NameTag.anime){NameTag.actif=true;NameTag.gradient=true;NameTag.arcenciel=false;}});
+  button("Arc-en-ciel : "+(!PrimeClient.peutAnimer()?"XRNPrime":NameTag.arcenciel?"oui":"non"),x+176,y+114,164,()->{if(!PrimeClient.peutAnimer())return;NameTag.arcenciel=!NameTag.arcenciel;if(NameTag.arcenciel){NameTag.actif=true;NameTag.anime=false;}});
   button("Violet / blanc",x,y+146,108,()->{NameTag.debut=0xFFA78BFA;NameTag.fin=0xFFF4EEFF;NameTag.gradient=true;});
   button("Aurore",x+116,y+146,108,()->{NameTag.debut=0xFF60CFFA;NameTag.fin=0xFFCB9CFF;NameTag.gradient=true;});
   button("Crepuscule",x+232,y+146,108,()->{NameTag.debut=0xFFFF87C4;NameTag.fin=0xFFFFD8B0;NameTag.gradient=true;});

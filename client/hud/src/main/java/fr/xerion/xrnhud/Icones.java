@@ -9,7 +9,11 @@ final class Icones {
  private static void path(DrawContext c,int x,int y,int color,int...p){for(int i=0;i+3<p.length;i+=2)line(c,x,y,p[i],p[i+1],p[i+2],p[i+3],color);}
  static void draw(DrawContext c,String name,int x,int y,int color){
   int tint=Theme.alpha(color,.16);Theme.arrondi(c,x-5,y-4,34,32,tint,0);
+  var item=switch(name){case "Totem Count"->net.minecraft.item.Items.TOTEM_OF_UNDYING;case "Armure"->net.minecraft.item.Items.DIAMOND_CHESTPLATE;case "Effets"->net.minecraft.item.Items.POTION;case "Nether"->net.minecraft.item.Items.OBSIDIAN;case "Durabilite"->net.minecraft.item.Items.DIAMOND_PICKAXE;default->null;};
+  if(item!=null){c.getMatrices().pushMatrix();c.getMatrices().translate(x,y);c.getMatrices().scale(1.5f,1.5f);c.drawItem(item.getDefaultStack(),0,0);c.getMatrices().popMatrix();return;}
   switch(name){
+   case "Fullbright"->{Theme.arrondi(c,x+7,y+7,11,11,color,0);for(int n=0;n<8;n++){double a=n*Math.PI/4;int rx=12+(int)Math.round(Math.cos(a)*10),ry=12+(int)Math.round(Math.sin(a)*10);line(c,x,y,rx,ry,12+(int)Math.round(Math.cos(a)*13),12+(int)Math.round(Math.sin(a)*13),color);}}
+
    case "Motion Blur"->{Theme.cadre(c,x+10,y+3,13,18,0,color);Theme.cadre(c,x+6,y+5,10,14,0,color);line(c,x,y,0,8,4,8,color);line(c,x,y,0,12,4,12,color);line(c,x,y,0,16,4,16,color);}
    case "Free Look"->{Theme.arrondi(c,x+2,y+6,21,13,0,color);Theme.cadre(c,x+9,y+9,7,7,0,color);line(c,x,y,5,2,19,2,color);line(c,x,y,19,2,22,5,color);}
    case "Auto Text"->{Theme.arrondi(c,x+1,y+3,22,15,0,color);path(c,x,y,color,5,17,5,22,11,17);for(int i=0;i<3;i++)Theme.rect(c,x+5+i*5,y+9,2,2,color);}

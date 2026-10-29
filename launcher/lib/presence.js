@@ -15,16 +15,18 @@ async function refresh(){
  const root=base();if(!root)return {configured:false};
  const data=await http.getJSON(root+'/v2/players');
  const players=(data.pseudos||[]).filter(p=>p.verified===true&&/^[a-f0-9]{32}$/i.test(p.uuid)&&p.expiresAt>Date.now());
+ require('./features').prime && await require('./prime').cachePublic(players).catch(()=>{});
  const file=path.join(util.appRoot(),'communaute.json');util.ensureDir(path.dirname(file));
  const temp=file+'.tmp';fs.writeFileSync(temp,JSON.stringify({version:2,pseudos:players,misAJour:new Date().toISOString()}));fs.renameSync(temp,file);
  return {configured:true,total:players.length};
 }
 let session='',sessionUntil=0,certificateUntil=0,sessionUuid='',lastStyle='',lastRefresh=0,lastHeartbeat=0,lastError='';
 const capeIds=require('../cosmetics.json').products.map(p=>p.id);
+const knownCape=id=>capeIds.includes(id)||/^prime_[a-f0-9]{32}$/.test(id||'');
 let rights=['cape_job'];
-function selectedCosmetic(){try{const file=path.join(util.appRoot(),'cosmetique.json');if(fs.existsSync(file)){const r=JSON.parse(fs.readFileSync(file,'utf8'));return capeIds.includes(r.equipe)?r.equipe:'';}const r=JSON.parse(fs.readFileSync(path.join(cfg.load().gameDir,'config','xrnhud.json'),'utf8')).reglages||{};return capeIds.includes(r.equipe)?r.equipe:'';}catch{return '';}}
+function selectedCosmetic(){try{const file=path.join(util.appRoot(),'cosmetique.json');if(fs.existsSync(file)){const r=JSON.parse(fs.readFileSync(file,'utf8'));return knownCape(r.equipe)?r.equipe:'';}const r=JSON.parse(fs.readFileSync(path.join(cfg.load().gameDir,'config','xrnhud.json'),'utf8')).reglages||{};return knownCape(r.equipe)?r.equipe:'';}catch{return '';}}
 function saveRights(list){
- rights=[...new Set(['cape_job',...capeIds.filter(id=>Array.isArray(list)&&list.includes(id))])];
+ rights=[...new Set(['cape_job',...(Array.isArray(list)?list.filter(knownCape):[])])];
  const file=path.join(util.appRoot(),'droits.json');util.ensureDir(path.dirname(file));
  fs.writeFileSync(file+'.tmp',JSON.stringify({droits:rights,misAJour:new Date().toISOString()}));fs.renameSync(file+'.tmp',file);
 }
@@ -60,6 +62,7 @@ async function syncNow(account,preLaunch=false){
     // Certificate signatures never modify Minecraft's multiplayer join proof.
     await register(account);
    }
+   require('./features').prime && await require('./prime').refreshState(account).catch(()=>{});
    const style=selectedStyle(),cosmetic=selectedCosmetic(),fingerprint=JSON.stringify({style,cosmetic});
    if(fingerprint!==lastStyle||Date.now()-lastHeartbeat>25000){
     const result=await http.postJSON(base()+'/v2/style',{style,cosmetic},{Authorization:'Bearer '+session});
@@ -67,7 +70,7 @@ async function syncNow(account,preLaunch=false){
     lastStyle=fingerprint;lastHeartbeat=Date.now();sessionUntil=Math.min(Date.now()+3500000,certificateUntil);lastError='';
    }
   }else{session='';sessionUuid='';}
-  if(Date.now()-lastRefresh>15000){await refresh();lastRefresh=Date.now();}
+  if(Date.now()-lastRefresh>(gameRunning?5000:15000)){await refresh();lastRefresh=Date.now();}
  }catch(error){lastError=error.message;retryAfter=Date.now()+60000;throw error;}finally{busy=false;}
 }
 function sync(account){
@@ -81,6 +84,7 @@ async function beforeGameStart(account){
 }
 function afterGameExit(){gameRunning=false;}
 async function refreshRights(){if(!session)return rights;const r=await http.getJSON(base()+'/v2/me',{headers:{Authorization:'Bearer '+session}});saveRights(r.rights);return rights;}
-async function shop(path,data){if(!session||sessionUntil<Date.now())throw Error('Connectez votre compte Microsoft pour acheter une cape.');const r=await http.postJSON(base()+'/v2/shop/'+path,data,{Authorization:'Bearer '+session});if(r.status!==200){const errors={invalid_or_used_code:'Code invalide, expiré ou déjà utilisé.',gift_rate_limit:'Trop de tentatives. Réessayez plus tard.',gifts_unavailable:'Codes cadeaux indisponibles.',admin_required:'Seul le propriétaire peut générer des codes.',already_owned:'Cette cape appartient déjà à votre compte. Choisissez-en une autre : le code reste valable.',shop_disabled:'Les achats sont fermés.',rate_limit:'Patientez avant de réessayer.',session_required:'Reconnectez votre compte Minecraft.'};throw Error(errors[r.json?.error]||'Le paiement n’a pas pu être vérifié. Aucun droit ajouté.');}return r.json;}
-module.exports={base,shop,refresh,register,sync,selectedStyle,selectedCosmetic,beforeGameStart,afterGameExit,refreshRights,status(){return {configured:!!base(),private:!!cfg.load().developerMode&&base()==='http://127.0.0.1:8789',sharing:configuredSharing(),registered:!!session&&sessionUntil>Date.now(),uuid:sessionUuid,lastRefresh,lastHeartbeat,error:lastError,rights:[...rights]};}};
+async function shop(path,data){if(!session||sessionUntil<Date.now())throw Error('Connectez votre compte Microsoft pour acheter une cape.');const r=await http.postJSON(base()+'/v2/shop/'+path,data,{Authorization:'Bearer '+session});if(r.status!==200){const errors={prime_not_launched:'XRNPrime est en préparation. Aucun paiement effectué.',prime_unconfigured:'Le paiement Prime sera disponible après configuration du service.',prime_required:'Un abonnement XRNPrime actif est nécessaire.',already_prime:'Ce compte dispose déjà de XRNPrime. Le code reste valable.',subscription_exists:'Un abonnement existe déjà : gérez-le avant d’en créer un autre.',weekly_limit:'Les deux imports des sept derniers jours sont déjà utilisés.',uploads_unconfigured:'Les imports seront disponibles après activation du stockage.',invalid_png:'Image refusée : choisissez une image PNG valide.',invalid_code:'Code Prime invalide.',prime_verification_failed:'Le service Prime n’a pas pu confirmer cette opération.',invalid_or_used_code:'Code invalide, expiré ou déjà utilisé.',gift_rate_limit:'Trop de tentatives. Réessayez plus tard.',gifts_unavailable:'Codes cadeaux indisponibles.',admin_required:'Seul le propriétaire peut générer des codes.',already_owned:'Cette cape appartient déjà à votre compte. Choisissez-en une autre : le code reste valable.',shop_disabled:'Les achats sont fermés.',rate_limit:'Patientez avant de réessayer.',session_required:'Reconnectez votre compte Minecraft.'};throw Error(errors[r.json?.error]||'Le paiement n’a pas pu être vérifié. Aucun droit ajouté.');}return r.json;}
+async function capeBytes(id){if(!/^prime_[a-f0-9]{32}$/.test(id||''))throw Error('Cape invalide.');const {res}=await http.request(base()+'/v2/shop/prime-texture/'+id,{headers:session?{Authorization:'Bearer '+session}:{}});if(res.statusCode!==200){res.resume();throw Error('Texture de cape indisponible.');}let size=0,chunks=[];for await(const c of res){size+=c.length;if(size>524288){res.destroy();throw Error('Texture trop volumineuse.');}chunks.push(c);}return Buffer.concat(chunks);}
+module.exports={capeBytes,base,shop,refresh,register,sync,selectedStyle,selectedCosmetic,beforeGameStart,afterGameExit,refreshRights,status(){return {configured:!!base(),private:!!cfg.load().developerMode&&base()==='http://127.0.0.1:8789',sharing:configuredSharing(),registered:!!session&&sessionUntil>Date.now(),uuid:sessionUuid,lastRefresh,lastHeartbeat,error:lastError,rights:[...rights]};}};
 function configuredSharing(){return cfg.load().shareAppearance!==false;}

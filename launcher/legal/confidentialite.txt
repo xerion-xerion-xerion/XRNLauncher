@@ -1,5 +1,5 @@
 CONFIDENTIALITÉ — XRN LAUNCHER
-Version du 28 octobre 2026 — distribution 4.9.1
+Version du 29 octobre 2026 — XRN 4.10.0
 
 Responsable et contact
 Xerion, développeur du projet XRN Launcher. Pour toute question ou demande concernant vos données : xrnlauncher@gmail.com.
@@ -35,3 +35,11 @@ Google : https://policies.google.com/privacy
 
 Boutique et cadeaux
 Pour les cosmétiques, le relais conserve les droits par UUID Minecraft, les références de commande, le produit, le montant, la devise et les états de paiement. Stripe héberge le paiement et traite les données de carte ; XRN ne reçoit pas le numéro de carte. Les droits et preuves sont durables pour retrouver les achats après réinstallation. Les cadeaux conservent l’émetteur, le destinataire après utilisation, la cape choisie et les dates ; le code complet n’est pas conservé côté serveur. Contact pour vos demandes : xrnlauncher@gmail.com. Politique Stripe : https://stripe.com/privacy.
+
+
+Essential
+Essential peut être téléchargé automatiquement depuis Modrinth pour une installation compatible ; ce choix peut être désactivé dans les paramètres. Ce téléchargement transmet les informations réseau habituelles au distributeur, pas votre jeton Minecraft. Les services et fonctions propres à Essential dépendent de ses conditions et de sa politique de confidentialité, présentées par Essential : https://essential.gg/licenses. XRN ne les accepte pas pour vous.
+
+
+
+Mods recommandés : les téléchargements officiels transmettent les informations réseau habituelles à Modrinth et à ses distributeurs. Aucun jeton Minecraft n’est envoyé pour ces téléchargements. Langue : la préférence français/anglais est conservée localement et partagée entre le launcher et le menu XRN.

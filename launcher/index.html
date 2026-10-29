@@ -10,6 +10,7 @@
 <link rel="icon" href="assets/icon.png">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="cosmetics.css">
+
 <link rel="stylesheet" href="studio.css">
 <link rel="stylesheet" href="refine.css"></head>
 <body>
@@ -518,6 +519,7 @@
               <div class="switch-row"><div><b style="font-size:13px">Apparence entre joueurs XRN</b><p>Partager votre présence, votre pseudo public, votre UUID Minecraft et le style de votre nom avec les autres utilisateurs.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Partager mon apparence XRN" data-switch="shareAppearance"></button></div>
 
               <div class="switch-row"><div><b style="font-size:13px">XRN Client en jeu</b><p>Prépare Fabric et les modules pour les versions prises en charge.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Activer XRN Client en jeu" data-switch="clientEnabled"></button></div>
+              <div class="switch-row"><div><b style="font-size:13px">Essential installé automatiquement</b><p>Télécharge la version officielle compatible au lancement. Un mod déjà installé ou désactivé reste sous votre contrôle.</p></div><button class="switch on" type="button" role="switch" aria-checked="true" aria-label="Installer Essential automatiquement" data-switch="essentialEnabled"></button></div>
               <div class="switch-row"><div><b style="font-size:13px">Vérification SHA-1</b><p>Contrôle l'intégrité de chaque fichier téléchargé</p></div><button class="switch on" type="button" role="switch" aria-label="Activer cette option" data-switch="verifySha1"></button></div>
               <div class="switch-row"><div><b style="font-size:13px">Téléchargements parallèles</b><p><b id="dlConc">6</b> fichiers en même temps</p></div><div class="stepper"><button data-step="-1">−</button><span id="dlConcVal">6</span><button data-step="1">+</button></div></div>
             </div>
@@ -632,11 +634,13 @@
 <!-- main.js s'execute dans la fenetre (contexte Node via node-remote) et expose window.XRN -->
 <script src="main.js"></script>
 <script src="ui.js"></script>
+<script src="language.js"></script>
 <dialog id="shotViewer"><div class="shot-viewbar"><button class="btn" id="shotPrev" aria-label="Capture précédente">←</button><span id="shotCaption"></span><button class="btn" id="shotNext" aria-label="Capture suivante">→</button><button class="btn" id="shotClose">Fermer</button></div><img id="shotLarge" alt=""></dialog>
 <script src="gallery.js"></script>
 <script src="cosmetics.js"></script>
 <script src="vendor/skinview3d-3.4.2.js"></script>
 <script src="cosmetics-viewer.js"></script>
+<script src="features-ui.js"></script>
 
 
 </body></html>

@@ -40,6 +40,9 @@ import com.google.gson.JsonParser;
  */
 public final class Connus {
 
+    private static final java.util.Map<String,Long> PRIME=new java.util.HashMap<>();private static final java.util.Map<String,String> CAPE_HASH=new java.util.HashMap<>();
+    public static boolean prime(java.util.UUID id){return id!=null&&PRIME.getOrDefault(id.toString().replace("-", ""),0L)>System.currentTimeMillis();}
+    public static String hashCape(String id){return CAPE_HASH.get(id);}
     private static final java.util.Map<String,NameTag.Profil> STYLES=new java.util.HashMap<>();
     public static NameTag.Profil style(java.util.UUID uuid){return uuid==null?null:STYLES.get(uuid.toString().replace("-", "").toLowerCase(Locale.ROOT));}
     private static final Set<String> PSEUDOS = new LinkedHashSet<>();
@@ -74,7 +77,7 @@ public final class Connus {
         return uuid != null && UUIDS.contains(uuid.toString().replace("-", "").toLowerCase(Locale.ROOT));
     }
     public static void chargerAnnuaire() {
-        ANNUAIRE.clear(); UUIDS.clear(); COSMÉTIQUES.clear(); STYLES.clear();
+        ANNUAIRE.clear(); UUIDS.clear(); COSMÉTIQUES.clear(); STYLES.clear(); PRIME.clear();CAPE_HASH.clear();
         String file=System.getProperty("XRNCommunaute", "");
         if (!file.isEmpty()) {
             try {
@@ -87,8 +90,10 @@ public final class Connus {
                         String uuid=player.get("uuid").getAsString().toLowerCase(Locale.ROOT);
                         if (!uuid.matches("[a-f0-9]{32}")) continue;
                         UUIDS.add(uuid);
+                        boolean prime=false;try{var p=player.getAsJsonObject("prime");long end=p.get("until").getAsLong();prime=p.get("active").getAsBoolean()&&end>System.currentTimeMillis();if(prime)PRIME.put(uuid,Math.min(end,player.get("expiresAt").getAsLong()));}catch(RuntimeException ignored){}
                         String cape=player.has("cosmetic")?player.get("cosmetic").getAsString():"";
                         if(java.util.List.of("cape_space","cape_job","cape_scream","cape_spine","cape_crimson","cape_eclipse","cape_rose","cape_seraphine","cape_moonlight").contains(cape))COSMÉTIQUES.put(uuid,cape);
+                        if(prime&&cape.matches("prime_[a-f0-9]{32}")&&player.has("customCape")){try{var info=player.getAsJsonObject("customCape");String sha=info.get("sha256").getAsString();if(cape.equals(info.get("id").getAsString())&&sha.matches("[a-f0-9]{64}")){COSMÉTIQUES.put(uuid,cape);CAPE_HASH.put(cape,sha);}}catch(RuntimeException ignored){}}
                         if(player.has("style")&&player.get("style").isJsonObject()){
                             var style=player.getAsJsonObject("style");
                             try{STYLES.put(uuid,new NameTag.Profil(style.has("enabled")&&style.get("enabled").getAsBoolean(),!style.has("badge")||style.get("badge").getAsBoolean(),!style.has("gradient")||style.get("gradient").getAsBoolean(),false,0xFF000000|(style.get("start").getAsInt()&0xFFFFFF),0xFF000000|(style.get("end").getAsInt()&0xFFFFFF),style.has("animate")&&style.get("animate").getAsBoolean(),style.has("rainbow")&&style.get("rainbow").getAsBoolean()));}catch(RuntimeException ignored){}

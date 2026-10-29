@@ -268,6 +268,9 @@ async function installFabric(mcVersion, bus) {
       par la version fusionnee.                                         */
   await game.install({ id: info.profileId, url: null }, { bus, skipMeta: true });
 
+  const included=installerIntegres(info.profileId);
+  if(included.echecs.length)throw Error(included.echecs.map(e=>e.nom+' : '+e.raison).join('\n'));
+  await require('./recommended').ensure(info.profileId,cfg.gameDir,bus);
   return { loader: 'Fabric', version: info.loader, profil: info.profileId };
 }
 

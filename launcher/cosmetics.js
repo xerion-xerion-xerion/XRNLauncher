@@ -11,10 +11,11 @@
  }
  function render(){
   if(!products.some(p=>p.id===selected))selected=products[0]?.id||'';
-  const box=$('shopProducts');box.replaceChildren();
+  const box=$('shopProducts'),scroll=box.scrollTop;box.replaceChildren();
   for(const p of products){const button=document.createElement('button');button.type='button';button.className='shop-product';button.setAttribute('aria-pressed',String(p.id===selected));
    const img=document.createElement('img');img.src=p.animated?p.preview.replace('.gif','-poster.png'):p.preview;img.alt='';const text=document.createElement('span'),title=document.createElement('strong'),sub=document.createElement('small'),label=document.createElement('span');title.textContent=p.name;sub.textContent=p.animated?'Cape animée · Espace':(p.id==='cape_job'?'Cape fixe · Mème':'Cape fixe');text.append(title,sub);label.className='shop-product-label';label.textContent=p.free?'OFFERTE':'APERÇU';button.append(img,text,label);button.onclick=()=>{selected=p.id;paused=false;render();};box.append(button);
   }
+  box.scrollTop=scroll;
   const p=products.find(p=>p.id===selected)||products[0];if(!p)return;
   $('shopPreviewLabel').textContent=p.name;$('shopAnimationLabel').textContent=p.animated?'Animation en boucle':'Cape fixe';
   window.XrnCapeViewer?.select(p,paused);

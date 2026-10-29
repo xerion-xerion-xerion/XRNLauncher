@@ -1,0 +1,10 @@
+package fr.xerion.xrnhud;
+import java.nio.file.*;import java.util.*;import com.google.gson.*;
+final class Langue {
+ private static String choix=System.getProperty("XRNLanguage","fr");private static final Map<String,String> exact=new HashMap<>();private static final Map<String,String> en=new LinkedHashMap<>();
+ static {try(var in=Langue.class.getResourceAsStream("/assets/xrnhud/lang/xrn_en.json")){var o=JsonParser.parseReader(new java.io.InputStreamReader(in,java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();o.entrySet().forEach(e->exact.put(e.getKey(),e.getValue().getAsString()));o.entrySet().stream().sorted((a,b)->b.getKey().length()-a.getKey().length()).forEach(e->en.put(normal(e.getKey()),e.getValue().getAsString()));String file=System.getProperty("XRNLanguageFile","");if(!file.isEmpty()&&Files.exists(Path.of(file))&&Files.size(Path.of(file))<1024)choix=JsonParser.parseString(Files.readString(Path.of(file))).getAsJsonObject().get("language").getAsString();}catch(Exception ignored){}}
+ private static String normal(String s){return java.text.Normalizer.normalize(s,java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","").replace('’','\'').toLowerCase(Locale.ROOT);}
+ static String actuelle(){return choix.equals("en")?"en":"fr";}
+ static void choisir(String value){if(!value.equals("fr")&&!value.equals("en"))return;choix=value;try{String target=System.getProperty("XRNLanguageFile","");if(!target.isEmpty()){Path f=Path.of(target),temp=f.resolveSibling(f.getFileName()+".tmp");Files.createDirectories(f.getParent());Files.writeString(temp,"{\"language\":\""+value+"\"}");Files.move(temp,f,StandardCopyOption.REPLACE_EXISTING);}}catch(Exception ignored){}Placement.sauver();}
+ static String t(String s){if(!actuelle().equals("en")||s==null)return s;if(exact.containsKey(s))return exact.get(s);String n=normal(s);if(en.containsKey(n))return en.get(n);int colon=s.indexOf(" : ");if(colon>0)return t(s.substring(0,colon))+": "+t(s.substring(colon+3));return s;}
+}

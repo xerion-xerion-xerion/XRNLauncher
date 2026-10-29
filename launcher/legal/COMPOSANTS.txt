@@ -6,3 +6,11 @@ Fabric Loader et Fabric API : Apache-2.0 ; https://fabricmc.net
 Authlib Injector : https://github.com/yushijinhun/authlib-injector
 Minecraft et Java ne sont pas inclus dans le setup ; téléchargements à partir des distributeurs concernés.
 XRN HUD : les notices du projet restent dans les JAR distribués.
+
+Essential : téléchargement officiel séparé, notices dans essential.txt.
+
+WaveyCapes : compatibilité avec une installation personnelle séparée ; voir waveycapes.txt. Aucun binaire inclus.
+
+Mods recommandés
+Sodium, Iris Shaders, Fabric API, Cloth Config API, FerriteCore, Mod Menu et sa dépendance Text Placeholder API sont téléchargés séparément depuis leurs projets Modrinth officiels, par version et chargeur exacts. Fabric API est fourni avec les ports intégrés sous sa licence Apache-2.0. Les autres JAR originaux sont téléchargés séparément, sans modification ni réhébergement. Leurs licences et crédits sont conservés dans les fichiers originaux. Les mods manuels ou désactivés sont préservés.
+Entity Culling n'est pas fourni automatiquement dans la distribution commerciale XRN, en l'absence d'autorisation de son auteur.

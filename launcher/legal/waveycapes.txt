@@ -1,0 +1,8 @@
+WaveyCapes — installation personnelle séparée
+
+Auteur : tr7zw. Site officiel : https://modrinth.com/mod/wavey-capes
+Licence : https://github.com/tr7zw/WaveyCapes/blob/main/LICENSE
+
+Aucun binaire ni algorithme de WaveyCapes n’est inclus ou réhébergé par XRN. La compatibilité détecte le mod installé séparément et utilise l’API de skin standard de Minecraft pour exposer la cape XRN. L’aperçu XRN reste fixe. WaveyCapes n’est pas un avantage payant de XRNPrime.
+
+Le suivi de variantes compatibles est réservé à une installation personnelle explicitement demandée, dans les données locales de l’utilisateur. Il télécharge des fichiers originaux depuis leur distribution officielle, en vérifiant leurs empreintes. La licence de l’auteur s’applique séparément ; une intégration ou redistribution commerciale nécessite son autorisation.

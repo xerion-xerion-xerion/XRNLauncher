@@ -1,0 +1,11 @@
+{
+  "key.xrnhud.menu": "Open the XRN menu",
+  "key.xrnhud.hud": "Show or hide the HUD",
+  "key.xrnhud.edit": "Open the HUD editor",
+  "key.xrnhud.wardrobe": "Open the wardrobe",
+  "key.xrnhud.autotext": "XRN · Auto Text",
+  "key.xrnhud.waypoints": "XRN · Waypoints",
+  "key.category.xrnhud.controls": "XRN Client",
+  "key.categories.xrnhud.controls": "XRN Client",
+  "key.xrnhud.freelook": "Free Look (hold)"
+}

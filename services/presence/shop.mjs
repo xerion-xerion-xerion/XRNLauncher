@@ -1,3 +1,5 @@
+import {handlePrime} from './prime.mjs';
+import {servePrimeCape} from './prime-assets.mjs';
 // The client supplies a product ID only. Prices, Minecraft identity, quantity,
 // Stripe account/mode and ownership are authoritative server-side values.
 import {handleGifts,giftRights} from './gifts.mjs';
@@ -141,10 +143,13 @@ export async function handleShop(request,directory){
  if(mode(env)==='live'&&u.origin!==new URL(env.XRN_SHOP_RETURN_ORIGIN).origin)return json({error:'origin_refused'},403);
  try{
   if(u.pathname==='/v2/shop/webhook'&&request.method==='POST')return await webhook(request,store,env);
+  if(u.pathname==='/v2/shop/prime/webhook'&&request.method==='POST')return await handlePrime(request,directory,{mode:mode(env),stripe,verifyWebhook,payload});
+  if(u.pathname.startsWith('/v2/shop/prime-texture/')&&request.method==='GET')return await servePrimeCape(request,directory,mode(env),await identity(request,store)||'');
   const uuid=await identity(request,store);if(!uuid)return json({error:'session_required'},401);
   if(request.method!=='POST')return json({error:'method'},405);
   const ip=request.headers.get('CF-Connecting-IP')||'unknown';
   if(!await directory.rate(uuid+':'+ip,u.pathname, u.pathname.endsWith('checkout')?8:30))return json({error:'rate_limit'},429);
+  if(u.pathname.startsWith('/v2/shop/prime/'))return await handlePrime(request,directory,{uuid,mode:mode(env),stripe,verifyWebhook,payload});
   if(u.pathname.startsWith('/v2/shop/gifts/'))return await handleGifts(request,directory,{uuid,mode:mode(env),products:PRODUCTS.filter(p=>p.amount===0||sellable(env,p))});
   if(u.pathname==='/v2/shop/checkout')return await create(request,uuid,store,env);
   if(u.pathname==='/v2/shop/status'){

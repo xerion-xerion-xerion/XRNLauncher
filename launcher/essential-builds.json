@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "project": "k2ZPuTBm",
+  "source": "https://modrinth.com/mod/essential",
+  "builds": [
+    {
+      "minecraft": "1.21.11",
+      "loader": "fabric",
+      "version": "oA7G5vf1",
+      "name": "Essential 1.5.1",
+      "filename": "Essential_1-5-1_fabric_1-21-11.jar",
+      "url": "https://cdn.modrinth.com/data/k2ZPuTBm/versions/oA7G5vf1/Essential_1-5-1_fabric_1-21-11.jar",
+      "size": 52828192,
+      "sha512": "880ff999837b10bed2c492dbcbfc353588754c2dcf75c79a560977ebc93f74131c41d2b0a7dce3e49cc1f2012bc67a1d4f2765a600e9b395c538dcc2bbdd9418"
+    },
+    {
+      "minecraft": "26.2",
+      "loader": "fabric",
+      "version": "5eyWJzEn",
+      "name": "Essential 1.5.1",
+      "filename": "Essential_1-5-1_fabric_26-2.jar",
+      "url": "https://cdn.modrinth.com/data/k2ZPuTBm/versions/5eyWJzEn/Essential_1-5-1_fabric_26-2.jar",
+      "size": 52722857,
+      "sha512": "5d195f434038a06b6b4f23536bfeaddf546add3a6ab6df43a16bac4800be4b54356a0524b104488fb3af6a87164f8d070a3e0235936c5a98187ee52afcee02f5"
+    }
+  ]
+}

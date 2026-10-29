@@ -1,0 +1,33 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "fr.xerion.xrnhud.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "PlayerEntityMixin",
+    "PlayerListEntryMixin",
+    "TitleScreenMixin",
+    "MouseMixin",
+    "BlockOutlineMixin",
+    "HitboxRendererMixin",
+    "HitboxColorMixin",
+    "CielMixin",
+    "MenuButtonMixin",
+    "FreeLookEntityMixin",
+    "FreeLookCameraMixin",
+    "RenderPipelinesAccessor",
+    "MotionBlurMixin",
+    "PlayerEntityRendererMixin",
+    "ItemScaleHandMixin",
+    "ItemScaleGuiMixin",
+    "FullbrightMixin",
+    "CapePartsAccessor",
+    "CapeClothMixin",
+    "CapePreviewMixin",
+    "WaveyPreviewMixin",
+    "CapeSkinMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

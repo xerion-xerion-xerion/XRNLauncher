@@ -52,4 +52,8 @@ public final class Logo {
         return Component.literal(CARACTERE)
                 .withStyle(style -> style.withFont(new FontDescription.Resource(POLICE)));
     }
+    public static net.minecraft.network.chat.Component decorerPrime(net.minecraft.network.chat.Component nom,boolean prime,boolean logo){
+        if(prime)nom=net.minecraft.network.chat.Component.empty().append(net.minecraft.network.chat.Component.literal("+ ").withStyle(s->s.withColor(0xC8ACFF))).append(nom);
+        return logo?decorer(nom):nom;
+    }
 }

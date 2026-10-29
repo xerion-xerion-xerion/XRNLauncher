@@ -7,7 +7,7 @@ APP=ROOT/'launcher'
 RUNTIME_SUFFIXES={'.dll','.pak','.bin'}
 RUNTIME_NAMES={'XRNLauncher.exe','notification_helper.exe','icudtl.dat','vk_swiftshader_icd.json'}
 TOOLS={'appliquer-maj.ps1','media-session.ps1','XrnMedia.exe','rename-window.ps1'}
-DIRS={'lib','assets','mods-integres','legal','vendor'}
+DIRS={'lib','assets','mods-integres','legal','vendor','locales'}
 def digest(p):
  h=hashlib.sha256()
  with p.open('rb') as f:
@@ -46,7 +46,7 @@ def main():
    if (runtime/name).is_dir():shutil.copytree(runtime/name,stage/name)
   for p in APP.iterdir():
    if p.is_file() and p.suffix in {'.js','.css','.html','.json'} and not p.name.startswith('_') and p.name not in {'profiles.json','config.local.json'}:shutil.copy2(p,stage/p.name)
-  for name in DIRS:shutil.copytree(APP/name,stage/name)
+  for name in DIRS:shutil.copytree(APP/name,stage/name,dirs_exist_ok=True)
   (stage/'tools').mkdir()
   for name in TOOLS:shutil.copy2(APP/'tools'/name,stage/'tools'/name)
   shutil.copy2(APP/'legal/LICENSE-NWJS.txt',stage/'LICENSE-NWJS.txt')

@@ -1,0 +1,1 @@
+if(XRN.env.features.prime){const s=document.createElement("script");s.src="prime.js";document.body.append(s);}else{document.querySelectorAll('[data-view="prime"],#view-prime').forEach(e=>e.remove());}

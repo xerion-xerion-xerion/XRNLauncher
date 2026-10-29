@@ -122,6 +122,8 @@
      alert(opts) { return Dialog.open(Object.assign({}, opts, { hideCancel: true, ok: opts.ok || 'Fermer' })); }
    };
 
+  window.XrnDialogs={confirm:opts=>Dialog.confirm(opts),prompt:opts=>Dialog.prompt(opts)};
+
   /* ================================================================== *
    *  TOASTS
    * ================================================================== */
@@ -605,6 +607,7 @@ const Splash = {
       if (name === 'home') Home.refresh();
       if (name === 'mods') setTimeout(() => Mods.refresh(), 0);
       if (name === 'boutique') window.XrnShop?.refresh();
+      if (name === 'prime') window.XrnPrime?.refresh();
 
     }
   };
@@ -1179,7 +1182,8 @@ const Splash = {
     }
     X.on('dl:progress', d => { STATE.lastProgress = d; queueDlRender(); updateStrip(d); });
     X.on('dl:file', d => pushFileRow(d));
-    X.on('mods:notice',d=>Toast.show('Module XRN',d.text,'info',6500));
+    X.on('mods:notice',d=>Toast.show('Mods',d.text,'info',6500));
+    X.on('mods:stage',d=>{logGame('',d.text);Toast.show('Préparation des mods',d.text,'info',6500);});
     X.on('dl:start', d => { STATE.lastProgress = { version: d.version, total: Number(d.total) || 0, doneBytes: 0, files: d.files || 0, filesDone: 0, speed: 0, current: '' }; $('#dlFiles').innerHTML = ''; const t = $('#dlPanelTitle'); if (t) t.textContent = 'Installation en cours'; Downloads.render(); });
     X.on('dl:done', d => { const t = $('#dlPanelTitle'); if (t) t.textContent = 'Dernière installation'; Downloads.render(); logGame('ok', 'Installation ' + d.version + ' terminée.'); });
     X.on('dl:error', d => logGame('err', d.name + ' : ' + d.message));

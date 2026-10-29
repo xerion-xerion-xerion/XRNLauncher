@@ -20,7 +20,12 @@
     "PlayerEntityRendererMixin",
     "ItemScaleHandMixin",
     "ItemScaleGuiMixin",
-    "FullbrightMixin"
+    "FullbrightMixin",
+    "CapePartsAccessor",
+    "CapeClothMixin",
+    "CapePreviewMixin",
+    "WaveyPreviewMixin",
+    "CapeSkinMixin"
   ],
   "injectors": {
     "defaultRequire": 0

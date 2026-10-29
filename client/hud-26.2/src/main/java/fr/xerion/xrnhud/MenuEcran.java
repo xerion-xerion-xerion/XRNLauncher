@@ -58,12 +58,12 @@ public class MenuEcran extends Screen {
         int searchWidth = pw >= 300 ? 117 : 80;
         search = new ChampTexte(font, px+pw-searchWidth-29, py+7, searchWidth, 16, Component.literal("Rechercher"));
         search.setBordered(false);
-        search.setHint(Component.literal("Rechercher…"));
+        search.setHint(Component.literal(Langue.t("Rechercher…")));
         search.setMaxLength(40); search.setResponder(value -> {scroll=0;targetScroll=0;smoothScroll=0;});
         addRenderableWidget(search);
         modules.clear();
         modules.add(new Module("FPS Plus","Textures conservees",()->Performance.actif,()->{Reglages.boostNote();Performance.basculer();},0));
-        modules.add(new Module("Fullbright","Eclairage clair sans potion",()->Fonctions.fullbright,()->Fonctions.fullbright=!Fonctions.fullbright,0));
+        modules.add(new Module("Fullbright","Éclairage maximal, même dans le noir",()->Fonctions.fullbright,()->Fonctions.fullbright=!Fonctions.fullbright,0));
         modules.add(new Module("Ciel XRN","Ciels animes et ambiance sonore",()->Ciel.actif,()->Ciel.actif=!Ciel.actif,0));
         modules.add(new Module("Name Tag","Couleurs, degrade et badges",()->NameTag.actif,()->NameTag.actif=!NameTag.actif,0));
         modules.add(new Module("Scoreboard","Tableau du serveur",()->Elements.scoreboard,()->Elements.scoreboard=!Elements.scoreboard,5));
@@ -130,7 +130,8 @@ public class MenuEcran extends Screen {
             Placement.sauver();minecraft.gui.setScreen(new EcranEdition());
         },mx,my);
         if(pw>=360)button(c,"Balises",px+122,py+ph-22,72,16,()->minecraft.gui.setScreen(new BalisesEcran(this)),mx,my);
-        if (pw >= 500) Theme.texte(c,font,"Maj droite / Echap",px+pw-111,py+ph-18,Theme.TEXTE_FAIBLE);
+        if(pw>=480)button(c,"Personnaliser",px+202,py+ph-22,104,16,()->minecraft.gui.setScreen(new ApparenceEcran(this)),mx,my);
+        if (pw >= 650) Theme.texte(c,font,"Maj droite / Echap",px+pw-111,py+ph-18,Theme.TEXTE_FAIBLE);
         Theme.champs(c,children());
         super.extractRenderState(c,mx,my,delta);
         c.pose().popMatrix();
@@ -138,7 +139,7 @@ public class MenuEcran extends Screen {
 
     private void renderModules(GuiGraphicsExtractor c,int mx,int my) {
         String query=search.getValue().trim().toLowerCase(Locale.ROOT);
-        List<Module> filtered=modules.stream().filter(m->m.name.toLowerCase(Locale.ROOT).contains(query)&&(category==0||groupe(m.name)==category)).toList();
+        List<Module> filtered=modules.stream().filter(m->Langue.t(m.name).toLowerCase(Locale.ROOT).contains(query)&&(category==0||groupe(m.name)==category)).toList();
         int columns=contentWidth>=430?3:(contentWidth>=250?2:1), gap=9, cw=(contentWidth-(columns-1)*gap)/columns, ch=96;
         maxScroll=Math.max(0,((filtered.size()+columns-1)/columns)*(ch+gap)-bodyH);
         scroll=Math.max(0,Math.min(scroll,maxScroll));targetScroll=Math.max(0,Math.min(targetScroll,maxScroll));
@@ -200,7 +201,7 @@ public class MenuEcran extends Screen {
         boolean hover=mx>=x&&mx<x+w&&my>=y&&my<y+23;
         Theme.rect(c,x,y,w,23,hover?Theme.nuance(0xFF2A2332):Theme.nuance(0xFF201B26));
         Theme.texte(c,font,fit(name,w-95),x+7,y+7,Theme.TEXTE);
-        Theme.texte(c,font,value,x+w-7-font.width(value),y+7,Theme.ACCENT);
+        Theme.texte(c,font,value,x+w-7-font.width(Langue.t(value)),y+7,Theme.ACCENT);
         hits.add(new Hit(x,y,w,23,()->{action.run();Placement.sauver();}));
     }
     private void tab(GuiGraphicsExtractor c,String text,int x,int y,boolean active,Runnable action,int mx,int my) {
@@ -214,6 +215,7 @@ public class MenuEcran extends Screen {
         hits.add(new Hit(x,y,w,h,action));
     }
     private String fit(String text,int width) {
+        text=Langue.t(text);
         if(font.width(text)<=width)return text;
         while(!text.isEmpty()&&font.width(text+"…")>width)text=text.substring(0,text.length()-1);
         return text+"…";

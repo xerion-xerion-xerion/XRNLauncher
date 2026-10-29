@@ -1,0 +1,10 @@
+Essential — téléchargement officiel optionnel
+
+XRN télécharge le fichier officiel compatible depuis Modrinth au lancement d’une installation prise en charge. Essential n’est ni inclus dans le setup XRN, ni modifié ou réhébergé par XRN. Les empreintes et la version du jeu sont vérifiées avant installation.
+
+Vous pouvez désactiver ce téléchargement dans les paramètres. Un fichier Essential déjà installé manuellement ou désactivé est conservé. Les conditions et la politique propres à Essential restent applicables ; XRN ne les accepte pas à votre place.
+
+Site : https://essential.gg/downloads
+Licence : https://github.com/SparkUniverse/Essential-Mod/blob/main/LICENSE
+Conditions et confidentialité : https://essential.gg/licenses
+Distribution officielle : https://modrinth.com/mod/essential

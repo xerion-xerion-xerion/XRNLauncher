@@ -59,12 +59,12 @@ public class MenuEcran extends Screen {
         int searchWidth = pw >= 300 ? 117 : 80;
         search = new ChampTexte(textRenderer, px+pw-searchWidth-29, py+7, searchWidth, 16, Text.literal("Rechercher"));
         search.setDrawsBackground(false);
-        search.setPlaceholder(Text.literal("Rechercher…"));
+        search.setPlaceholder(Text.literal(Langue.t("Rechercher…")));
         search.setMaxLength(40); search.setChangedListener(value -> {scroll=0;targetScroll=0;smoothScroll=0;});
         addDrawableChild(search);
         modules.clear();
         modules.add(new Module("FPS Plus","Textures conservees",()->Performance.actif,()->{Reglages.boostNote();Performance.basculer();},0));
-        modules.add(new Module("Fullbright","Eclairage clair sans potion",()->Fonctions.fullbright,()->Fonctions.fullbright=!Fonctions.fullbright,0));
+        modules.add(new Module("Fullbright","Éclairage maximal, même dans le noir",()->Fonctions.fullbright,()->Fonctions.fullbright=!Fonctions.fullbright,0));
         modules.add(new Module("Ciel XRN","Ciels animes et ambiance sonore",()->Ciel.actif,()->Ciel.actif=!Ciel.actif,0));
         modules.add(new Module("Name Tag","Couleurs, degrade et badges",()->NameTag.actif,()->NameTag.actif=!NameTag.actif,0));
         modules.add(new Module("Scoreboard","Tableau du serveur",()->Elements.scoreboard,()->Elements.scoreboard=!Elements.scoreboard,5));
@@ -131,7 +131,8 @@ public class MenuEcran extends Screen {
             Placement.sauver();client.setScreen(new EcranEdition());
         },mx,my);
         if(pw>=360)button(c,"Balises",px+122,py+ph-22,72,16,()->client.setScreen(new BalisesEcran(this)),mx,my);
-        if (pw >= 500) Theme.texte(c,textRenderer,"Maj droite / Echap",px+pw-111,py+ph-18,Theme.TEXTE_FAIBLE);
+        if(pw>=480)button(c,"Personnaliser",px+202,py+ph-22,104,16,()->client.setScreen(new ApparenceEcran(this)),mx,my);
+        if (pw >= 650) Theme.texte(c,textRenderer,"Maj droite / Echap",px+pw-111,py+ph-18,Theme.TEXTE_FAIBLE);
         Theme.champs(c,children());
         super.render(c,mx,my,delta);
         c.getMatrices().popMatrix();
@@ -139,7 +140,7 @@ public class MenuEcran extends Screen {
 
     private void renderModules(DrawContext c,int mx,int my) {
         String query=search.getText().trim().toLowerCase(Locale.ROOT);
-        List<Module> filtered=modules.stream().filter(m->m.name.toLowerCase(Locale.ROOT).contains(query)&&(category==0||groupe(m.name)==category)).toList();
+        List<Module> filtered=modules.stream().filter(m->Langue.t(m.name).toLowerCase(Locale.ROOT).contains(query)&&(category==0||groupe(m.name)==category)).toList();
         int columns=contentWidth>=430?3:(contentWidth>=250?2:1), gap=9, cw=(contentWidth-(columns-1)*gap)/columns, ch=96;
         maxScroll=Math.max(0,((filtered.size()+columns-1)/columns)*(ch+gap)-bodyH);
         scroll=Math.max(0,Math.min(scroll,maxScroll));targetScroll=Math.max(0,Math.min(targetScroll,maxScroll));
@@ -205,7 +206,7 @@ public class MenuEcran extends Screen {
         boolean hover=mx>=x&&mx<x+w&&my>=y&&my<y+23;
         Theme.rect(c,x,y,w,23,hover?Theme.nuance(0xFF2A2332):Theme.nuance(0xFF201B26));
         Theme.texte(c,textRenderer,fit(name,w-95),x+7,y+7,Theme.TEXTE);
-        Theme.texte(c,textRenderer,value,x+w-7-textRenderer.getWidth(value),y+7,Theme.ACCENT);
+        Theme.texte(c,textRenderer,Langue.t(value),x+w-7-textRenderer.getWidth(Langue.t(value)),y+7,Theme.ACCENT);
         hits.add(new Hit(x,y,w,23,()->{action.run();Placement.sauver();}));
     }
     private void tab(DrawContext c,String text,int x,int y,boolean active,Runnable action,int mx,int my) {
@@ -219,6 +220,7 @@ public class MenuEcran extends Screen {
         hits.add(new Hit(x,y,w,h,action));
     }
     private String fit(String text,int width) {
+        text=Langue.t(text);
         if(textRenderer.getWidth(text)<=width)return text;
         while(!text.isEmpty()&&textRenderer.getWidth(text+"…")>width)text=text.substring(0,text.length()-1);
         return text+"…";

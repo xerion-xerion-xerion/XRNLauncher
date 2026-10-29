@@ -1,3 +1,13 @@
+## Nouveautés 4.10.0
+
+- Version publique sans abonnement Prime. Boutique compacte et codes cadeaux espacés.
+- Garde-robe en grille avec recherche, textures des capes et aperçu du personnage fixe.
+- Langue français/anglais partagée entre le launcher et le menu XRN ; titres des capes traduits.
+- Accès Personnaliser au bas du menu et couleurs d’accent cohérentes.
+- Installation séparée des mods officiels compatibles avant le premier lancement Fabric : Essential, Sodium, Iris, Fabric API, Cloth Config API, FerriteCore et Mod Menu avec ses dépendances. Les fichiers manuels ou désactivés sont préservés.
+- WaveyCapes : compatibilité avec l’installation personnelle séparée ; ni redistribution commerciale ni avantage payant.
+- Ports du HUD vérifiés : Fabric 1.21.11, 26.1.2 et 26.2. Les autres versions 1.20.x/1.21.x/26.x nécessitent encore des ports ; aucun joker de compatibilité ne masque cette limite.
+
 # XRN Launcher
 
 Launcher Minecraft Java pour Windows, développé par Xerion. Interface violette, installations classiques et Fabric, gestion des mods, captures F2 et client au HUD personnalisable.

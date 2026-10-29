@@ -208,6 +208,8 @@ const XRN = {
 
   
   env: {
+    language: require('./lib/language'),
+    features: require('./lib/features'),
     info() {
       const c = cfgm.load();
       return {
@@ -221,6 +223,12 @@ const XRN = {
       };
     },
     config() { return cfgm.load(); },
+    prime: {
+      preview(id){return require('./lib/prime').preview(session.account,id);},
+      async load(){const account=session.account;const result=await require('./lib/prime').load(account);if(account?.id!==session.account?.id)throw Error('Le compte a changé. Actualisez cet onglet.');return result;},
+      async action(verb,body){const r=await require('./lib/prime').action(session.account,verb,body);if(verb==='checkout')nw.Shell.openExternal(r.url);return r;},
+      equip(id){if(!/^prime_[a-f0-9]{32}$/.test(id||''))throw Error('Cape inconnue.');return cosmetics.equip(session.account,id);}
+    },
     cosmetics: {
       gift(action,body){if(!['redeem','create','list','revoke'].includes(action))throw Error('Action inconnue.');return cosmetics.gift(session.account,action,body);},
       gift(action,body){if(!['redeem','create','list','revoke'].includes(action))throw Error('Action inconnue.');return cosmetics.gift(session.account,action,body);},
@@ -800,6 +808,11 @@ const XRN = {
       if(pose.poses.length)XRN.report('MODS',pose.poses.join(', '));
       if(pose.echecs.length)throw new Error(pose.echecs.map(e=>e.nom+' : '+e.raison).join('\n'));
       if(!pose.compatibility.supported)bus.emit('mods:notice',{text:pose.compatibility.reason});
+      const capeMod=await require('./lib/user-cape-mod').ensure(entry.id,cfgm.load().gameDir,bus);
+      if(capeMod.reason)bus.emit('mods:notice',{text:capeMod.reason});
+      const essentialResults=await require('./lib/recommended').ensure(entry.id,cfgm.load().gameDir,bus);
+      const essential=essentialResults.find(r=>r.name==='Essential')||{};
+      if(essential.reason)bus.emit('mods:notice',{text:essential.reason});
 
       await presence.beforeGameStart(session.account).catch(()=>XRN.report('PRESENCE','Apparence partagée indisponible ; lancement du jeu maintenu.'));
       let res;
@@ -840,6 +853,8 @@ const XRN = {
   },
 
   /* ---------------------------------------------------------------- */
+  language: require('./lib/language'),
+  features: require('./lib/features'),
   screenshots: screenshots,
   files: {
     saves() { return files.listSaves(); },

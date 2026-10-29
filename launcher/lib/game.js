@@ -1020,6 +1020,12 @@ function buildArgs(plan, opts) {
   /*  L'annuaire de la communaute : la liste des pseudos qui utilisent
       le client, pour mettre leur logo a cote de leur pseudo. Le mod la
       lit sur le disque, sans avoir besoin du reseau.                     */
+  jvm.push('-DXRNLanguage='+require('./language').get());
+  jvm.push('-DXRNLanguageFile='+require('./language').file());
+  if(require('./features').prime)jvm.push('-DXRNPrimeEnabled=true');
+  if(require('./features').prime)jvm.push('-DXRNPrime='+require('./prime').stateFile());
+  jvm.push('-DXRNPrimeCapes='+require('./prime').dir());
+  jvm.push('-DXRNVisiblePlayers='+require('path').join(require('./util').appRoot(),'visible-players.json'));
   jvm.push('-DXRNCommunaute=' + require('./communaute').fichierListe());
   /*  Les droits de la boutique : les cosmetiques que le joueur
       possede. Le mod en a besoin pour les montrer.                      */

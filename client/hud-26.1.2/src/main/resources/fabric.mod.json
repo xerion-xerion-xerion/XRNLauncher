@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "xrnhud",
+  "version": "${version}",
+  "name": "XRN HUD",
+  "description": "XRN Client: HUD, cosmetics and visual options. Optional appearance sharing uses the launcher settings.",
+  "authors": [
+    "Xerion"
+  ],
+  "license": "LicenseRef-XRN-Proprietary",
+  "environment": "client",
+  "mixins": [
+    {
+      "config": "xrnhud.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "entrypoints": {
+    "client": [
+      "fr.xerion.xrnhud.XrnHudClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "26.1.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

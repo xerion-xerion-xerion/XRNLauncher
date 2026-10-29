@@ -35,11 +35,11 @@ final class Theme {
     static final int TEXTE = 0xFFE9E5EF;
     static final int TEXTE_DOUX = 0xFFA59DB0;
     static final int TEXTE_FAIBLE = 0xFF776F83;
-    static final int VERT = 0xFFA078D7;
+    static int VERT = 0xFFA078D7;
     static final int ROUGE = 0xFFE9A38E;
 
     static int couleur=0xFFA78BFA;
-    static void appliquerCouleur(int c){couleur=0xFF000000|(c&0xFFFFFF);ACCENT_FORT=couleur;ACCENT=melange(couleur,0xFFFFFFFF,.3f);}
+    static void appliquerCouleur(int c){couleur=0xFF000000|(c&0xFFFFFF);ACCENT_FORT=couleur;VERT=couleur;ACCENT=melange(couleur,0xFFFFFFFF,.3f);}
     static int nuance(int c){if(couleur==0xFFA78BFA)return c;float[] h=java.awt.Color.RGBtoHSB(c>>16&255,c>>8&255,c&255,null),a=java.awt.Color.RGBtoHSB(couleur>>16&255,couleur>>8&255,couleur&255,null);return (c&0xFF000000)|(java.awt.Color.HSBtoRGB(a[0],h[1],h[2])&0xFFFFFF);}
     static void engrenage(DrawContext c,int x,int y,int color){
         for(int a=0;a<8;a++){double t=a*Math.PI/4;rect(c,x+8+(int)Math.round(Math.cos(t)*7),y+8+(int)Math.round(Math.sin(t)*7),3,3,color);}
@@ -79,11 +79,11 @@ final class Theme {
     }
 
     static void texte(DrawContext c, TextRenderer t, String s, int x, int y, int couleur) {
-        c.drawText(t, s, x, y, couleur, true);
+        c.drawText(t, Langue.t(s), x, y, couleur, true);
     }
 
     static void texteCentre(DrawContext c, TextRenderer t, String s, int x, int y, int couleur) {
-        c.drawCenteredTextWithShadow(t, s, x, y, couleur);
+        c.drawCenteredTextWithShadow(t, Langue.t(s), x, y, couleur);
     }
 
     /** Petit texte de section, en capitales, precede d'un trait. */
@@ -114,8 +114,8 @@ final class Theme {
     static int curseurInterrupteur(float progress){return 2+Math.round(14*Math.clamp(progress,0f,1f));}
     static void interrupteur(DrawContext c,int x,int y,float progress,double a){
         float p=Math.clamp(progress,0f,1f);
-        arrondi(c,x,y,26,12,alpha(melange(COMMUT,ACCENT_FORT,p),a),0);
-        arrondi(c,x+curseurInterrupteur(p),y+2,8,8,alpha(melange(0xFFB2AABF,0xFF21182F,p),a),0);
+        arrondi(c,x,y,26,12,alpha(melange(nuance(COMMUT),ACCENT_FORT,p),a),0);
+        arrondi(c,x+curseurInterrupteur(p),y+2,8,8,alpha(melange(nuance(0xFFB2AABF),nuance(0xFF21182F),p),a),0);
     }
     static void interrupteur(DrawContext c,int x,int y,boolean marche,double a){interrupteur(c,x,y,marche?1f:0f,a);}
 

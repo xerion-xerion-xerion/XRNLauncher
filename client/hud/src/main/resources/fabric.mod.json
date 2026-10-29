@@ -3,7 +3,7 @@
   "id": "xrnhud",
   "version": "${version}",
   "name": "XRN HUD",
-  "description": "HUD discret et menu d'options, ouverts par la touche Maj droite. Tout reste local, aucune donnee n'est collectee.",
+  "description": "XRN Client: HUD, cosmetics and visual options. Optional appearance sharing uses the launcher settings.",
   "authors": [
     "Xerion"
   ],
