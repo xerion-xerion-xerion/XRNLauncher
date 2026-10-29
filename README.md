@@ -2,6 +2,13 @@
 
 Launcher Minecraft Java pour Windows, développé par Xerion. Interface violette, installations classiques et Fabric, gestion des mods, captures F2 et client au HUD personnalisable.
 
+## Nouveautés 4.9.3
+
+- Ciels XRN animés avec vitesse réglable, lueurs facultatives et arrêt de l’animation.
+- Deux ambiances sonores originales : fond spatial et souffle de nuages ; volume réglable, son désactivé par défaut.
+- Fullbright accessible dans les mods : éclairage du rendu sans potion artificielle ni modification du réglage de luminosité.
+- Réglages conservés, shaders prioritaires et quatre nouvelles capes de la 4.9.2 incluses.
+
 ## Nouveautés 4.9.2
 
 - Quatre nouvelles capes fixes à 1,99 € chacune : Éclipse, Rose blanche, Séraphine et Clair de lune.

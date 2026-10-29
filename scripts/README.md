@@ -24,3 +24,10 @@ Le template Inno Setup ne doit pas être compilé directement. `build-installer.
 python scripts/build-installer.py --payload dist/XRNLauncher-win-x64.zip --iscc "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" --output dist
 ```
 Avant publication, exécuter `python scripts/verify-release.py --directory dist`. Ce contrôle relie le setup, son compte rendu de compilation, les sources Inno Setup et l’archive complète. Ne pas remplacer une archive publiée sans reconstruire le setup correspondant. Tester ensuite un setup isolé avec le téléchargement HTTPS de la release.
+
+
+## Signature Windows (préparée, certificat requis)
+
+`--sign-cert-thumbprint EMPREINTE` active une signature Authenticode avec un certificat de signature de code déjà présent dans le magasin Windows de son titulaire. `--signtool CHEMIN` peut préciser le SignTool officiel du SDK Windows. Aucun mot de passe ni clé privée ne va dans le dépôt ou les arguments. Le launcher est signé après intégration de l’icône et avant création de l’archive ; le setup est signé avant calcul de ses empreintes finales. Une erreur de signature ou d’horodatage arrête la construction.
+
+Le certificat doit autoriser la signature de code, posséder sa clé privée et une chaîne de confiance valide. Un certificat Office ou autosigné ne fournit pas la confiance publique nécessaire. Aucune signature de production n’a été créée sans certificat reconnu. La signature n’assure pas la disparition immédiate des alertes SmartScreen. Références Microsoft : [options de signature](https://learn.microsoft.com/windows/apps/package-and-deploy/code-signing-options), [réputation SmartScreen](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation).

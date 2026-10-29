@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Reject stale or test installers before uploading a release."""
-import argparse, hashlib, json, pathlib
+import subprocess,argparse, hashlib, json, pathlib
 P=pathlib.Path
 ROOT=P(__file__).resolve().parents[1]
 def sha(p):
@@ -17,6 +17,8 @@ def verify(directory, record_name='XRN-Setup-build.json'):
  expected='https://github.com/xerion-xerion-xerion/XRNLauncher/releases/download/v'+r['appVersion']+'/XRNLauncher-win-x64.zip'
  assert r['payloadUrl']==expected,'Unexpected production download URL'
  for name,digest in r['sourceHashes'].items():assert sha(ROOT/'installer'/name)==digest,'Installer sources changed: '+name
+ if r.get('authenticodeThumbprint'):
+  subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(ROOT/'scripts/sign-windows.ps1'),'-FilePath',str(directory/r['setupName']),'-CertificateThumbprint',r['authenticodeThumbprint'],'-VerifyOnly'],check=True)
  return r
 if __name__=='__main__':
  a=argparse.ArgumentParser();a.add_argument('--directory',type=P,required=True);a.add_argument('--record',default='XRN-Setup-build.json');o=a.parse_args();r=verify(o.directory,o.record);print('PASS: production setup, payload, fixed URL and source fingerprints agree ('+r['appVersion']+').')

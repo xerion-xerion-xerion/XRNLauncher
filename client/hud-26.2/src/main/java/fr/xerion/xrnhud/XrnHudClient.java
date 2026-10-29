@@ -144,7 +144,7 @@ public class XrnHudClient implements ClientModInitializer {
             Hud.compterClics(client);
             Hud.mesurerVitesse(client);
             fr.xerion.xrnhud.Musique.suivre();
-            Fonctions.maj(client);
+            Fonctions.maj(client);AmbianceCiel.tick(client);
         });
 
         /*  Bouton dans le menu de pause : le menu XRN doit etre

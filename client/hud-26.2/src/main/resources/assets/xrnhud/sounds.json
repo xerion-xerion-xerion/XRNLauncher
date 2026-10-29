@@ -1,0 +1,18 @@
+{
+  "sky_space": {
+    "sounds": [
+      {
+        "name": "xrnhud:ambient/sky_space",
+        "stream": true
+      }
+    ]
+  },
+  "sky_clouds": {
+    "sounds": [
+      {
+        "name": "xrnhud:ambient/sky_clouds",
+        "stream": true
+      }
+    ]
+  }
+}

@@ -9,7 +9,8 @@ def sha(p):
   for chunk in iter(lambda:f.read(1024*1024),b''):h.update(chunk)
  return h.hexdigest()
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--payload',type=P,required=True);ap.add_argument('--iscc',type=P,required=True);ap.add_argument('--output',type=P,required=True);ap.add_argument('--revision',default='1');ap.add_argument('--name',default='XRN-Setup');ap.add_argument('--test-build',action='store_true');ap.add_argument('--test-url');a=ap.parse_args()
+ ap=argparse.ArgumentParser();ap.add_argument('--payload',type=P,required=True);ap.add_argument('--iscc',type=P,required=True);ap.add_argument('--output',type=P,required=True);ap.add_argument('--revision',default='1');ap.add_argument('--name',default='XRN-Setup');ap.add_argument('--test-build',action='store_true');ap.add_argument('--test-url');ap.add_argument("--sign-cert-thumbprint");ap.add_argument("--signtool",type=P);a=ap.parse_args()
+ if a.signtool and not a.sign_cert_thumbprint:raise ValueError("--signtool requires --sign-cert-thumbprint")
  if not re.fullmatch(r'[A-Za-z0-9_.-]+',a.name) or not a.revision.isdigit():raise ValueError('Invalid installer name or revision')
  if a.test_url and not a.test_build:raise ValueError('A URL override is allowed only in an isolated test build')
  version=json.loads((ROOT/'launcher/package.json').read_text(encoding='utf-8'))['version']
@@ -31,7 +32,12 @@ def main():
   subprocess.run(args+[str(script)],check=True)
   if sha(payload)!=expected:raise ValueError('Payload changed during compilation')
  name='XRN-Setup-Test' if a.test_build else a.name;exe=out/(name+'.exe')
+ if a.sign_cert_thumbprint:
+  signing=['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(ROOT/'scripts/sign-windows.ps1'),'-FilePath',str(exe),'-CertificateThumbprint',a.sign_cert_thumbprint]
+  if a.signtool:signing+=['-SignTool',str(a.signtool.resolve())]
+  subprocess.run(signing,check=True)
  record={'appVersion':version,'setupRevision':int(a.revision),'testBuild':a.test_build,'payloadName':payload.name,'payloadSha256':expected,'payloadBytes':payload.stat().st_size,'payloadUrl':a.test_url or 'https://github.com/xerion-xerion-xerion/XRNLauncher/releases/download/v'+version+'/XRNLauncher-win-x64.zip','setupName':exe.name,'setupSha256':sha(exe),'setupBytes':exe.stat().st_size,'sourceHashes':inputs}
+ if a.sign_cert_thumbprint:record['authenticodeThumbprint']=a.sign_cert_thumbprint.replace(' ','').upper()
  (out/(name+'-build.json')).write_text(json.dumps(record,indent=2),encoding='utf-8')
  print(json.dumps(record))
 if __name__=='__main__':main()

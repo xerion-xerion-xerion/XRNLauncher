@@ -5,11 +5,11 @@
       "minecraft": "1.21.11",
       "loader": "fabric",
       "java": 21,
-      "version": "1.46.2",
+      "version": "1.47.0",
       "files": [
         {
-          "name": "xrn-hud-1.46.2-mc1.21.11.jar",
-          "sha256": "aec52f35416ac600ee57d249c2cdf2d6c1311b7d67b9300831e7fa0e73037c72"
+          "name": "xrn-hud-1.47.0-mc1.21.11.jar",
+          "sha256": "b4f50a30a3ed50309b15e3301511a1f5cb1bb77178d2134d6e04cb69aca3e448"
         },
         {
           "name": "fabric-api-0.141.6+1.21.11.jar",
@@ -21,11 +21,11 @@
       "minecraft": "26.2",
       "loader": "fabric",
       "java": 25,
-      "version": "1.46.2",
+      "version": "1.47.0",
       "files": [
         {
-          "name": "xrn-hud-1.46.2-mc26.2.jar",
-          "sha256": "e584408499dee55f646c019de909e6d895081aa23816f1bd8a0a770fd6b0bef6"
+          "name": "xrn-hud-1.47.0-mc26.2.jar",
+          "sha256": "36d3c7cf5bb2039f28b30ba1bc6e8b17ea9b271fb2b165de90ca0eccebd41aa1"
         },
         {
           "name": "fabric-api-0.161.0+26.2.jar",

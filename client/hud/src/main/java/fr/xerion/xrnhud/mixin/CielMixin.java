@@ -18,6 +18,8 @@ public abstract class CielMixin {
  private AbstractTexture xrn$texture(SkyRendering owner){return xrn$sky?Ciel.texture():endSkyTexture;}
  @ModifyArg(method="renderEndSky",at=@At(value="INVOKE",target="Lnet/minecraft/client/gl/DynamicUniforms;write(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),index=1,require=1)
  private org.joml.Vector4fc xrn$color(org.joml.Vector4fc original){return xrn$sky?Ciel.couleur():original;}
+ @ModifyArg(method="renderEndSky",at=@At(value="INVOKE",target="Lnet/minecraft/client/gl/DynamicUniforms;write(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),index=0,require=1)
+ private org.joml.Matrix4fc xrn$animation(org.joml.Matrix4fc original){return xrn$sky?Ciel.matrice(original):original;}
  @Inject(method="renderCelestialBodies",at=@At("HEAD"),cancellable=true,require=1)
  private void xrn$astres(net.minecraft.client.util.math.MatrixStack matrix,float a,float b,float d,net.minecraft.world.MoonPhase phase,float e,float f,CallbackInfo ci){if(Ciel.disponible()&&!Ciel.astres)ci.cancel();}
  @ModifyArg(method="renderEndSky",at=@At(value="INVOKE",target="Lcom/mojang/blaze3d/systems/RenderSystem$ShapeIndexBuffer;getIndexBuffer(I)Lcom/mojang/blaze3d/buffers/GpuBuffer;"),index=0,require=1)

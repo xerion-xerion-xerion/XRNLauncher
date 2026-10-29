@@ -63,7 +63,8 @@ public class MenuEcran extends Screen {
         addRenderableWidget(search);
         modules.clear();
         modules.add(new Module("FPS Plus","Textures conservees",()->Performance.actif,()->{Reglages.boostNote();Performance.basculer();},0));
-        modules.add(new Module("Ciel XRN","Deux ciels violets integres",()->Ciel.actif,()->Ciel.actif=!Ciel.actif,0));
+        modules.add(new Module("Fullbright","Eclairage clair sans potion",()->Fonctions.fullbright,()->Fonctions.fullbright=!Fonctions.fullbright,0));
+        modules.add(new Module("Ciel XRN","Ciels animes et ambiance sonore",()->Ciel.actif,()->Ciel.actif=!Ciel.actif,0));
         modules.add(new Module("Name Tag","Couleurs, degrade et badges",()->NameTag.actif,()->NameTag.actif=!NameTag.actif,0));
         modules.add(new Module("Scoreboard","Tableau du serveur",()->Elements.scoreboard,()->Elements.scoreboard=!Elements.scoreboard,5));
         modules.add(new Module("Inventory HUD","27 cases de votre inventaire",()->ModulesPlus.sac,()->ModulesPlus.sac=!ModulesPlus.sac,5));
@@ -169,7 +170,7 @@ public class MenuEcran extends Screen {
         }
     }
 
-    private int groupe(String name){return switch(name){case "Name Tag","Ciel XRN"->4;case "Taille des objets","Motion Blur","Hitboxes","Contours blocs","Shader Monitor"->2;case "Free Look","FPS Plus","Balises","Auto Text","Auto Connect","Nether","Rappel de pause"->3;default->1;};}
+    private int groupe(String name){return switch(name){case "Name Tag","Ciel XRN"->4;case "Fullbright","Taille des objets","Motion Blur","Hitboxes","Contours blocs","Shader Monitor"->2;case "Free Look","FPS Plus","Balises","Auto Text","Auto Connect","Nether","Rappel de pause"->3;default->1;};}
     private Runnable configuration(String name){return switch(name){
         case "Taille des objets"->()->minecraft.gui.setScreen(new TailleObjetsEcran(this));
         case "Motion Blur"->()->minecraft.gui.setScreen(new MotionBlurEcran(this));

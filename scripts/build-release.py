@@ -31,7 +31,8 @@ def source_snapshot():
  for name in TOOLS:files['tools/'+name]=APP/'tools'/name
  return {name:digest(p)for name,p in files.items()}
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--runtime',type=P,required=True);ap.add_argument('--runtime-version',required=True);ap.add_argument('--previous',type=P);ap.add_argument('--output',type=P,default=ROOT/'dist');ap.add_argument('--iscc',type=P);args=ap.parse_args()
+ ap=argparse.ArgumentParser();ap.add_argument('--runtime',type=P,required=True);ap.add_argument('--runtime-version',required=True);ap.add_argument('--previous',type=P);ap.add_argument('--output',type=P,default=ROOT/'dist');ap.add_argument('--iscc',type=P);ap.add_argument("--sign-cert-thumbprint");ap.add_argument("--signtool",type=P);args=ap.parse_args()
+ if args.signtool and not args.sign_cert_thumbprint:raise ValueError("--signtool requires --sign-cert-thumbprint")
  version=json.loads((APP/'package.json').read_text(encoding='utf-8'))['version'];assert re.fullmatch(r'\d+\.\d+\.\d+',version)
  runtime=args.runtime.resolve();assert (runtime/'nw.dll').is_file() and (runtime/'XRNLauncher.exe').is_file(),'Provide a complete XRN runtime folder'
  out=args.output.resolve();out.mkdir(parents=True,exist_ok=True)
@@ -55,6 +56,10 @@ def main():
   for icon in (runtime/'assets').glob('xrn-launcher-*.ico'):
    if re.fullmatch(r'xrn-launcher-\d+\.\d+\.\d+\.ico',icon.name) and not (stage/'assets'/icon.name).exists():shutil.copy2(icon,stage/'assets'/icon.name)
   subprocess.run(['powershell','-NoProfile','-ExecutionPolicy','Bypass','-File',str(APP/'tools/set-exe-icon.ps1'),'-Exe',str(stage/'XRNLauncher.exe'),'-Ico',str(APP/'assets/icon.ico')],check=True)
+  if args.sign_cert_thumbprint:
+   signing=['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(ROOT/'scripts/sign-windows.ps1'),'-FilePath',str(stage/'XRNLauncher.exe'),'-CertificateThumbprint',args.sign_cert_thumbprint]
+   if args.signtool:signing+=['-SignTool',str(args.signtool.resolve())]
+   subprocess.run(signing,check=True)
   full={p.relative_to(stage).as_posix():p for p in stage.rglob('*')if p.is_file()};new=managed(stage)
   archive(out/'XRNLauncher-win-x64.zip',full,'XRNLauncher/')
   archive(out/'XRNLauncher-noyau.zip',new,'XRNLauncher/')
@@ -69,7 +74,11 @@ def main():
   (out/'XRNLauncher-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
   payload=out/'XRNLauncher-win-x64.zip';unpacked=sum(p.stat().st_size for p in full.values());sha=digest(payload)
   if source_snapshot()!=source_before:raise RuntimeError('Launcher sources changed during packaging. Rebuild before publishing.')
-  if args.iscc:subprocess.run([__import__('sys').executable,str(ROOT/'scripts/build-installer.py'),'--payload',str(payload),'--iscc',str(args.iscc.resolve()),'--output',str(out)],check=True)
+  if args.iscc:
+   installer=[__import__('sys').executable,str(ROOT/'scripts/build-installer.py'),'--payload',str(payload),'--iscc',str(args.iscc.resolve()),'--output',str(out)]
+   if args.sign_cert_thumbprint:installer+=['--sign-cert-thumbprint',args.sign_cert_thumbprint]
+   if args.signtool:installer+=['--signtool',str(args.signtool.resolve())]
+   subprocess.run(installer,check=True)
   files=[p for p in out.iterdir()if p.is_file() and (p.name.startswith('XRNLauncher-') or p.name in {'XRN-Setup.exe','XRN-Setup-build.json'})]
   (out/'SHA256SUMS.txt').write_text(''.join(digest(p)+'  '+p.name+'\n'for p in sorted(files)),encoding='ascii')
   if args.iscc:subprocess.run([__import__('sys').executable,str(ROOT/'scripts/verify-release.py'),'--directory',str(out)],check=True)

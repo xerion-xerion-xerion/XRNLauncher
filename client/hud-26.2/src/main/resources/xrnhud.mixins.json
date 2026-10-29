@@ -19,7 +19,8 @@
     "MotionBlurMixin",
     "PlayerEntityRendererMixin",
     "ItemScaleHandMixin",
-    "ItemScaleGuiMixin"
+    "ItemScaleGuiMixin",
+    "FullbrightMixin"
   ],
   "injectors": {
     "defaultRequire": 0
