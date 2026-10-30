@@ -145,7 +145,7 @@
         b.addEventListener('click', () => { try { action.run(); } catch (e) {} el.remove(); });
         el.querySelector('div').appendChild(b);
       }
-      box.appendChild(el);
+      while(box.children.length>=3)box.firstElementChild.remove();box.appendChild(el);
       setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, ms || 3800);
     }
   };
@@ -666,6 +666,7 @@ const Splash = {
     }
     try { return await fn(X); }
     catch (e) {
+      if(e?.cancelled||e?.code==='launch_cancelled')return {cancelled:true};
       const msg = (e && (e.body || e.message)) || String(e);
       if (e && e.code === 'nojava') {
         /*  Le message ne se contente plus de constater l'absence de
@@ -1183,8 +1184,8 @@ const Splash = {
     }
     X.on('dl:progress', d => { STATE.lastProgress = d; queueDlRender(); updateStrip(d); });
     X.on('dl:file', d => pushFileRow(d));
-    X.on('mods:notice',d=>Toast.show('Mods',d.text,'info',6500));
-    X.on('mods:stage',d=>{logGame('',d.text);Toast.show('Préparation des mods',d.text,'info',6500);});
+    X.on('mods:notice',d=>logGame('',d.text));
+    X.on('mods:stage',d=>{logGame('',d.text);if(STATE.launching)$('#launchStatus').textContent=d.text;});
     X.on('dl:start', d => { STATE.lastProgress = { version: d.version, total: Number(d.total) || 0, doneBytes: 0, files: d.files || 0, filesDone: 0, speed: 0, current: '' }; $('#dlFiles').innerHTML = ''; const t = $('#dlPanelTitle'); if (t) t.textContent = 'Installation en cours'; Downloads.render(); });
     X.on('dl:done', d => { const t = $('#dlPanelTitle'); if (t) t.textContent = 'Dernière installation'; Downloads.render(); logGame('ok', 'Installation ' + d.version + ' terminée.'); });
     X.on('dl:error', d => logGame('err', d.name + ' : ' + d.message));
@@ -1201,7 +1202,7 @@ const Splash = {
     X.on('game:exit', d => {
       logGame(d.code === 0 ? 'ok' : 'warn', 'Le jeu s\'est arrêté (code ' + d.code + ').');
       $('#btnPlay').classList.remove('busy', 'ring');
-      Toast.show('Jeu arrêté', 'Code de sortie : ' + d.code, 'info', 4000);
+      $('#launchProgress').hidden=false;$('#launchStatus').textContent=d.code===0?'Jeu fermé.':'Le jeu s’est arrêté. Consultez le journal pour le diagnostic.';$('#btnCancelLaunch').hidden=true;
     });
   }
   function updateStrip(d) {
@@ -1237,6 +1238,7 @@ const Splash = {
    * ================================================================== */
   async function play(world) {
     if (!DESKTOP) return api(null);
+    if(STATE.launching)return;
     if (!STATE.account) { Toast.show('Connexion requise', 'Connectez un compte dans l\'onglet Connexion.', 'warn'); return Nav.go('login'); }
     const id = STATE.selected;
     if (!id) { Toast.show('Aucune version', 'Installez d\'abord une version de Minecraft.', 'warn'); return Nav.go('versions'); }
@@ -1281,15 +1283,15 @@ const Splash = {
         }
       }
     }
-    const btn = $('#btnPlay');
-    btn.classList.add('busy', 'ring');
+    if(STATE.launching)return;STATE.launching=true;const btn = $('#btnPlay');
+    btn.classList.add('busy', 'ring');$('#launchProgress').hidden=false;$('#launchStatus').textContent='Préparation du lancement…';$('#btnCancelLaunch').hidden=false;$('#btnCancelLaunch').disabled=false;$('#btnCancelLaunch').textContent='Annuler le lancement';
     logGame('', '>>> Préparation du lancement (' + id + ')');
     const res = await api(x => x.game.launch({
       version: id, ramGB: cfg.ramGB, world: world || null, extraJavaArgs: cfg.javaArgs
     }));
-    if (!res) { btn.classList.remove('busy', 'ring'); return; }
-    Toast.show('Minecraft lancé', 'Version ' + id + (world ? ' — monde ' + world : ''), 'ok', 4000);
+    STATE.launching=false;$('#btnCancelLaunch').hidden=true;btn.classList.remove('busy','ring');$('#launchStatus').textContent=res?.cancelled?'Lancement annulé.':res?'Minecraft est lancé.':'Lancement impossible. Consultez le journal.';
   }
+  $('#btnCancelLaunch').onclick=()=>{if(!STATE.launching)return;X.game.cancelLaunch();$('#btnCancelLaunch').disabled=true;$('#launchStatus').textContent='Annulation du lancement…';};
   $('#btnPlay').addEventListener('click', () => play(null));
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); play(null); }
@@ -1543,42 +1545,42 @@ const Splash = {
     async refresh(){
       const profiles=await api(x=>x.modCatalog.contexts(),{soft:true})||[];
       const select=$('#catalogInstallation'),previous=select.value||STATE.selected;
-      select.innerHTML=profiles.map(p=>`<option value="${esc(p.id)}">${esc(p.version)} · ${esc(p.loader)}</option>`).join('');
+      select.innerHTML=profiles.map(p=>`<option value="${esc(p.id)}">${esc(p.version)} · ${esc(p.loader)}</option>`).join('')||'<option value="">Catalogue général — aucune installation</option>';
+      select.disabled=!profiles.length;
       if(profiles.some(p=>p.id===previous))select.value=previous;
-      this.profiles=profiles;$('#catalogSearch').disabled=!profiles.length;this.describe();
-      if(!profiles.length){$('#catalogResults').replaceChildren();$('#catalogCount').textContent='';$('#catalogPagination').hidden=true;return;}
+      this.profiles=profiles;$('#catalogSearch').disabled=false;this.describe();
       const key=this.key();if(key!==this.lastKey)await this.search(0);
     },
     key(){return [$('#catalogInstallation').value,$('#catalogQuery').value.trim(),$('#catalogSort').value].join('|');},
     describe(){
       const p=(this.profiles||[]).find(p=>p.id===$('#catalogInstallation').value);
-      $('#catalogContext').textContent=p?`Pour Minecraft ${p.version} · ${p.loader}. Les dépendances requises sont proposées avant le téléchargement.`:'Installez d’abord Fabric ou un autre chargeur dans la section ci-dessous.';
+      document.querySelector('.catalog-panel .tag').textContent=p?'Version et chargeur vérifiés':'Parcourir sans installer';$('#catalogContext').textContent=p?`Pour Minecraft ${p.version} · ${p.loader}. Les dépendances requises sont proposées avant le téléchargement.`:'Explorez les mods sans installation. Ajoutez une version avec un chargeur dans Installations pour pouvoir télécharger.';
     },
     async search(offset=0){
-      const installation=$('#catalogInstallation').value;if(!installation)return;
+      const installation=$('#catalogInstallation').value;
       const generation=++this.generation,key=this.key();this.offset=offset;$('#catalogSearch').disabled=true;
       const box=$('#catalogResults');box.textContent='Recherche des mods compatibles…';$('#catalogPagination').hidden=true;
       try{
         const result=await X.modCatalog.search('modrinth',$('#catalogQuery').value,installation,{sort:$('#catalogSort').value,offset});
         if(generation!==this.generation)return;this.lastKey=key;this.result=result;
-        const compact=n=>Number(n||0).toLocaleString('fr-FR',{notation:'compact',maximumFractionDigits:1});
+        const locale=window.XrnLanguage?.get()==='en'?'en-GB':'fr-FR';const compact=n=>Number(n||0).toLocaleString(locale,{notation:'compact',maximumFractionDigits:1});
         const category=n=>({'library':'Bibliothèque','optimization':'Optimisation','utility':'Utilitaire','decoration':'Décoration','worldgen':'Monde','adventure':'Aventure','technology':'Technique'}[n]||n.replace(/-/g,' '));
-        $('#catalogCount').textContent=Number(result.total||0).toLocaleString('fr-FR')+' mods · '+result.context.version+' / '+result.context.loader;
+        const canInstall=!!installation&&!!result.context&&!result.browseOnly;$('#catalogCount').textContent=Number(result.total||0).toLocaleString(locale)+' mods · '+(canInstall?result.context.version+' / '+result.context.loader:'Catalogue général');$('#catalogInstallHint').hidden=canInstall;
         box.innerHTML=result.items.length?result.items.map((p,i)=>`<article class="catalog-row" role="listitem">
           <span class="catalog-mod-icon" aria-hidden="true"><span>${esc(p.title.slice(0,1))}</span>${p.icon?`<img alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" src="${esc(p.icon)}">`:''}</span>
-          <div class="catalog-mod-main"><h5>${esc(p.title)}</h5><p>${esc(p.description)}</p><div class="catalog-mod-meta"><span class="catalog-author"><i aria-hidden="true">${esc(p.author.slice(0,1).toUpperCase())}</i>${esc(p.author)}</span><span class="catalog-loader">${esc(result.context.loader)}</span>${(p.categories||[]).filter(v=>!['fabric','forge','quilt','neoforge','minecraft','liteloader','rift','babric'].includes(v)).slice(0,2).map(v=>`<span class="catalog-category">${esc(category(v))}</span>`).join('')}</div></div>
-          <div class="catalog-mod-side"><div class="catalog-mod-stats"><span title="Téléchargements">${ic('i-download',12)} ${compact(p.downloads)}</span>${p.updated?`<span title="Dernière mise à jour">${esc(relative(Date.parse(p.updated)))}</span>`:''}</div><div class="catalog-row-actions"><button class="btn sm catalog-view" data-catalog-view="${i}">Voir ↗</button><button class="btn sm catalog-install" data-catalog="${i}">Installer</button></div></div>
+          <div class="catalog-mod-main"><h5>${esc(p.title)}</h5><p>${esc(p.description)}</p><div class="catalog-mod-meta"><span class="catalog-author"><i aria-hidden="true">${esc(p.author.slice(0,1).toUpperCase())}</i>${esc(p.author)}</span><span class="catalog-loader">${esc(result.context?.loader||(p.loaders||[]).join(' / ')||'Minecraft')}</span>${(p.categories||[]).filter(v=>!['fabric','forge','quilt','neoforge','minecraft','liteloader','rift','babric'].includes(v)).slice(0,2).map(v=>`<span class="catalog-category">${esc(category(v))}</span>`).join('')}</div></div>
+          <div class="catalog-mod-side"><div class="catalog-mod-stats"><span title="Téléchargements">${ic('i-download',12)} ${compact(p.downloads)}</span>${p.updated?`<span title="Dernière mise à jour">${esc(relative(Date.parse(p.updated)))}</span>`:''}</div><div class="catalog-row-actions"><button class="btn sm catalog-view" data-catalog-view="${i}">Voir ↗</button><button class="btn sm catalog-install" data-catalog="${i}" ${canInstall?'':'disabled title="Installez une version pour télécharger"'}>Installer</button></div></div>
         </article>`).join(''):'<p class="empty">Aucun mod pour cette recherche et cette installation.</p>';
         $$('img',box).forEach(img=>img.addEventListener('error',()=>{img.hidden=true;},{once:true}));
-        $$('[data-catalog]',box).forEach(b=>b.onclick=()=>this.install('modrinth',result.items[Number(b.dataset.catalog)],installation,b));
+        if(canInstall)$$('[data-catalog]',box).forEach(b=>b.onclick=()=>this.install('modrinth',result.items[Number(b.dataset.catalog)],installation,b));
         $$('[data-catalog-view]',box).forEach(b=>b.onclick=()=>api(x=>x.env.openUrl(result.items[Number(b.dataset.catalogView)].url)));
         const end=offset+result.items.length;$('#catalogPage').textContent=result.items.length?`${offset+1}–${end} sur ${Number(result.total).toLocaleString('fr-FR')}`:'';
         $('#catalogPrev').disabled=offset===0;$('#catalogNext').disabled=end>=result.total;$('#catalogPagination').hidden=!result.items.length||result.total<=20;
       }catch(e){if(generation===this.generation){box.textContent=e.message||'Le catalogue est indisponible.';$('#catalogCount').textContent='';this.lastKey='';}}
-      finally{if(generation===this.generation)$('#catalogSearch').disabled=!$('#catalogInstallation').value;}
+      finally{if(generation===this.generation)$('#catalogSearch').disabled=false;}
     },
     async install(provider,project,installation,button){
-      if(this.installing)return;this.installing=true;button.disabled=true;button.textContent='Vérification…';
+      if(this.installing||!installation||!(this.profiles||[]).some(p=>p.id===installation))return;this.installing=true;button.disabled=true;button.textContent='Vérification…';
       try{
         const plan=await X.modCatalog.prepare(provider,project.id,installation);
         const accepted=await Dialog.open({title:'Installer '+project.title+' ?',html:`<p>Minecraft ${esc(plan.context.version)} · ${esc(plan.context.loader)} · ${human(plan.bytes)}</p><ul>${plan.files.map(f=>`<li>${esc(f.filename)}</li>`).join('')}</ul>`,ok:'Télécharger et installer',cancel:'Annuler'});
@@ -2432,7 +2434,7 @@ const Login = {
       const acc = await X.auth.resume();
       Account.apply(acc);
       await Home.refresh();
-      if (!acc) { Nav.go('login'); Toast.show('Bienvenue', 'Connectez votre compte Microsoft pour commencer.', 'info', 5200); }
+      if (!acc) { Nav.go('login'); }
       else Nav.go((location.hash || '#/home').replace('#/', ''));
       Home.refresh();
       Splash.ready();

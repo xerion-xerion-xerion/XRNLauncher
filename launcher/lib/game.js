@@ -1146,11 +1146,12 @@ function renommerFenetre(pid, titre, bus) {
 }
 
 async function launch(opts, bus) {
+  const checkpoint=()=>require('./launch-control').check(opts.cancelToken);checkpoint();
   if (opts.userType === "msa" && (!opts.accessToken || opts.accessToken === "0")) throw new Error("Une session Minecraft valide est requise.");
   const cfg = cfgm.load();
   const entry = { id: opts.version, url: opts.versionUrl };
   const complet = await versionComplete(entry);
-  const vjson = complet.vjson;
+  checkpoint();const vjson = complet.vjson;
   const plan = buildPlan(vjson, cfg, complet.racine);
 
   if (!util.exists(plan.jar)) {
@@ -1165,7 +1166,7 @@ async function launch(opts, bus) {
     throw e;
   }
 
-  const exe = java.path.toLowerCase().endsWith('java.exe') && !opts.forceWindow
+  checkpoint();const exe = java.path.toLowerCase().endsWith('java.exe') && !opts.forceWindow
     ? java.path
     : java.path.replace(/javaw\.exe$/i, 'javaw.exe');
 
@@ -1179,7 +1180,7 @@ async function launch(opts, bus) {
 
   const child = spawn(exe, args, {
     cwd: plan.dir,
-    windowsHide: false,
+    windowsHide: true,
     detached: false,
     env: Object.assign({}, process.env, { MINECRAFT_JAVA_HOME: path.dirname(java.path) })
   });

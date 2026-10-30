@@ -6,6 +6,7 @@ window.__XRN_START = 'main.js execute';
     Rien de tout cela n'existe dans un simple navigateur : l'UI detecte
     window.XRN et bascule automatiquement en "mode apercu".               */
 
+const launchControl=require('./lib/launch-control');
 const fs    = require('fs');
 const path  = require('path');
 const { EventEmitter } = require('events');
@@ -757,6 +758,8 @@ const XRN = {
 
     clientBuilds() { return require('./lib/client-builds').manifest().map(b=>({minecraft:b.minecraft,loader:b.loader})); },
     async launch(opts) {
+      const attempt=launchControl.begin(),checkpoint=()=>launchControl.check(attempt);
+      try{checkpoint();
       const acc = session.account;
       const offline = opts.offline;
       if (!offline && !acc) throw new Error('Aucun compte connecte');
@@ -782,7 +785,7 @@ const XRN = {
           donc pas le lancement, on retombe sur le jeton deja connu. */
       if (acc && ['microsoft','xbox'].includes(acc.type)) {
         const verified = await microsoftSession.validate(acc);
-        session.account = verified;
+        checkpoint();session.account = verified;
         accessToken = verified.mcToken; uuid = verified.id; username = verified.name; userType = 'msa';
         bus.emit('auth:connected', auth.publicAccount(verified));
       }
@@ -806,19 +809,20 @@ const XRN = {
         if(existing)entry={id:existing.version,url:null};
         else{bus.emit('mods:stage',{text:'Preparation de XRN Client pour Minecraft '+entry.id+'…'});const profile=await mods.installFabric(entry.id,bus);entry={id:profile.profil,url:null};}
       }
-      const pose=mods.installerIntegres(entry.id);
+      checkpoint();const pose=mods.installerIntegres(entry.id);
       if(pose.poses.length)XRN.report('MODS',pose.poses.join(', '));
       if(pose.echecs.length)throw new Error(pose.echecs.map(e=>e.nom+' : '+e.raison).join('\n'));
       if(!pose.compatibility.supported)bus.emit('mods:notice',{text:pose.compatibility.reason});
       const capeMod=await require('./lib/internal-cape').prepare(cfgm.load().gameDir,pose.compatibility.supported);
-      if(capeMod.reason)bus.emit('mods:notice',{text:capeMod.reason});
+      checkpoint();if(capeMod.reason)bus.emit('mods:notice',{text:capeMod.reason});
       const essentialResults=await require('./lib/recommended').ensure(entry.id,cfgm.load().gameDir,bus);
-      const essential=essentialResults.find(r=>r.name==='Essential')||{};
+      checkpoint();const essential=essentialResults.find(r=>r.name==='Essential')||{};
       if(essential.reason)bus.emit('mods:notice',{text:essential.reason});
 
       await presence.beforeGameStart(session.account).catch(()=>XRN.report('PRESENCE','Apparence partagée indisponible ; lancement du jeu maintenu.'));
-      let res;
+      checkpoint();let res;
       try { res = await game.launch({
+        cancelToken:attempt,
         version: entry.id,
         versionUrl: entry.url,
         username, uuid, accessToken, userType,
@@ -829,7 +833,9 @@ const XRN = {
       session.game = res;
       cfgm.save({ lastVersion: entry.id, lastProfile: username });
       return res;
+      }catch(error){if(error.cancelled)presence.afterGameExit();throw error;}finally{launchControl.end(attempt);}
     },
+    cancelLaunch(){return launchControl.cancel();},
 
     running() { return session.game ? { ...session.game, running: isAlive(session.game.pid) } : null; },
     kill() { if (session.game) game.killGame(session.game.pid); session.game = null; return true; }

@@ -11,15 +11,15 @@ function compatible(v,c){return Array.isArray(v.game_versions)&&v.game_versions.
 function pick(versions,c){return versions.filter(v=>compatible(v,c)).sort((a,b)=>(a.version_type==='release'?0:1)-(b.version_type==='release'?0:1)||Date.parse(b.date_published)-Date.parse(a.date_published))[0];}
 async function mrVersion(project,c){const q=new URLSearchParams({loaders:JSON.stringify([c.loader]),game_versions:JSON.stringify([c.version]),include_changelog:'false'});const v=pick(await http.getJSON(MR+'/project/'+id(project)+'/version?'+q),c);if(!v)throw Error('Aucun fichier compatible pour '+project+' ('+c.version+', '+c.loader+').');return v;}
 async function search(provider,query,installation,options={}){
- const c=context(installation);query=String(query||'').trim().slice(0,100);
+ const c=installation?context(installation):null;query=String(query||'').trim().slice(0,100);
  if(provider==='modrinth'){
   const offset=Math.max(0,Math.min(10000,Math.floor(Number(options.offset)||0))),sort=['downloads','relevance','updated'].includes(options.sort)?options.sort:'downloads';
-  const q=new URLSearchParams({query,index:sort,offset:String(offset),limit:'20',facets:JSON.stringify([['project_type:mod'],['versions:'+c.version],['categories:'+c.loader],['client_side:required','client_side:optional']])});
+  const q=new URLSearchParams({query,index:sort,offset:String(offset),limit:'20',facets:JSON.stringify([['project_type:mod'],...(c?[["versions:"+c.version],["categories:"+c.loader]]:[]),['client_side:required','client_side:optional']])});
   const data=await http.getJSON(MR+'/search?'+q);
   // Slugs are display metadata, not trusted identifiers. A malformed hit must
   // never break the whole catalogue or become a filesystem/download parameter.
-  const items=(data.hits||[]).filter(p=>typeof p.project_id==='string'&&/^[A-Za-z0-9]{8}$/.test(p.project_id)).map(p=>({id:p.project_id,title:String(p.title||'Mod'),description:String(p.description||''),author:String(p.author||''),url:'https://modrinth.com/mod/'+id(p.project_id),icon:iconUrl(p.icon_url),downloads:Number(p.downloads)||0,updated:p.date_modified||'',categories:(p.display_categories||p.categories||[]).filter(v=>typeof v==='string').slice(0,4)}));
-  return {context:c,items,offset,total:Number(data.total_hits)||items.length};
+  const items=(data.hits||[]).filter(p=>typeof p.project_id==='string'&&/^[A-Za-z0-9]{8}$/.test(p.project_id)).map(p=>({id:p.project_id,title:String(p.title||'Mod'),description:String(p.description||''),author:String(p.author||''),url:'https://modrinth.com/mod/'+id(p.project_id),icon:iconUrl(p.icon_url),downloads:Number(p.downloads)||0,updated:p.date_modified||'',loaders:(p.categories||[]).filter(v=>Object.hasOwn(loaderTypes,v)),categories:(p.display_categories||p.categories||[]).filter(v=>typeof v==='string').slice(0,4)}));
+  return {context:c,browseOnly:!c,items,offset,total:Number(data.total_hits)||items.length};
  }
  throw Error('Catalogue inconnu');
 }

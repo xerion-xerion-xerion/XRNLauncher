@@ -730,5 +730,20 @@
   "Nous sommes tous dans la nature ; ce qui est en nous lui vient aussi.": "We are all part of nature; what is within us comes from it too.",
   "Nous sommes tous dans le caniveau, mais certains d'entre nous regardent les étoiles.": "We are all in the gutter, but some of us are looking at the stars.",
   "Nous sommes un moyen par lequel le cosmos se connaît lui-même.": "We are a way for the cosmos to know itself.",
-  "Nous sommes une façon que l'atome a de se connaître.": "We are a way for the atom to know itself."
+  "Nous sommes une façon que l'atome a de se connaître.": "We are a way for the atom to know itself.",
+  "Catalogue général — aucune installation": "General catalog — no installation",
+  "Explorez les mods sans installation. Ajoutez une version avec un chargeur dans Installations pour pouvoir télécharger.": "Browse mods without an installation. Add a version with a mod loader in Installations to download mods.",
+  "Installez une version pour télécharger vos mods.": "Install a game version to download mods.",
+  "Installez une version pour télécharger": "Install a game version to download",
+  "Ajouter une installation": "Add an installation",
+  "Catalogue général": "General catalog",
+  "Parcourir sans installer": "Browse without installing",
+  "Annuler le lancement": "Cancel launch",
+  "Préparation du lancement…": "Preparing launch…",
+  "Annulation du lancement…": "Cancelling launch…",
+  "Lancement annulé.": "Launch cancelled.",
+  "Minecraft est lancé.": "Minecraft is running.",
+  "Lancement impossible. Consultez le journal.": "Unable to launch. Check the log.",
+  "Jeu fermé.": "Game closed.",
+  "Le jeu s’est arrêté. Consultez le journal pour le diagnostic.": "The game stopped. Check the log for details."
 }
