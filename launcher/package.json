@@ -1,6 +1,6 @@
 {
   "name": "xrn-launcher",
-  "version": "4.13.0",
+  "version": "4.14.0",
   "license": "LicenseRef-XRN-Proprietary",
   "description": "XRN Launcher — Minecraft Java",
   "main": "index.html",

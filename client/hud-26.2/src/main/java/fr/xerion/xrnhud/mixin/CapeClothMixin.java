@@ -24,8 +24,9 @@ public abstract class CapeClothMixin {
  @Inject(method="setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V",at=@At("TAIL"),require=1)
  private void xrn$animer(AvatarRenderState state,CallbackInfo ci){
   boolean ours=state.skin!=null&&state.skin.cape()!=null&&"xrnhud".equals(state.skin.cape().texturePath().getNamespace());
-  boolean active=ours&&CapeMouvement.actif&&!CapeMouvement.externe()&&!((CapeApercu)(Object)state).xrn$apercuCape();cape.skipDraw=active;xrn$cloth.visible=active;if(!active)return;
-  float motion=Math.max(state.walkAnimationSpeed,Math.abs(state.capeLean)/90);
+  boolean active=ours&&CapeMouvement.actif&&!((CapeApercu)(Object)state).xrn$apercuCape();cape.skipDraw=ours;xrn$cloth.visible=ours;if(!ours)return;
+  if(!active){for(int i=0;i<xrn$cubes.size();i++)System.arraycopy(xrn$rest[i],0,xrn$cubes.get(i).polygons,0,xrn$rest[i].length);xrn$age=Float.NaN;return;}
+  float motion=Math.clamp(state.walkAnimationSpeed*2.2f+Math.abs(state.capeLean)/120,0,1.5f);
   float clothAge=(float)Math.floor(state.ageInTicks*3f)/3f;motion=Math.round(motion*20f)/20f;
   if(xrn$age==clothAge&&xrn$id==state.id&&xrn$motion==motion&&xrn$strength==CapeMouvement.intensite)return;
   xrn$age=clothAge;xrn$id=state.id;xrn$motion=motion;xrn$strength=CapeMouvement.intensite;xrn$surface.calculer(clothAge,state.id,motion);

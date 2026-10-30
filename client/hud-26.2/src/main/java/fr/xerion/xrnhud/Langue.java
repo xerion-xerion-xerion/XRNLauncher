@@ -6,5 +6,5 @@ final class Langue {
  private static String normal(String s){return java.text.Normalizer.normalize(s,java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","").replace('’','\'').toLowerCase(Locale.ROOT);}
  static String actuelle(){return choix.equals("en")?"en":"fr";}
  static void choisir(String value){if(!value.equals("fr")&&!value.equals("en"))return;choix=value;try{String target=System.getProperty("XRNLanguageFile","");if(!target.isEmpty()){Path f=Path.of(target),temp=f.resolveSibling(f.getFileName()+".tmp");Files.createDirectories(f.getParent());Files.writeString(temp,"{\"language\":\""+value+"\"}");Files.move(temp,f,StandardCopyOption.REPLACE_EXISTING);}}catch(Exception ignored){}Placement.sauver();}
- static String t(String s){if(!actuelle().equals("en")||s==null)return s;if(exact.containsKey(s))return exact.get(s);String n=normal(s);if(en.containsKey(n))return en.get(n);int colon=s.indexOf(" : ");if(colon>0)return t(s.substring(0,colon))+": "+t(s.substring(colon+3));return s;}
+ static String t(String s){if(!actuelle().equals("en")||s==null)return s;if(exact.containsKey(s))return exact.get(s);String n=normal(s);if(en.containsKey(n))return en.get(n);if(s.startsWith("Force "))return "Strength "+s.substring(6);int colon=s.indexOf(" : ");if(colon>0)return t(s.substring(0,colon))+": "+t(s.substring(colon+3));return s;}
 }

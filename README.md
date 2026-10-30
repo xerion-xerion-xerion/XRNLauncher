@@ -1,3 +1,11 @@
+## XRN 4.14.0
+
+Aperçus de garde-robe corrigés : les vignettes lisent le découpage carré réel des textures, et le mannequin utilise le même maillage complet que la cape en jeu. Les objets tenus ne s’affichent plus dans l’aperçu. Le mode flottant conserve une géométrie fermée et un mouvement plus visible en déplacement ; l’aperçu reste immobile et tourne uniquement à la souris.
+
+163 traductions ajoutées en français/anglais, avec des libellés dynamiques de paiement et de téléchargement corrigés. Nouveau site bilingue et adaptatif : aperçu interactif des fonctions et des capes animées, compatibilité détaillée, étapes d’installation et téléchargement direct du setup officiel.
+
+Client 1.53.0 vérifié en jeu sur Fabric 1.21.11, 26.1.2 et 26.2, avec garde-robe, mouvement et vol en élytres. Patch depuis la 4.13.0, jeux et comptes conservés. L’installeur est contrôlé par empreintes et testé dans un dossier isolé. Il n’est pas signé avec un certificat Authenticode reconnu ; aucune suppression garantie des alertes de réputation n’est annoncée. Le certificat HTTPS du domaine est provisionné par GitHub Pages, distinct de la signature des exécutables.
+
 ## XRN 4.13.0
 
 Cadrage corrigé sur les capes rigides et flottantes ; atlas correspondant au modèle carré et aperçu de collection au ratio 10:16. Logo du launcher réutilisé dans le name tag, avec un + contenu dans sa hauteur. Toutes les couleurs de pseudo restent gratuites.

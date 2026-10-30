@@ -24,8 +24,9 @@ public abstract class CapeClothMixin {
  @Inject(method="setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V",at=@At("TAIL"),require=1)
  private void xrn$animer(PlayerEntityRenderState state,CallbackInfo ci){
   boolean ours=state.skinTextures!=null&&state.skinTextures.cape()!=null&&"xrnhud".equals(state.skinTextures.cape().texturePath().getNamespace());
-  boolean active=ours&&CapeMouvement.actif&&!CapeMouvement.externe()&&!((CapeApercu)(Object)state).xrn$apercuCape();cape.hidden=active;xrn$cloth.visible=active;if(!active)return;
-  float motion=Math.max(state.limbSwingAmplitude,Math.abs(state.field_53537)/90);
+  boolean active=ours&&CapeMouvement.actif&&!((CapeApercu)(Object)state).xrn$apercuCape();cape.hidden=ours;xrn$cloth.visible=ours;if(!ours)return;
+  if(!active){for(int i=0;i<xrn$cubes.size();i++)System.arraycopy(xrn$rest[i],0,xrn$cubes.get(i).sides,0,xrn$rest[i].length);xrn$age=Float.NaN;return;}
+  float motion=Math.clamp(state.limbSwingAmplitude*2.2f+Math.abs(state.field_53537)/120,0,1.5f);
   float clothAge=(float)Math.floor(state.age*3f)/3f;motion=Math.round(motion*20f)/20f;
   if(xrn$age==clothAge&&xrn$id==state.id&&xrn$motion==motion&&xrn$strength==CapeMouvement.intensite)return;
   xrn$age=clothAge;xrn$id=state.id;xrn$motion=motion;xrn$strength=CapeMouvement.intensite;xrn$surface.calculer(clothAge,state.id,motion);
