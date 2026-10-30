@@ -1,7 +1,8 @@
 import {verifyCertificateProof} from './certificate.mjs';
 import {handleShop,purchaseRights,PRODUCTS,mode as shopMode} from './shop.mjs';
-import {primeStatus,primeStyle} from './prime.mjs';
+import {PRIME_EXCLUSIVE_CAPES,primeStatus,primeStyle} from './prime.mjs';
 import {primeCapeRights,primeCapeInfo} from './prime-assets.mjs';
+const primeGated=(env,uuid)=>env.XRN_PRIME_PUBLIC==='true'||uuid===env.XRN_GIFT_ADMIN_UUID||String(env.XRN_PRIME_DEV_ALLOWLIST||'').split(',').includes(uuid);
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 const random=n=>hex(crypto.getRandomValues(new Uint8Array(n)));
@@ -33,7 +34,7 @@ export class Directory {
     const all=await this.store.list({prefix:'p:',limit:2000});
     const pseudos=await Promise.all([...all.values()].filter(p=>p.expiresAt>now).map(async({uuid,pseudo,style:s,cosmetic,expiresAt})=>{
      const prime=await primeStatus(this.store,this.env,shopMode(this.env),uuid),cape=(await this.rights(uuid)).includes(cosmetic)?cosmetic:'';
-     return {uuid,pseudo,style:this.env.XRN_PRIME_PUBLIC==='true'?await primeStyle(this.store,this.env,shopMode(this.env),uuid,s):s,cosmetic:cape,customCape:await primeCapeInfo(this.store,this.env,shopMode(this.env),cape,uuid),prime:{active:prime.active,until:prime.until},expiresAt,verified:true};
+     return {uuid,pseudo,style:primeGated(this.env,uuid)?await primeStyle(this.store,this.env,shopMode(this.env),uuid,s):s,cosmetic:cape,customCape:await primeCapeInfo(this.store,this.env,shopMode(this.env),cape,uuid),prime:{active:prime.active,until:prime.until,tier:prime.tier,loyaltyMs:prime.loyaltyMs},expiresAt,verified:true};
     }));
     return json({pseudos});
    }
@@ -51,20 +52,20 @@ export class Directory {
     if(!nonce||nonce.until<now||nonce.scheme!=='certificate-v2')return json({error:'expired_challenge'},401);
     let identity;try{identity=await verifyCertificateProof(b,nonce);}catch{return json({error:'invalid_certificate_proof'},401);}
     const session=random(32),sessionHash=await hash(session),rights=await this.rights(identity.uuid);
-    const cosmetic=rights.includes(b.cosmetic)?b.cosmetic:'',chosenStyle=this.env.XRN_PRIME_PUBLIC==='true'?await primeStyle(this.store,this.env,shopMode(this.env),identity.uuid,style(b.style)):style(b.style);
+    const cosmetic=rights.includes(b.cosmetic)?b.cosmetic:'',chosenStyle=primeGated(this.env,identity.uuid)?await primeStyle(this.store,this.env,shopMode(this.env),identity.uuid,style(b.style)):style(b.style);
     await this.store.transaction(async tx=>{
      const old=await tx.get('p:'+identity.uuid);if(old?.sessionHash)await tx.delete('s:'+old.sessionHash);
      await tx.put('s:'+sessionHash,{uuid:identity.uuid,until:Math.min(now+3600000,identity.certificateExpiresAt),certificateExpiresAt:identity.certificateExpiresAt});
      await tx.put('p:'+identity.uuid,{uuid:identity.uuid,pseudo:identity.pseudo,style:chosenStyle,cosmetic,expiresAt:Math.min(now+90000,identity.certificateExpiresAt),sessionHash});
     });
-    return json({player:{uuid:identity.uuid},session,rights,expiresAt:Math.min(now+3600000,identity.certificateExpiresAt)});
+    return json({player:{uuid:identity.uuid},session,rights,permanentRights:['cape_job',...(await this.store.get('e:'+identity.uuid)||[]),...await purchaseRights(this.store,this.env,identity.uuid)],expiresAt:Math.min(now+3600000,identity.certificateExpiresAt)});
    }
    if(u.pathname==='/v2/me'&&request.method==='GET'){
     const token=(request.headers.get('Authorization')||'').replace(/^Bearer /,'');
     if(!/^[a-f0-9]{64}$/.test(token))return json({error:'session_required'},401);
     const session=await this.store.get('s:'+await hash(token));
     if(!session||session.until<=now)return json({error:'session_expired'},401);
-    return json({uuid:session.uuid,rights:await this.rights(session.uuid)});
+    return json({uuid:session.uuid,rights:await this.rights(session.uuid),permanentRights:['cape_job',...(await this.store.get('e:'+session.uuid)||[]),...await purchaseRights(this.store,this.env,session.uuid)]});
    }
    if(u.pathname==='/v1/challenge'&&request.method==='GET'){
     if(!await this.rate(ip,'challenge',12))return json({error:'rate_limit'},429);
@@ -92,7 +93,7 @@ export class Directory {
     const token=(request.headers.get('Authorization')||'').replace(/^Bearer /,'');
     if(!/^[a-f0-9]{64}$/.test(token))return json({error:'session_required'},401);
     const b=await body(request),key=await hash(token);
-    const ok=await this.store.transaction(async tx=>{const session=await tx.get('s:'+key);if(!session||session.until<=now||session.certificateExpiresAt<=now)return false;const p=await tx.get('p:'+session.uuid);if(!p||p.sessionHash!==key)return false;const rights=await this.rights(session.uuid,tx);p.style=this.env.XRN_PRIME_PUBLIC==='true'?await primeStyle(tx,this.env,shopMode(this.env),session.uuid,style(b.style)):style(b.style);p.cosmetic=rights.includes(b.cosmetic)?b.cosmetic:'';p.expiresAt=Math.min(now+90000,session.certificateExpiresAt||Infinity);session.until=Math.min(now+3600000,session.certificateExpiresAt||Infinity);await tx.put('s:'+key,session);await tx.put('p:'+p.uuid,p);return true;});
+    const ok=await this.store.transaction(async tx=>{const session=await tx.get('s:'+key);if(!session||session.until<=now||session.certificateExpiresAt<=now)return false;const p=await tx.get('p:'+session.uuid);if(!p||p.sessionHash!==key)return false;const rights=await this.rights(session.uuid,tx);p.style=primeGated(this.env,session.uuid)?await primeStyle(tx,this.env,shopMode(this.env),session.uuid,style(b.style)):style(b.style);p.cosmetic=rights.includes(b.cosmetic)?b.cosmetic:'';p.expiresAt=Math.min(now+90000,session.certificateExpiresAt||Infinity);session.until=Math.min(now+3600000,session.certificateExpiresAt||Infinity);await tx.put('s:'+key,session);await tx.put('p:'+p.uuid,p);return true;});
     return ok?json({ok:true}):json({error:'session_expired'},401);
    }
    return json({error:'not_found'},404);
@@ -101,7 +102,9 @@ export class Directory {
  async rights(uuid,store=this.store){
   const granted=[...(await store.get('e:'+uuid)||[]),...await purchaseRights(store,this.env,uuid)];
   const custom=await primeCapeRights(store,this.env,shopMode(this.env),uuid);
-  return [...PRODUCTS.filter(p=>p.amount===0||(Array.isArray(granted)&&granted.includes(p.id))).map(p=>p.id),...custom];
+  const preview=this.env.XRN_PRIME_PUBLIC==='true'||uuid===this.env.XRN_GIFT_ADMIN_UUID||String(this.env.XRN_PRIME_DEV_ALLOWLIST||'').split(',').includes(uuid);
+  const catalogue=preview&&this.env.XRN_PRIME_CATALOGUE_ENABLED==='true'&&(await primeStatus(store,this.env,shopMode(this.env),uuid)).active;
+  return [...PRODUCTS.filter(p=>p.amount===0||catalogue||(Array.isArray(granted)&&granted.includes(p.id))).map(p=>p.id),...custom,...(catalogue?PRIME_EXCLUSIVE_CAPES:[])];
  }
  async alarm(){
   const now=Date.now();let keep=false;

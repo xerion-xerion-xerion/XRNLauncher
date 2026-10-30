@@ -1,5 +1,5 @@
 CONFIDENTIALITÉ — XRN LAUNCHER
-Version du 29 octobre 2026 — XRN 4.10.0
+Version du 30 octobre 2026 — XRN 4.12.0
 
 Responsable et contact
 Xerion, développeur du projet XRN Launcher. Pour toute question ou demande concernant vos données : xrnlauncher@gmail.com.
@@ -43,3 +43,10 @@ Essential peut être téléchargé automatiquement depuis Modrinth pour une inst
 
 
 Mods recommandés : les téléchargements officiels transmettent les informations réseau habituelles à Modrinth et à ses distributeurs. Aucun jeton Minecraft n’est envoyé pour ces téléchargements. Langue : la préférence français/anglais est conservée localement et partagée entre le launcher et le menu XRN.
+
+
+XRNPrime et images importées
+Le relais conserve par UUID Minecraft l’état de l’abonnement, les références Stripe utiles à sa vérification et à sa résiliation, les périodes validées servant à la couleur d’ancienneté, les accès offerts et les tenues. Les codes complets ne sont pas conservés par le service ; leur empreinte permet une utilisation unique.
+Une image importée et son nom sont transmis au service XRN après votre envoi. Le développeur peut examiner la texture complète et ses deux faces pour décider de l’autoriser ou de la refuser. Ce contrôle est manuel : aucun service tiers de classification automatique d’images n’est utilisé. Les images en attente ne sont pas publiées aux joueurs. Les images refusées sont retirées du stockage de textures ; l’état de traitement et le compteur d’import restent enregistrés pour éviter les contournements de quota.
+Lorsqu’une cape personnelle validée est équipée, sa texture et son empreinte sont accessibles aux autres clients XRN pour afficher cette cape. La publication cesse à l’expiration de l’accès Prime ou après suppression. Le badge, son palier d’ancienneté et les couleurs choisies sont également partagés avec les autres joueurs XRN pendant l’utilisation du client. Vous pouvez masquer le badge dans les options du pseudo.
+Vous pouvez supprimer vos images personnelles depuis « Mes imports », même après expiration de Prime. Les images restantes peuvent être conservées pour une réactivation ultérieure ; pour une suppression de l’ensemble des données de votre compte, contactez xrnlauncher@gmail.com. Les états de paiement et justificatifs nécessaires au suivi des achats sont distincts des images. XRN ne reçoit pas votre numéro de carte bancaire.

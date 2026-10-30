@@ -13,22 +13,23 @@
   if(!products.some(p=>p.id===selected))selected=products[0]?.id||'';
   const box=$('shopProducts'),scroll=box.scrollTop;box.replaceChildren();
   for(const p of products){const button=document.createElement('button');button.type='button';button.className='shop-product';button.setAttribute('aria-pressed',String(p.id===selected));
-   const img=document.createElement('img');img.src=p.animated?p.preview.replace('.gif','-poster.png'):p.preview;img.alt='';const text=document.createElement('span'),title=document.createElement('strong'),sub=document.createElement('small'),label=document.createElement('span');title.textContent=p.name;sub.textContent=p.animated?'Cape animée · Espace':(p.id==='cape_job'?'Cape fixe · Mème':'Cape fixe');text.append(title,sub);label.className='shop-product-label';label.textContent=p.free?'OFFERTE':'APERÇU';button.append(img,text,label);button.onclick=()=>{selected=p.id;paused=false;render();};box.append(button);
+   const img=document.createElement('img');img.src=p.preview;img.alt='';const text=document.createElement('span'),title=document.createElement('strong'),sub=document.createElement('small'),label=document.createElement('span');title.textContent=p.name;sub.textContent=p.animated?'Cape animée · Espace':(p.id==='cape_job'?'Cape fixe · Mème':'Cape fixe');text.append(title,sub);label.className='shop-product-label';const owned=p.free||(data.rights||[]).includes(p.id);label.textContent=owned?'Disponible':'Verrouillée';if(!owned){const lock=document.createElement('img');lock.src='assets/lock.svg';lock.alt='Verrouillée';lock.className='cape-lock';label.prepend(lock);}button.append(img,text,label);button.onclick=()=>{selected=p.id;paused=false;render();};box.append(button);
   }
   box.scrollTop=scroll;
   const p=products.find(p=>p.id===selected)||products[0];if(!p)return;
   $('shopPreviewLabel').textContent=p.name;$('shopAnimationLabel').textContent=p.animated?'Animation en boucle':'Cape fixe';
   window.XrnCapeViewer?.select(p,paused);
   $('shopProductTitle').textContent=p.name;$('shopProductDescription').textContent=p.description;$('shopProductType').textContent=p.animated?'Cape animée':'Cape fixe';$('shopProductPrice').textContent=p.free?'Offerte':new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format((p.amount||299)/100);
+  if(p.primeExclusive)$('shopProductPrice').textContent='XRNPrime';
   const owned=p.free||(data.rights||[]).includes(p.id),equipped=data.equipped===p.id;
   $('shopEquip').disabled=busy||!api||!owned;$('shopEquip').textContent=owned?(equipped?'Retirer la cape':'Équiper la cape '+p.name):'Bientôt disponible';
   $('shopEquip').hidden=!owned;
-  $('shopBuy').hidden=p.free||owned;$('shopBuy').disabled=busy||!api?.checkout||!data.paymentAvailable||p.purchasable===false||!data.presence?.registered;
+  $('shopBuy').hidden=p.free||owned||p.primeExclusive;$('shopBuy').disabled=busy||!api?.checkout||!data.paymentAvailable||p.purchasable===false||!data.presence?.registered;
   $('shopBuy').textContent=(data.paymentAvailable?(data.paymentMode==='test'?'Tester l’achat · ':'Acheter · '):'Achat bientôt disponible · ')+new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format((p.amount||299)/100);
   $('shopMode').textContent=data.paymentAvailable?(data.paymentMode==='test'?'Stripe en mode test · Aucun débit réel':'Paiement sécurisé par Stripe'):'Service de paiement indisponible · Actualisez';
   $('shopPause').disabled=!p.animated;$('shopPause').textContent=paused?'Lire':'Pause';
   const giftSelect=$('shopGiftProduct'),previous=giftSelect.value;giftSelect.replaceChildren();
-  for(const item of products.filter(item=>!item.free)){const option=document.createElement('option');option.value=item.id;option.textContent=item.name+((data.rights||[]).includes(item.id)?' · déjà possédée':'');option.disabled=(data.rights||[]).includes(item.id);giftSelect.append(option);}
+  for(const item of products.filter(item=>!item.free&&!item.primeExclusive)){const option=document.createElement('option');option.value=item.id;option.textContent=item.name+((data.rights||[]).includes(item.id)?' · déjà possédée':'');option.disabled=(data.rights||[]).includes(item.id);giftSelect.append(option);}
   if([...giftSelect.options].some(o=>o.value===previous&&!o.disabled))giftSelect.value=previous;else if(giftSelect.selectedOptions[0]?.disabled)giftSelect.value=[...giftSelect.options].find(o=>!o.disabled)?.value||'';
   $('shopGiftRedeem').disabled=busy||!api?.gift||!data.gifts?.available||!data.presence?.registered||!giftSelect.value;
   $('shopGiftAdmin').hidden=!data.gifts?.canGenerate;

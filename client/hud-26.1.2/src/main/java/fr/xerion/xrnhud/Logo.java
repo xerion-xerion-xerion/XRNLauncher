@@ -52,8 +52,6 @@ public final class Logo {
         return Component.literal(CARACTERE)
                 .withStyle(style -> style.withFont(new FontDescription.Resource(POLICE)));
     }
-    public static net.minecraft.network.chat.Component decorerPrime(net.minecraft.network.chat.Component nom,boolean prime,boolean logo){
-        if(prime)nom=net.minecraft.network.chat.Component.empty().append(net.minecraft.network.chat.Component.literal("+ ").withStyle(s->s.withColor(0xC8ACFF))).append(nom);
-        return logo?decorer(nom):nom;
-    }
+    public static Component decorerPrime(Component nom,boolean prime,boolean logo){return decorerPrime(nom,prime,logo,0);}
+    public static Component decorerPrime(Component nom,boolean prime,boolean logo,int tier){if(!logo)return nom;if(!prime)return decorer(nom);String glyph=String.valueOf((char)(0xE010+Math.max(0,Math.min(4,tier))));return Component.empty().append(Component.literal(glyph).withStyle(style->style.withFont(new FontDescription.Resource(POLICE)).withColor(0xffffff).withShadowColor(0))).append(Component.literal(" ")).append(nom);}
 }

@@ -1,3 +1,11 @@
+## XRN 4.12.0
+
+Capes flottantes intégrées : pièces enregistrées avant la capture du modèle et modèles isolés par joueur. Textures d’élytres séparées du découpage des capes ; animations, équipement et pose de vol conservés. Logo symétrique, + sans contour noir.
+
+XRNPrime public : 4,99 €/mois, quatre capes exclusives animées (Pulsar, Zénith, Aurore, Équinoxe), catalogue temporaire, couleurs de pseudo animées, tenues et deux imports par période de sept jours. Validation manuelle obligatoire des images avant tout droit ou partage. Résiliation intégrée et codes développeur à usage unique, dont accès à vie. Le serveur vérifie droits, identité et expiration ; les achats à l’unité restent distincts.
+
+Client 1.51.0 fourni pour Fabric 1.21.11, 26.1.2 et 26.2. Les autres versions ne sont pas annoncées compatibles. Aucun code ni binaire de WaveyCapes n’est distribué ou vendu ; le rendu est une implémentation XRN indépendante.
+
 ## Correctif 4.10.1
 
 Le compte, le sélecteur de langue et les commandes de fenêtre ont des emplacements distincts. Vérification en français et en anglais, avec un pseudo long et une fenêtre de 1100 ou 1400 pixels.

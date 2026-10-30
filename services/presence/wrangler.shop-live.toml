@@ -5,14 +5,16 @@ compatibility_date = "2026-10-27"
 workers_dev = true
 
 [vars]
+XRN_CAPE_REVIEW_REQUIRED = "true"
 XRN_SHOP_MODE = "live"
 XRN_ALLOW_LIVE = "true"
 XRN_SHOP_RETURN_ORIGIN = "https://xrn-shop-live.schianotom667.workers.dev"
 XRN_LIVE_PRODUCT_IDS = "cape_space,cape_scream,cape_spine,cape_crimson,cape_eclipse,cape_rose,cape_seraphine,cape_moonlight"
 
-# Private Prime rollout. Public launch requires an explicit release decision.
+# XRNPrime public rollout authorized for release 4.12.0.
 XRN_PRIME_ENABLED = "true"
-XRN_PRIME_PUBLIC = "false"
+XRN_PRIME_CATALOGUE_ENABLED = "true"
+XRN_PRIME_PUBLIC = "true"
 XRN_PRIME_PRICE_ID = "price_1UVtQ6FlhUcFafcwTydjdLoM"
 
 [[durable_objects.bindings]]

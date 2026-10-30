@@ -7,7 +7,7 @@ public abstract class CapeSkinMixin {
  @Inject(method="getSkin",at=@At("RETURN"),cancellable=true,require=1)
  private void xrn$cape(CallbackInfoReturnable<PlayerSkin> ci){
   if(!CapeMouvement.externe())return;PlayerSkin skin=ci.getReturnValue();if(skin==null)return;var player=(AbstractClientPlayer)(Object)this;var client=Minecraft.getInstance();String chosen=client.player==player?Droits.equipe():Connus.cosmetique(player.getUUID());Identifier texture=Droits.texture(chosen);if(texture==null)return;
-  Cape asset=new Cape(texture);ci.setReturnValue(new PlayerSkin(skin.body(),asset,asset,skin.model(),skin.secure()));
+  Cape asset=new Cape(texture);ci.setReturnValue(new PlayerSkin(skin.body(),asset,new Cape(ElytraTextures.texture(chosen)),skin.model(),skin.secure()));
  }
  private record Cape(Identifier texture) implements ClientAsset.Texture {public Identifier id(){return texture;}public Identifier texturePath(){return texture;}}
 }

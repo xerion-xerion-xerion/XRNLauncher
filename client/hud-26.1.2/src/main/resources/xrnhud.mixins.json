@@ -25,7 +25,9 @@
     "CapeClothMixin",
     "CapePreviewMixin",
     "WaveyPreviewMixin",
-    "CapeSkinMixin"
+    "CapeSkinMixin",
+    "CapeLayerDataAccessor",
+    "CapeModelIsolationMixin"
   ],
   "injectors": {
     "defaultRequire": 0

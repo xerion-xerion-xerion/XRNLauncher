@@ -110,6 +110,62 @@
       "commercialReady": false,
       "amount": 199,
       "currency": "eur"
+    },
+    {
+      "id": "cape_prime_pulsar",
+      "name": "Pulsar",
+      "description": "Cape animée exclusive XRNPrime.",
+      "animated": true,
+      "preview": "assets/cosmetics/cape_prime_pulsar.gif",
+      "free": false,
+      "amount": 0,
+      "currency": "eur",
+      "primeExclusive": true,
+      "commercialReady": false,
+      "frames": 32,
+      "frameMillis": 75
+    },
+    {
+      "id": "cape_prime_zenith",
+      "name": "Zénith",
+      "description": "Cape animée exclusive XRNPrime.",
+      "animated": true,
+      "preview": "assets/cosmetics/cape_prime_zenith.gif",
+      "free": false,
+      "amount": 0,
+      "currency": "eur",
+      "primeExclusive": true,
+      "commercialReady": false,
+      "frames": 32,
+      "frameMillis": 75
+    },
+    {
+      "id": "cape_prime_aurore",
+      "name": "Aurore",
+      "description": "Cape animée exclusive XRNPrime.",
+      "animated": true,
+      "frames": 32,
+      "frameMillis": 75,
+      "preview": "assets/cosmetics/cape_prime_aurore.gif",
+      "free": false,
+      "amount": 0,
+      "currency": "eur",
+      "primeExclusive": true,
+      "commercialReady": true
+    },
+    {
+      "id": "cape_prime_equinoxe",
+      "name": "Équinoxe",
+      "description": "Cape animée exclusive XRNPrime.",
+      "animated": true,
+      "frames": 32,
+      "frameMillis": 75,
+      "preview": "assets/cosmetics/cape_prime_equinoxe.gif",
+      "free": false,
+      "amount": 0,
+      "currency": "eur",
+      "primeExclusive": true,
+      "commercialReady": true
     }
   ]
 }

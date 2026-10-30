@@ -4,7 +4,7 @@ const valid=id=>typeof id==='string'&&/^prime_[a-f0-9]{32}$/.test(id),dir=()=>pa
 let last=0,inFlight=null,current=null,pendingOutfit=null;
 function accountCheck(account){if(!account?.minecraftVerified||!presence.status().registered||presence.status().uuid!==account.id)throw Error('Connectez votre compte Microsoft dans XRN pour utiliser Prime.');}
 async function call(account,action,body={}){accountCheck(account);return presence.shop('prime/'+action,body);}
-function writeState(account,state,capes){const file=stateFile();util.ensureDir(path.dirname(file));fs.writeFileSync(file+'.tmp',JSON.stringify({schema:1,uuid:account.id,launched:true,active:state.active===true,until:state.until,verifiedUntil:Math.min(state.until||0,Date.now()+240000),capes:capes.map(c=>({id:c.id,name:c.name,sha256:c.sha256})),outfit:pendingOutfit?.uuid===account.id?pendingOutfit:undefined,updatedAt:Date.now()}));fs.renameSync(file+'.tmp',file);}
+function writeState(account,state,capes){const file=stateFile();util.ensureDir(path.dirname(file));fs.writeFileSync(file+'.tmp',JSON.stringify({schema:1,uuid:account.id,launched:true,active:state.active===true,tier:Math.max(0,Math.min(4,state.tier|0)),loyaltyMs:state.loyaltyMs||0,until:state.until,verifiedUntil:Math.min(state.until||0,Date.now()+240000),capes:capes.map(c=>({id:c.id,name:c.name,sha256:c.sha256})),outfit:pendingOutfit?.uuid===account.id?pendingOutfit:undefined,updatedAt:Date.now()}));fs.renameSync(file+'.tmp',file);}
 async function cacheCape(c){
  if(!valid(c.id)||!/^[a-f0-9]{64}$/.test(c.sha256||''))return '';
  util.ensureDir(dir());const file=path.join(dir(),c.id+'.png');
@@ -19,13 +19,13 @@ async function cachePublic(players){
 }
 async function refreshState(account,force=false){
  accountCheck(account);if(inFlight)return inFlight;if(!force&&current?.uuid===account.id&&Date.now()-last<45000)return current;
- inFlight=(async()=>{const status=await call(account,'status'),library=await call(account,'capes/list');await presence.refreshRights();const capes=library.capes.filter(c=>valid(c.id)&&/^[a-f0-9]{64}$/.test(c.sha256||''));
+ inFlight=(async()=>{const status=await call(account,'status'),library=await call(account,'capes/list');await presence.refreshRights();const capes=library.capes.filter(c=>(!c.state||c.state==='ready')&&valid(c.id)&&/^[a-f0-9]{64}$/.test(c.sha256||''));
  for(let i=0;i<capes.length;i+=3)await Promise.allSettled(capes.slice(i,i+3).map(cacheCape));writeState(account,status,capes);last=Date.now();current={...status,...library,uuid:account.id};return current;})();
  try{return await inFlight;}finally{inFlight=null;}
 }
 async function load(account){await presence.sync(account);const state=await refreshState(account,true),outfits=await call(account,'outfits/list');return {...state,...outfits,style:presence.selectedStyle(),equipped:presence.selectedCosmetic(),capes:state.capes};}
 async function action(account,verb,body={}){
- const allowed=['checkout','cancel','gifts/create','gifts/list','gifts/redeem','gifts/revoke','capes/upload','capes/delete','capes/rename','outfits/save','outfits/delete','outfits/equip'];if(!allowed.includes(verb))throw Error('Action Prime inconnue.');accountCheck(account);
+ const allowed=['checkout','cancel','gifts/create','gifts/list','gifts/redeem','gifts/revoke','capes/upload','capes/delete','capes/rename','capes/review-list','capes/review-preview','capes/review','outfits/save','outfits/delete','outfits/equip'];if(!allowed.includes(verb))throw Error('Action Prime inconnue.');accountCheck(account);
  const r=await call(account,verb,body);
  if(verb==='checkout'){const u=new URL(r.url);if(u.protocol!=='https:'||u.hostname!=='checkout.stripe.com'||u.username||u.password)throw Error('Lien Stripe refusé.');return {...r,url:u.href};}
  if(verb==='outfits/equip'){

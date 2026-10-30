@@ -68,6 +68,6 @@ public abstract class PlayerListEntryMixin {
         var uuid=((PlayerInfo)(Object)this).getProfile().id();String username=((PlayerInfo)(Object)this).getProfile().name();
         nom=moi?fr.xerion.xrnhud.NameTag.personnaliser(nom,username):fr.xerion.xrnhud.NameTag.distant(nom,username,uuid);
         boolean badge=moi?fr.xerion.xrnhud.NameTag.badge:fr.xerion.xrnhud.NameTag.badgeDistant(uuid);
-        cir.setReturnValue(Logo.decorerPrime(nom,fr.xerion.xrnhud.PrimeClient.actif(uuid),Logo.actif&&badge));
+        cir.setReturnValue(Logo.decorerPrime(nom,fr.xerion.xrnhud.PrimeClient.actif(uuid),Logo.actif&&badge,fr.xerion.xrnhud.PrimeClient.niveau(uuid)));
     }
 }

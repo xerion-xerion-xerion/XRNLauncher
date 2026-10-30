@@ -18,3 +18,5 @@
 .shop-gift-row{display:flex;gap:12px;align-items:center;justify-content:space-between;border-top:1px solid #302936;padding:10px 0;font-size:12px;max-width:960px}.shop-gift-row .btn{height:32px;font-size:11px}
 @media(max-width:1000px){.shop-gifts form{grid-template-columns:minmax(0,1fr) minmax(160px,220px)}#shopGiftRedeem{grid-column:1/-1;justify-self:end;width:154px}.shop-gifts{padding:18px}#shopGiftCreateForm{grid-template-columns:minmax(0,440px) 154px}}
 @media(max-width:760px){.shop-gifts form,#shopGiftCreateForm{grid-template-columns:minmax(0,1fr)}#shopGiftRedeem{grid-column:auto;justify-self:stretch;width:100%}#shopGiftResult{grid-template-columns:minmax(0,1fr) 80px}.shop-gifts{padding:16px}}
+
+.shop-product .cape-lock{display:inline-block;width:13px;height:15px;object-fit:contain;margin:0 6px 0 0;border:0;vertical-align:middle}.shop-product-label{display:flex;align-items:center;gap:4px}

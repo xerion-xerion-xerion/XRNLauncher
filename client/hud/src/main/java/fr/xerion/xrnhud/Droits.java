@@ -62,6 +62,7 @@ public final class Droits {
         Un seul type de cosmetique, pour l instant : les capes. La
         cape de l auteur est offerte, les autres se paient.              */
     public static final List<Cosmetique> CATALOGUE = new java.util.concurrent.CopyOnWriteArrayList<>(List.of(
+      new Cosmetique("cape_prime_aurore","Aurore","cape",0,"#B9A0EE",false),new Cosmetique("cape_prime_equinoxe","Équinoxe","cape",0,"#B9A0EE",false),new Cosmetique("cape_prime_pulsar","Pulsar","cape",0,"#B9A0EE",false),new Cosmetique("cape_prime_zenith","Zénith","cape",0,"#B9A0EE",false),
       new Cosmetique("cape_job", "Job Application", "cape", 0, "#E4ECF2", true),
       new Cosmetique("cape_space", "Singularite", "cape", 0, "#75DAEE", false),
       new Cosmetique("cape_scream", "Scream", "cape", 0, "#E4ECF2", false),
@@ -84,7 +85,9 @@ public final class Droits {
       for(int i=0;i<frames.length;i++)frames[i]=Identifier.of("xrnhud","textures/cosmetics/cape_space/"+String.format(java.util.Locale.ROOT,"%02d",i)+".png");
       ANIMATIONS.put("cape_space",frames);
     }
+    static {for(String id:List.of("cape_prime_pulsar","cape_prime_zenith","cape_prime_aurore","cape_prime_equinoxe")){Identifier[] frames=new Identifier[32];for(int i=0;i<frames.length;i++)frames[i]=Identifier.of("xrnhud","textures/cosmetics/"+id+"/"+String.format(java.util.Locale.ROOT,"%02d",i)+".png");ANIMATIONS.put(id,frames);}}
     public static Identifier texture(String id) {
+      if(List.of("cape_prime_pulsar","cape_prime_zenith","cape_prime_aurore","cape_prime_equinoxe").contains(id==null?"":id))return ANIMATIONS.get(id)[(int)((System.nanoTime()/75_000_000L)%32)];
       if(id!=null&&id.startsWith("prime_"))return PrimeClient.texture(id);
       if("cape_eclipse".equals(id))return Identifier.of("xrnhud","textures/cosmetics/cape_eclipse.png");
       if("cape_rose".equals(id))return Identifier.of("xrnhud","textures/cosmetics/cape_rose.png");
@@ -99,7 +102,7 @@ public final class Droits {
       Identifier[] frames=ANIMATIONS.get(id);
       return frames==null?null:frames[(int)((System.nanoTime()/("cape_space".equals(id)?60_000_000L:80_000_000L))%frames.length)];
     }
-    private static final Set<String> ACQUIS = new LinkedHashSet<>();
+    private static final Set<String> ACQUIS = new LinkedHashSet<>();private static final Set<String> PERMANENTS=new LinkedHashSet<>();private static boolean primeLease;
     private static String equipe = "";
     private static int etoiles = 0;
 
@@ -113,7 +116,7 @@ public final class Droits {
      * d'appeler le serveur lui-meme.
      */
     static void charger() {
-        ACQUIS.clear(); ACQUIS.add("cape_job");
+        ACQUIS.clear(); ACQUIS.add("cape_job");PERMANENTS.clear();PERMANENTS.add("cape_job");primeLease=false;
         String chemin = cheminFichier();
         if (chemin == null || chemin.isEmpty()) {
             LOGGER.info("Droits : aucun fichier trouve (ni la propriete, ni le dossier du jeu)");
@@ -137,6 +140,7 @@ public final class Droits {
                 return;
             }
             JsonObject o = racine.getAsJsonObject();
+            if(o.has("permanentRights")&&o.get("permanentRights").isJsonArray()){primeLease=true;for(var item:o.getAsJsonArray("permanentRights"))PERMANENTS.add(item.getAsString());}
             if (o.has("droits") && o.get("droits").isJsonArray()) {
                 JsonArray liste = o.getAsJsonArray("droits");
                 for (JsonElement e : liste) {
@@ -179,7 +183,7 @@ public final class Droits {
 
     /** Le joueur possede-t-il ce cosmetique ? */
     public static boolean possede(String id) {
-        return "cape_job".equals(id) || (id != null && ACQUIS.contains(id));
+        return "cape_job".equals(id) || (id != null && ACQUIS.contains(id)&&(!primeLease||PERMANENTS.contains(id)||PrimeClient.peutAnimer()));
     }
 
     /** Les cosmetiques que le joueur possede, dans l ordre du catalogue. */
@@ -193,7 +197,7 @@ public final class Droits {
 
     /** Le cosmetique porte. Une chaine vide : rien d equipe. */
     public static String equipe() {
-        return equipe;
+        return possede(equipe)?equipe:"";
     }
 
     /**

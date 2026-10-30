@@ -161,6 +161,7 @@ final class Theme {
         }
         if(border!=0){forme(c,x,y,w,h,border);forme(c,x+1,y+1,w-2,h-2,fill);}else forme(c,x,y,w,h,fill);
     }
+    static void cadenas(DrawContext c,int x,int y,int color){rect(c,x+2,y,5,1,color);rect(c,x+1,y+1,1,4,color);rect(c,x+7,y+1,1,4,color);arrondi(c,x,y+4,9,7,color,0);rect(c,x+4,y+6,1,3,0xFF19161D);}
     static void boutons(DrawContext c,TextRenderer font,java.util.List<? extends Object> children,int mx,int my){
         for(Object child:children)if(child instanceof net.minecraft.client.gui.widget.ButtonWidget b&&b.visible){
             boolean hover=b.active&&(mx>=b.getX()&&mx<b.getX()+b.getWidth()&&my>=b.getY()&&my<b.getY()+b.getHeight());

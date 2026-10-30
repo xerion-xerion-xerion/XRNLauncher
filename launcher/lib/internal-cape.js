@@ -1,0 +1,4 @@
+'use strict';
+const fs=require('fs'),path=require('path'),safe=require('./safe-path');
+async function prepare(gameDir,supported){if(!supported)return {status:'unsupported'};const root=path.resolve(gameDir),dir=safe.confine(root,path.join(root,'mods'));if(!fs.existsSync(dir))return {status:'internal'};let count=0;for(const name of fs.readdirSync(dir)){if(!/\.jar$/i.test(name))continue;const file=safe.confine(dir,path.join(dir,name),false);if(!require('./user-cape-mod').isWaveyCapes(file))continue;let backup=safe.confine(dir,file+'.disabled',false);if(fs.existsSync(backup))backup=safe.confine(dir,file+'.xrn-backup-'+Date.now()+'.disabled',false);fs.renameSync(file,backup);count++;}return {status:'internal',reason:count?'Capes flottantes XRN activées. L’ancien rendu externe est conservé dans les fichiers désactivés.':''};}
+module.exports={prepare};

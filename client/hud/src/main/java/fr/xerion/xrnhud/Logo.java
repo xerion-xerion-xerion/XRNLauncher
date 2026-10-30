@@ -52,8 +52,6 @@ public final class Logo {
         return Text.literal(CARACTERE)
                 .styled(style -> style.withFont(new StyleSpriteSource.Font(POLICE)));
     }
-    public static net.minecraft.text.Text decorerPrime(net.minecraft.text.Text nom,boolean prime,boolean logo){
-        if(prime)nom=net.minecraft.text.Text.empty().append(net.minecraft.text.Text.literal("+ ").styled(s->s.withColor(0xC8ACFF))).append(nom);
-        return logo?decorer(nom):nom;
-    }
+    public static Text decorerPrime(Text nom,boolean prime,boolean logo){return decorerPrime(nom,prime,logo,0);}
+    public static Text decorerPrime(Text nom,boolean prime,boolean logo,int tier){if(!logo)return nom;if(!prime)return decorer(nom);String glyph=String.valueOf((char)(0xE010+Math.max(0,Math.min(4,tier))));return Text.empty().append(Text.literal(glyph).styled(style->style.withFont(new StyleSpriteSource.Font(POLICE)).withColor(0xffffff).withShadowColor(0))).append(Text.literal(" ")).append(nom);}
 }

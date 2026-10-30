@@ -1,3 +1,5 @@
+export const PRIME_LIFETIME_UNTIL=253402300799000;
+export const PRIME_EXCLUSIVE_CAPES=['cape_prime_pulsar','cape_prime_zenith','cape_prime_aurore','cape_prime_equinoxe'];
 // XRNPrime: server-owned billing, grants and cosmetic-only privileges.
 const json=(body,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
 const hex=b=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
@@ -7,9 +9,23 @@ const enabled=env=>env.XRN_PRIME_ENABLED==='true';
 const admin=(env,uuid)=>/^[a-f0-9]{32}$/.test(env.XRN_GIFT_ADMIN_UUID||'')&&uuid===env.XRN_GIFT_ADMIN_UUID;
 const id=(value,prefix)=>typeof value==='string'&&new RegExp('^'+prefix+'_[A-Za-z0-9]+$').test(value);
 export const PRIME={name:'XRNPrime',amount:499,currency:'eur',interval:'month',imports:2,windowMs:7*86400000,presets:5};
+export function addPrimeCoverage(member,start,end){
+ if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||end<=start)return;
+ const periods=[...(member.primePeriods||[]),[start,end]].sort((a,b)=>a[0]-b[0]),merged=[];
+ for(const period of periods){const last=merged.at(-1);if(last&&period[0]<=last[1])last[1]=Math.max(last[1],period[1]);else merged.push([...period]);}
+ while(merged.length>64&&merged[0][1]<=Date.now()){const old=merged.shift();member.primePastMs=(member.primePastMs||0)+old[1]-old[0];}member.primePeriods=merged;
+}
+export function primeTenure(member,now=Date.now()){
+ const ms=Math.max(0,(member.primePastMs||0)+(member.primePeriods||[]).reduce((n,[start,end])=>n+Math.max(0,Math.min(now,end)-start),0));
+ return {loyaltyMs:ms,tier:ms>=365*86400000?4:ms>=180*86400000?3:ms>=90*86400000?2:ms>=30*86400000?1:0};
+}
+async function migrateGiftTenure(store,mode,uuid){const member=await store.get(key(mode,uuid));if(!member?.giftUntil||member.primeGiftHistoryMigrated)return;
+ const rows=await store.list({prefix:'prime:code:'+mode+':',limit:1000});for(const gift of rows.values())if(gift.state==='used'&&gift.usedBy===uuid&&Number.isSafeInteger(gift.usedAt)&&Number.isSafeInteger(gift.days))addPrimeCoverage(member,gift.usedAt,gift.usedAt+gift.days*86400000);
+ member.primeGiftHistoryMigrated=true;await store.put(key(mode,uuid),member);
+}
 export async function primeStatus(store,env,mode,uuid,now=Date.now()){
  const data=await store.get(key(mode,uuid))||{},paid=data.billing?.active===true&&data.billing.until>now&&data.billing.checkedAt>now-300000,gift=data.giftUntil>now;
- const active=enabled(env)&&(paid||gift);return {active,until:active?Math.max(paid?data.billing.until:0,gift?data.giftUntil:0):0,source:paid?'stripe':gift?'gift':'none',cancelAtPeriodEnd:!!data.billing?.cancelAtPeriodEnd,subscriptionStatus:data.billing?.status||'none',hasSubscription:!!data.subscription,canCancel:!!data.subscription&&!['canceled','incomplete_expired'].includes(data.billing?.status)&&!data.billing?.cancelAtPeriodEnd};
+ const lifetime=data.lifetime===true;const active=enabled(env)&&(paid||gift||lifetime);return {...primeTenure(data,now),active,lifetime,until:active?(lifetime?PRIME_LIFETIME_UNTIL:Math.max(paid?data.billing.until:0,gift?data.giftUntil:0)):0,source:lifetime?'lifetime':paid?'stripe':gift?'gift':'none',cancelAtPeriodEnd:!!data.billing?.cancelAtPeriodEnd,subscriptionStatus:data.billing?.status||'none',hasSubscription:!!data.subscription,canCancel:!!data.subscription&&!['canceled','incomplete_expired'].includes(data.billing?.status)&&!data.billing?.cancelAtPeriodEnd};
 }
 export async function primeStyle(store,env,mode,uuid,style){const p=await primeStatus(store,env,mode,uuid);return {...style,animate:p.active&&style.animate===true,rainbow:p.active&&style.rainbow===true};}
 async function body(request,payload,max=4096){const b=JSON.parse(new TextDecoder().decode(await payload(request,max)));if(!b||typeof b!=='object'||Array.isArray(b))throw Error('invalid_body');return b;}
@@ -31,7 +47,7 @@ export async function refreshPrime(store,env,mode,uuid,stripe){
    if(active){const end=Number(item.current_period_end),start=Number(item.current_period_start);if(!Number.isSafeInteger(end)||!Number.isSafeInteger(start)||end<=start||end-start>32*86400||line.period?.start!==start||line.period?.end!==end)throw Error('period_mismatch');until=end*1000;active=until>Date.now();await store.put('prime:invoice:'+mode+':'+invoiceId,uuid);if(id(pi?.id,'pi'))await store.put('prime:pi:'+mode+':'+pi.id,uuid);}
   }
  }
- await store.transaction(async tx=>{const m=await tx.get(key(mode,uuid));if(m.sequence!==seq||m.subscription!==sub.id)return;m.billing={active,until,status:sub.status,invoice:invoiceId,cancelAtPeriodEnd:sub.cancel_at_period_end===true,checkedAt:Date.now()};await tx.put(key(mode,uuid),m);});
+ await store.transaction(async tx=>{const m=await tx.get(key(mode,uuid));if(m.sequence!==seq||m.subscription!==sub.id)return;if(active)addPrimeCoverage(m,Number(item.current_period_start)*1000,until);m.billing={active,until,status:sub.status,invoice:invoiceId,cancelAtPeriodEnd:sub.cancel_at_period_end===true,checkedAt:Date.now()};await tx.put(key(mode,uuid),m);});
  return primeStatus(store,env,mode,uuid);
 }
 async function checkout(request,directory,ctx){
@@ -62,15 +78,15 @@ async function gifts(request,directory,ctx,action){
  if(action==='redeem'){
   if(!fields(b,['code'])||!/^[A-Z0-9]{20,80}$/.test(normalize(b.code)))return json({error:'invalid_code'},400);
   const k='prime:code:'+mode+':'+await digest(normalize(b.code),env);
-  const result=await store.transaction(async tx=>{const g=await tx.get(k);if(!g||g.state!=='ready'||g.expiresAt<=now||g.recipient&&g.recipient!==uuid)return {error:'invalid_or_used_code'};const status=await primeStatus(tx,env,mode,uuid);if(status.active)return {error:'already_prime'};if(status.hasSubscription&&!['canceled','incomplete_expired'].includes(status.subscriptionStatus))return {error:'subscription_exists'};const m=await tx.get(key(mode,uuid))||{};m.giftUntil=now+g.days*86400000;await tx.put(key(mode,uuid),m);g.state='used';g.usedBy=uuid;g.usedAt=now;await tx.put(k,g);return {ok:true,until:m.giftUntil};});return json(result,result.error?409:200);
+  const result=await store.transaction(async tx=>{const g=await tx.get(k);if(!g||g.state!=='ready'||g.expiresAt<=now||g.recipient&&g.recipient!==uuid)return {error:'invalid_or_used_code'};const status=await primeStatus(tx,env,mode,uuid);if(status.lifetime||status.active&&!g.lifetime)return {error:'already_prime'};if(g.lifetime&&status.hasSubscription&&status.canCancel)return {error:'cancel_subscription_first'};if(!g.lifetime&&status.hasSubscription&&!['canceled','incomplete_expired'].includes(status.subscriptionStatus))return {error:'subscription_exists'};const m=await tx.get(key(mode,uuid))||{};if(g.lifetime){m.lifetime=true;m.lifetimeGiftId=g.id;m.lifetimeSince=now;addPrimeCoverage(m,now,PRIME_LIFETIME_UNTIL);}else{m.giftUntil=now+g.days*86400000;addPrimeCoverage(m,now,m.giftUntil);}await tx.put(key(mode,uuid),m);g.state='used';g.usedBy=uuid;g.usedAt=now;await tx.put(k,g);return {ok:true,lifetime:!!g.lifetime,until:g.lifetime?PRIME_LIFETIME_UNTIL:m.giftUntil};});return json(result,result.error?409:200);
  }
  if(!isAdmin)return json({error:'admin_required'},403);
  if(action==='create'){
-  if(!fields(b,['days','recipient','prefix'])||!Number.isInteger(b.days)||b.days<1||b.days>365||(b.recipient&&!/^[a-f0-9]{32}$/.test(b.recipient)))return json({error:'invalid_grant'},400);
-  const prefix=normalize(b.prefix||'PRIME');if(!/^[A-Z0-9]{1,12}$/.test(prefix))return json({error:'invalid_prefix'},400);const code=prefix+'-'+random().toUpperCase(),hash=await digest(normalize(code),env),g={id:random(),state:'ready',days:b.days,recipient:b.recipient||'',createdAt:now,expiresAt:now+30*86400000,createdBy:uuid};
-  await store.transaction(async tx=>{const k='prime:code:'+mode+':'+hash;await tx.put(k,g);await tx.put('prime:gift-id:'+mode+':'+g.id,k);await tx.put('prime:gift-list:'+mode+':'+now+':'+g.id,k);});return json({code,id:g.id,days:g.days,expiresAt:g.expiresAt});
+  if(!fields(b,['days','recipient','prefix','lifetime'])||(b.lifetime!==undefined&&typeof b.lifetime!=='boolean')||(!b.lifetime&&(!Number.isInteger(b.days)||b.days<1||b.days>365))||(b.lifetime&&b.days!==undefined&&b.days!==0)||(b.recipient&&!/^[a-f0-9]{32}$/.test(b.recipient)))return json({error:'invalid_grant'},400);
+  const prefix=normalize(b.prefix||'PRIME');if(!/^[A-Z0-9]{1,12}$/.test(prefix))return json({error:'invalid_prefix'},400);const code=prefix+'-'+random().toUpperCase(),hash=await digest(normalize(code),env),g={id:random(),state:'ready',days:b.lifetime?0:b.days,lifetime:b.lifetime===true,recipient:b.recipient||'',createdAt:now,expiresAt:now+30*86400000,createdBy:uuid};
+  await store.transaction(async tx=>{const k='prime:code:'+mode+':'+hash;await tx.put(k,g);await tx.put('prime:gift-id:'+mode+':'+g.id,k);await tx.put('prime:gift-list:'+mode+':'+now+':'+g.id,k);});return json({code,id:g.id,days:g.days,lifetime:g.lifetime,expiresAt:g.expiresAt});
  }
- if(action==='list'){if(!fields(b,[]))return json({error:'invalid_request'},400);const entries=await store.list({prefix:'prime:gift-list:'+mode+':',reverse:true,limit:50}),codes=[];for(const k of entries.values()){const g=await store.get(k);if(g)codes.push({id:g.id,state:g.state==='ready'&&g.expiresAt<=now?'expired':g.state,days:g.days,expiresAt:g.expiresAt,createdAt:g.createdAt,usedBy:g.usedBy||'',recipient:g.recipient});}return json({codes});}
+ if(action==='list'){if(!fields(b,[]))return json({error:'invalid_request'},400);const entries=await store.list({prefix:'prime:gift-list:'+mode+':',reverse:true,limit:50}),codes=[];for(const k of entries.values()){const g=await store.get(k);if(g)codes.push({id:g.id,lifetime:g.lifetime===true,state:g.state==='ready'&&g.expiresAt<=now?'expired':g.state,days:g.days,expiresAt:g.expiresAt,createdAt:g.createdAt,usedBy:g.usedBy||'',recipient:g.recipient});}return json({codes});}
  if(action==='revoke'){if(!fields(b,['id'])||!/^[a-f0-9]{32}$/.test(b.id||''))return json({error:'invalid_id'},400);const ok=await store.transaction(async tx=>{const k=await tx.get('prime:gift-id:'+mode+':'+b.id),g=k&&await tx.get(k);if(!g||g.state!=='ready')return false;g.state='revoked';await tx.put(k,g);return true;});return json({ok},ok?200:409);}
  return json({error:'not_found'},404);
 }
@@ -88,7 +104,7 @@ export async function handlePrime(request,directory,ctx){
   if(action==='webhook')return primeWebhook(request,directory,ctx);
   if(action.startsWith('gifts/'))return gifts(request,directory,ctx,action.slice(6));
   if(action==='checkout')return checkout(request,directory,ctx);
-  if(action==='status'){const b=await body(request,payload);if(!fields(b,[]))return json({error:'invalid_request'},400);const m=await store.get(key(mode,uuid));if(m?.subscription&&(!m.billing?.checkedAt||m.billing.checkedAt<Date.now()-60000)||await store.get('prime:pending:'+mode+':'+uuid))await finishPrimeCheckout(store,env,mode,uuid,stripe);const status=await primeStatus(store,env,mode,uuid);return json({...status,...PRIME,canGenerate:admin(env,uuid),uploadsConfigured:true});}
+  if(action==='status'){await migrateGiftTenure(store,mode,uuid);const b=await body(request,payload);if(!fields(b,[]))return json({error:'invalid_request'},400);const m=await store.get(key(mode,uuid));if(m?.subscription&&(!m.billing?.checkedAt||m.billing.checkedAt<Date.now()-60000)||await store.get('prime:pending:'+mode+':'+uuid))await finishPrimeCheckout(store,env,mode,uuid,stripe);const status=await primeStatus(store,env,mode,uuid);return json({...status,...PRIME,canGenerate:admin(env,uuid),catalogueIncluded:env.XRN_PRIME_CATALOGUE_ENABLED==='true'&&(env.XRN_PRIME_PUBLIC==='true'||uuid===env.XRN_GIFT_ADMIN_UUID||String(env.XRN_PRIME_DEV_ALLOWLIST||'').split(',').includes(uuid)),exclusiveCapes:PRIME_EXCLUSIVE_CAPES,uploadsConfigured:true,moderationRequired:env.XRN_CAPE_REVIEW_REQUIRED==='true'});}
   if(action==='cancel'){const b=await body(request,payload);if(!fields(b,[]))return json({error:'invalid_request'},400);const m=await store.get(key(mode,uuid));if(!m?.subscription)return json({error:'no_subscription'},409);await stripe(env,'subscriptions/'+encodeURIComponent(m.subscription),'POST',new URLSearchParams({cancel_at_period_end:'true'}));return json(await refreshPrime(store,env,mode,uuid,stripe));}
   if(action.startsWith('outfits/')){
    const b=await body(request,payload),sub=action.slice(8),prefix='prime:outfit:'+mode+':'+uuid+':';

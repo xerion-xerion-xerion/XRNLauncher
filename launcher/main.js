@@ -408,6 +408,7 @@ const XRN = {
 
     installationId() { return notif.idInstallation(); },
     async notification() {
+      if (require('./lib/features').channel === 'dev') return null;
       try {
         const r = await notif.verifier();
         XRN.report('NOTIF', r ? ('message recu : ' + r.id) : 'aucun message');
@@ -454,6 +455,7 @@ const XRN = {
         recente, celle que les telechargeurs utilisent. Le test est
         silencieux : sans reseau, on ne dit rien du tout.            */
     async chercherMiseAJour() {
+      if (require('./lib/features').channel === 'dev') return { ok: false, private: true };
       const courant = String((pkg && pkg.version) || '0.0.0');
       try {
         const r = await http.getJSON('https://api.github.com/repos/xerion-xerion-xerion/XRNLauncher/releases/latest');
@@ -808,7 +810,7 @@ const XRN = {
       if(pose.poses.length)XRN.report('MODS',pose.poses.join(', '));
       if(pose.echecs.length)throw new Error(pose.echecs.map(e=>e.nom+' : '+e.raison).join('\n'));
       if(!pose.compatibility.supported)bus.emit('mods:notice',{text:pose.compatibility.reason});
-      const capeMod=await require('./lib/user-cape-mod').ensure(entry.id,cfgm.load().gameDir,bus);
+      const capeMod=await require('./lib/internal-cape').prepare(cfgm.load().gameDir,pose.compatibility.supported);
       if(capeMod.reason)bus.emit('mods:notice',{text:capeMod.reason});
       const essentialResults=await require('./lib/recommended').ensure(entry.id,cfgm.load().gameDir,bus);
       const essential=essentialResults.find(r=>r.name==='Essential')||{};
