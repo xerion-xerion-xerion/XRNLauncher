@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('fs'),path=require('path'),util=require('./util'),cfg=require('./config'),presence=require('./presence');
 const collection=require('../cosmetics.json').products;
-const skinCache=new Map();
+const skinCache=new Map();let shopCache=null,shopCacheAt=0;
 async function skin(account){
  if(!account)return {name:'',dataUrl:''};
  let url=account.skinUrl||'';if(!url&&account.name)url=await require('./skins').parNom(account.name);
@@ -21,10 +21,10 @@ function selection(){try{const f=wardrobeFile();if(fs.statSync(f).size>4096)retu
 async function catalogue(account){
  const state=presence.status();
  const own=state.registered&&state.uuid===account?.id;
- if(own)await presence.refreshRights().catch(()=>{});
- let shop={mode:'unavailable',products:[]};try{shop=await require('./http').getJSON(presence.base()+'/v2/shop/catalogue');}catch{}
+ const rightsRequest=own?presence.refreshRights().catch(()=>{}):Promise.resolve();
+ let shop={mode:'unavailable',products:[]};try{if(shopCache&&Date.now()-shopCacheAt<60000)shop=shopCache;else{shop=await require('./http').getJSON(presence.base()+'/v2/shop/catalogue');shopCache=shop;shopCacheAt=Date.now();}}catch{}
  let gifts={available:false,canGenerate:false};if(own)try{gifts=await presence.shop('gifts/status',{});}catch{}
- return {gifts,products:collection.map(p=>({...p,paymentUrl:'',purchasable:shop.products?.find(s=>s.id===p.id)?.purchasable===true,amount:shop.products?.find(s=>s.id===p.id)?.amount??p.amount})),equipped:selection(),rights:own?presence.status().rights:['cape_job'],presence:{...presence.status(),registered:own},connected:account?.minecraftVerified===true,paymentAvailable:['test','live'].includes(shop.mode),paymentMode:shop.mode};
+ await rightsRequest;return {gifts,products:collection.map(p=>({...p,paymentUrl:'',purchasable:shop.products?.find(s=>s.id===p.id)?.purchasable===true,amount:shop.products?.find(s=>s.id===p.id)?.amount??p.amount})),equipped:selection(),rights:own?presence.status().rights:['cape_job'],presence:{...presence.status(),registered:own},connected:account?.minecraftVerified===true,paymentAvailable:['test','live'].includes(shop.mode),paymentMode:shop.mode};
 }
 function requireSession(account){if(!account?.minecraftVerified||!presence.status().registered||presence.status().uuid!==account.id)throw Error('Connectez votre compte Minecraft au relais avant de tester un achat.');}
 async function checkout(account,id){

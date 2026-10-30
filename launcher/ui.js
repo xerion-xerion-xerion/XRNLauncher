@@ -606,6 +606,7 @@ const Splash = {
       if (name === 'login') Login.refresh();
       if (name === 'home') Home.refresh();
       if (name === 'mods') setTimeout(() => Mods.refresh(), 0);
+      if (name === 'discover') setTimeout(() => Catalog.refresh(), 0);
       if (name === 'boutique') window.XrnShop?.refresh();
       if (name === 'prime') window.XrnPrime?.refresh();
 
@@ -1340,7 +1341,7 @@ const Splash = {
       this.renderIntegre(etat.integres || []);
       this.renderList(etat.mods);
       this.renderLoader(etat);
-      await Catalog.refresh();
+
     },
 
     /*  Le mod embarque : la version vient du nom du jar integre et la

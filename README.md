@@ -1,3 +1,13 @@
+## XRN 4.13.0
+
+Cadrage corrigé sur les capes rigides et flottantes ; atlas correspondant au modèle carré et aperçu de collection au ratio 10:16. Logo du launcher réutilisé dans le name tag, avec un + contenu dans sa hauteur. Toutes les couleurs de pseudo restent gratuites.
+
+Studio Prime recto-verso, cadrage et bordures ; contrôle automatique des imports via Cloudflare Workers AI, bloquant en cas d’erreur ou de refus. Animation de confirmation après paiement vérifié et droit reçu. Catalogue Modrinth séparé du gestionnaire de mods. Installateur détaillant les composants, le téléchargement, la destination et la conservation des données.
+
+FPS Plus retire le plafond local d’images par seconde et restaure les réglages précédents à sa désactivation. Les textures de cape en jeu utilisent deux fois moins de pixels que la 4.12. Optimiseurs PvP d’affichage : budget des particules de cristaux, perles, ancres et nourriture ; aucun paquet, délai serveur ou comportement de combat modifié. Le gain dépend de la scène et du matériel ; aucune garantie de bannissement impossible n’est annoncée.
+
+Client 1.52.0 : Fabric 1.21.11, 26.1.2 et 26.2 vérifiés. L’historique ci-dessous décrit les versions précédentes.
+
 ## XRN 4.12.0
 
 Capes flottantes intégrées : pièces enregistrées avant la capture du modèle et modèles isolés par joueur. Textures d’élytres séparées du découpage des capes ; animations, équipement et pose de vol conservés. Logo symétrique, + sans contour noir.

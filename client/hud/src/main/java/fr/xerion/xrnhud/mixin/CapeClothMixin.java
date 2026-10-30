@@ -17,7 +17,8 @@ public abstract class CapeClothMixin {
  @Inject(method="<init>",at=@At("TAIL"),require=1)
  private void xrn$creer(ModelPart root,CallbackInfo ci){
   xrn$cloth=cape.getChild("xrn_cloth");xrn$cubes=((CapePartsAccessor)(Object)xrn$cloth).xrn$cubes();xrn$rest=new ModelPart.Quad[xrn$cubes.size()][];
-  for(int i=0;i<xrn$cubes.size();i++){var cube=xrn$cubes.get(i);for(int q=0;q<cube.sides.length;q++){var face=cube.sides[q];ModelPart.Vertex[] v=new ModelPart.Vertex[4];for(int k=0;k<4;k++){var old=face.vertices()[k];v[k]=new ModelPart.Vertex(old.x(),old.y(),old.z(),old.u(),old.v()*2);}cube.sides[q]=new ModelPart.Quad(v,new Vector3f(face.direction()));}xrn$rest[i]=cube.sides.clone();}
+  var flat=((CapePartsAccessor)(Object)cape).xrn$cubes().getFirst().sides;
+  for(int i=0;i<xrn$cubes.size();i++){var cube=xrn$cubes.get(i);for(int q=0;q<cube.sides.length;q++){var side=cube.sides[q];ModelPart.Quad reference=null;for(var candidate:flat)if(candidate.direction().dot(side.direction())>.99f){reference=candidate;break;}if(reference==null)throw new IllegalStateException("Missing cape UV face");var a=reference.vertices()[0];var b=reference.vertices()[1];var d=reference.vertices()[3];var ab=new Vector3f(b.x()-a.x(),b.y()-a.y(),b.z()-a.z());var ad=new Vector3f(d.x()-a.x(),d.y()-a.y(),d.z()-a.z());ModelPart.Vertex[] vertices=new ModelPart.Vertex[4];for(int k=0;k<4;k++){var old=side.vertices()[k];var ap=new Vector3f(old.x()-a.x(),old.y()-a.y(),old.z()-a.z());float u=ap.dot(ab)/ab.lengthSquared(),v=ap.dot(ad)/ad.lengthSquared();vertices[k]=new ModelPart.Vertex(old.x(),old.y(),old.z(),a.u()+u*(b.u()-a.u())+v*(d.u()-a.u()),a.v()+u*(b.v()-a.v())+v*(d.v()-a.v()));}cube.sides[q]=new ModelPart.Quad(vertices,new Vector3f(side.direction()));}xrn$rest[i]=cube.sides.clone();}
   xrn$surface=new CapeSurface();xrn$cloth.visible=false;
  }
  @Inject(method="setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V",at=@At("TAIL"),require=1)
@@ -25,8 +26,9 @@ public abstract class CapeClothMixin {
   boolean ours=state.skinTextures!=null&&state.skinTextures.cape()!=null&&"xrnhud".equals(state.skinTextures.cape().texturePath().getNamespace());
   boolean active=ours&&CapeMouvement.actif&&!CapeMouvement.externe()&&!((CapeApercu)(Object)state).xrn$apercuCape();cape.hidden=active;xrn$cloth.visible=active;if(!active)return;
   float motion=Math.max(state.limbSwingAmplitude,Math.abs(state.field_53537)/90);
-  if(xrn$age==state.age&&xrn$id==state.id&&xrn$motion==motion&&xrn$strength==CapeMouvement.intensite)return;
-  xrn$age=state.age;xrn$id=state.id;xrn$motion=motion;xrn$strength=CapeMouvement.intensite;xrn$surface.calculer(state.age,state.id,motion);
+  float clothAge=(float)Math.floor(state.age*3f)/3f;motion=Math.round(motion*20f)/20f;
+  if(xrn$age==clothAge&&xrn$id==state.id&&xrn$motion==motion&&xrn$strength==CapeMouvement.intensite)return;
+  xrn$age=clothAge;xrn$id=state.id;xrn$motion=motion;xrn$strength=CapeMouvement.intensite;xrn$surface.calculer(clothAge,state.id,motion);
   for(int i=0;i<xrn$cubes.size();i++){
    float p=(xrn$surface.angles[i]+xrn$surface.angles[i+1])*.5f,s=(xrn$surface.lateraux[i]+xrn$surface.lateraux[i+1])*.5f;
    for(int q=0;q<xrn$rest[i].length;q++){

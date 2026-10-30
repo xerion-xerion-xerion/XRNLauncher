@@ -6,6 +6,7 @@ workers_dev = true
 
 [vars]
 XRN_CAPE_REVIEW_REQUIRED = "true"
+XRN_CAPE_MODERATION = "automatic"
 XRN_SHOP_MODE = "live"
 XRN_ALLOW_LIVE = "true"
 XRN_SHOP_RETURN_ORIGIN = "https://xrn-shop-live.schianotom667.workers.dev"
@@ -24,3 +25,6 @@ class_name = "Directory"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Directory"]
+
+[ai]
+binding = "AI"

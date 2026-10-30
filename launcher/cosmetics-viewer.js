@@ -33,7 +33,7 @@
   }catch{if(g===generation)$('shopSkinCaption').textContent='Texture de cape indisponible.';}
  }
  function update(now){
-  if(viewer&&images.length&&$('view-boutique').classList.contains('active')&&!document.hidden&&now-lastTime>=frameMillis){
+  if(viewer&&images.length&&$('view-boutique').classList.contains('active')&&!document.hidden&&document.hasFocus()&&now-lastTime>=frameMillis){
    const i=paused?0:Math.floor(now/frameMillis)%images.length;if(i!==frameIndex){const c=viewer.capeCanvas;c.getContext('2d').drawImage(images[i],0,0,c.width,c.height);if(viewer.capeTexture)viewer.capeTexture.needsUpdate=true;viewer.render();frameIndex=i;}lastTime=now;
   }
   requestAnimationFrame(update);

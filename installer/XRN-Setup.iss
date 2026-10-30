@@ -86,6 +86,8 @@ french.FinishedLabel=Installation terminée. Le launcher est prêt et vos donné
 
 [Code]
 var
+  ComponentsPage: TOutputMsgWizardPage;
+  SummaryPage: TOutputMsgWizardPage;
   PrivacyPage: TWizardPage;
   PrivacyRead: TNewCheckBox;
   PrivacyMemo: TRichEditViewer;
@@ -113,6 +115,7 @@ begin
   WizardForm.WelcomeLabel1.Caption := CustomMessage('WelcomeLabel1');
   WizardForm.WelcomeLabel2.Caption := CustomMessage('WelcomeLabel2');
   WizardForm.FinishedLabel.Caption := CustomMessage('FinishedLabel');
+  ComponentsPage := CreateOutputMsgPage(wpWelcome, 'Votre installation XRN', 'Le launcher et vos parties restent indépendants.', 'Application : XRN Launcher {#AppVersion}, pour Windows 10 / 11 64 bits.' + #13#10#13#10 + 'Inclus : gestion des versions, mods compatibles, comptes Microsoft, captures et cosmétiques.' + #13#10#13#10 + 'Téléchargement : environ ' + IntToStr({#PayloadDownloadBytes} div 1048576) + ' Mo. Le fichier sera vérifié avant extraction.' + #13#10#13#10 + 'Minecraft et Java seront préparés séparément selon la version choisie. Aucun jeu existant ne sera supprimé par cette installation.' + #13#10#13#10 + 'Aucun droit administrateur nécessaire.');
   PrivacyPage := CreateCustomPage(wpLicense, 'Votre confidentialité', 'Les informations utilisées par XRN et vos moyens de contact.');
   PrivacyMemo := TRichEditViewer.Create(PrivacyPage);
   PrivacyMemo.Parent := PrivacyPage.Surface;
@@ -128,6 +131,7 @@ begin
   PrivacyRead.Caption := 'J’ai lu la politique de confidentialité de XRN.';
   PrivacyRead.Checked := WizardSilent and (ExpandConstant('{param:ACCEPTTERMS|0}') = '1');
   PrivacyRead.OnClick := @PrivacyChanged;
+  SummaryPage := CreateOutputMsgPage(wpSelectTasks, 'Prêt à installer', 'Vérifiez les éléments avant de continuer.', 'Destination : voir le récapitulatif ci-dessous.' + #13#10#13#10 + 'Le programme sera installé dans votre profil Windows. Vos comptes, mods et sauvegardes restent dans le dossier de données du launcher.' + #13#10#13#10 + 'Le raccourci du Bureau dépend de votre choix à l’étape précédente. Le menu Démarrer permettra aussi de retrouver XRN.' + #13#10#13#10 + 'Les téléchargements, les empreintes et l’extraction sont suivis étape par étape.');
   DownloadPage := CreateDownloadPage('Téléchargement de XRN', 'Les fichiers sont vérifiés avant leur installation.', nil);
   DownloadPage.ShowBaseNameInsteadOfUrl := True;
   ExtractionPage := CreateOutputProgressPage('Préparation de XRN', 'Préparation des composants du launcher.');
@@ -135,6 +139,7 @@ end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
+  if CurPageID = SummaryPage.ID then SummaryPage.MsgLabel.Caption := 'Destination : ' + WizardDirValue + #13#10#13#10 + 'Composants : launcher XRN {#AppVersion}, gestion des versions, mods et cosmétiques.' + #13#10#13#10 + 'Vos jeux, sauvegardes et comptes sont conservés dans le dossier de données. Le téléchargement est vérifié avant extraction.' + #13#10#13#10 + 'Les raccourcis suivent votre sélection à l’étape précédente.';
   if CurPageID = PrivacyPage.ID then WizardForm.NextButton.Enabled := PrivacyRead.Checked;
   if CurPageID = wpInstalling then WizardForm.FilenameLabel.Visible := False;
 end;

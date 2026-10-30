@@ -303,5 +303,14 @@
   "Bientôt disponible": "Not owned",
   "Aucun achat en attente.": "No pending purchases.",
   "Équinoxe": "Equinox",
-  "Zénith": "Zenith"
+  "Zénith": "Zenith",
+  "Optimiseurs": "Optimizers",
+  "OPTIMISEURS": "OPTIMIZERS",
+  "Cristaux": "Crystals",
+  "Perles": "Pearls",
+  "Ancres": "Anchors",
+  "Nourriture": "Food",
+  "Particules lointaines": "Distant particles",
+  "Rendu local uniquement, sans modifier les delais.": "Local rendering only; server delays unchanged.",
+  "Particules evitees": "Particles skipped"
 }

@@ -1,5 +1,5 @@
 CONDITIONS D’UTILISATION — XRN LAUNCHER
-Version du 30 octobre 2026 — XRN 4.12.0
+Version du 30 octobre 2026 — XRN 4.13.0
 
 1. Le projet
 XRN Launcher est un logiciel indépendant développé par Xerion. Contact : xrnlauncher@gmail.com. Il n’est ni développé, ni approuvé par Mojang ou Microsoft. Minecraft et leurs autres marques appartiennent à leurs titulaires.
@@ -30,6 +30,8 @@ Les cosmétiques sont des éléments visuels numériques liés au compte Minecra
 
 XRNPrime
 XRNPrime coûte 4,99 € par mois, avec renouvellement mensuel automatique. Le montant est présenté avant confirmation sur Stripe. La résiliation du renouvellement est accessible directement dans l’onglet XRNPrime ; l’accès reste disponible jusqu’à la fin de la période déjà payée. Les accès offerts par code n’entraînent aucun prélèvement. Un code portant la mention « À vie » accorde un accès sans échéance mensuelle ; un code non utilisé expire après trente jours et ne sert qu’une fois.
-Pendant la période active, Prime donne accès au catalogue de capes, aux quatre capes animées exclusives Pulsar, Zénith, Aurore et Équinoxe, aux effets de pseudo animés et multicolores, aux tenues enregistrées et à deux imports de capes par période glissante de sept jours. Les capes achetées à l’unité restent acquises après expiration de Prime ; les autres avantages temporaires sont verrouillés.
-Les imports sont adaptés au format du client et restent inutilisables en jeu jusqu’à validation manuelle par le développeur. Les images de nudité, à caractère sexuel, haineux ou de violence graphique sont refusées. N’importez que des images dont vous avez les droits nécessaires. La validation d’une image ne constitue pas une certification de droits d’auteur. La suppression d’une image ne recrédite pas un import consommé dans les sept derniers jours.
+Pendant la période active, Prime donne accès au catalogue de capes, aux quatre capes animées exclusives Pulsar, Zénith, Aurore et Équinoxe, au studio de capes à deux faces, au cadrage et aux bordures, aux tenues enregistrées et à deux imports de capes par période glissante de sept jours. Les capes achetées à l’unité restent acquises après expiration de Prime ; les autres avantages temporaires sont verrouillés.
+Les imports sont adaptés au format du client et restent inutilisables en jeu jusqu’à vérification automatique via Cloudflare Workers AI. Les images de nudité, à caractère sexuel, haineux ou de violence graphique sont refusées. N’importez que des images dont vous avez les droits nécessaires. La validation d’une image ne constitue pas une certification de droits d’auteur. La suppression d’une image ne recrédite pas un import consommé dans les sept derniers jours.
 Pour une demande relative à votre achat, à une rétractation, à un remboursement ou à un contenu importé, contactez xrnlauncher@gmail.com en précisant la référence disponible dans votre compte. Aucune renonciation générale aux droits légaux du consommateur n’est imposée par ces conditions.
+
+Les couleurs du pseudo, dégradés fixes ou animés et arc-en-ciel restent disponibles sans abonnement. Les optimiseurs fournis modifient le rendu local ; ils ne contournent pas les délais du serveur. Chaque serveur définit les modifications autorisées. Aucun statut universel « anti-bannissement » n’est promis.

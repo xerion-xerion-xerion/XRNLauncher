@@ -1,12 +1,16 @@
 (function(){
  'use strict';const api=window.XRN?.env?.cosmetics,$=id=>document.getElementById(id);
- let data=null,products=[],selected='cape_job',paused=false,busy=false,generation=0,pending=[],checking=false,lastCheck=0;
+ let data=null,products=[],selected='cape_job',paused=false,busy=false,generation=0,pending=[],checking=false,lastCheck=0,pendingAccount='';
+ function pendingKey(){return 'xrn-pending-orders:'+pendingAccount;}
+ function savePending(){if(pendingAccount)try{localStorage.setItem(pendingKey(),JSON.stringify(pending));}catch{}}
+ function loadPending(){const uuid=data?.presence?.registered?data.presence.uuid:'';const account=/^[a-f0-9]{32}$/i.test(uuid||'')?uuid:'';if(pendingAccount===account)return;pendingAccount=account;pending=[];if(account)try{const saved=JSON.parse(localStorage.getItem(pendingKey())||'[]');if(Array.isArray(saved))pending=saved.filter(id=>/^[a-f0-9]{40}$/.test(id)).slice(0,8);}catch{}}
+
  async function refresh(){
   const g=++generation;
   try{
    const result=api?await api.catalogue():{...await(await fetch('cosmetics.json')).json(),rights:['cape_job'],equipped:'',presence:{},connected:false};
-   if(g!==generation)return;data=result;products=result.products;render();if(data.gifts?.canGenerate)await giftHistory();
-   if(data.paymentAvailable&&data.presence?.registered&&api?.orders){const recent=await api.orders();pending=(recent.orders||[]).filter(o=>['open','creating'].includes(o.state)).slice(0,8).map(o=>o.order);$('shopCheckPayment').hidden=!pending.length;}
+   if(g!==generation)return;data=result;loadPending();products=result.products;render();if(data.gifts?.canGenerate)await giftHistory();
+   if(data.paymentAvailable&&data.presence?.registered&&api?.orders){const recent=await api.orders();pending=[...new Set([...pending,...(recent.orders||[]).filter(o=>['open','creating'].includes(o.state)).map(o=>o.order)])].slice(0,8);savePending();$('shopCheckPayment').hidden=!pending.length;}
   }catch{$('shopActionStatus').textContent='La collection est indisponible. Réessayez.';}
  }
  function render(){
@@ -45,11 +49,11 @@
  $('shopPause').onclick=()=>{paused=!paused;render();};
  $('shopBuy').onclick=async()=>{
   if(busy||!api?.checkout)return;busy=true;render();
-  try{const order=await api.checkout(selected);pending=[...new Set([...pending,order.order])];$('shopCheckPayment').hidden=false;$('shopActionStatus').textContent=order.test?'Page Stripe de test ouverte dans votre navigateur. Aucun débit réel.':'Page Stripe ouverte : vérifiez le montant avant de confirmer.';}catch(e){$('shopActionStatus').textContent=e.message;}finally{busy=false;render();}
+  try{const order=await api.checkout(selected);pending=[...new Set([...pending,order.order])];savePending();$('shopCheckPayment').hidden=false;$('shopActionStatus').textContent=order.test?'Page Stripe de test ouverte dans votre navigateur. Aucun débit réel.':'Page Stripe ouverte : vérifiez le montant avant de confirmer.';}catch(e){$('shopActionStatus').textContent=e.message;}finally{busy=false;render();}
  };
  async function checkPayments(){
   if(checking||!pending.length||!api?.paymentStatus)return;checking=true;lastCheck=Date.now();
-  try{for(const id of [...pending]){const result=await api.paymentStatus(id);if(['paid','revoked','expired'].includes(result.state)){pending=pending.filter(n=>n!==id);if(result.state==='paid'){$('shopActionStatus').textContent=(result.test?'Paiement de test confirmé. ':'Paiement confirmé. ')+'Cette cape est ajoutée à votre compte.';const current=await api.catalogue();data=current;products=current.products;render();}else $('shopActionStatus').textContent=result.state==='revoked'?'Achat remboursé ou contesté : cape retirée.':'Session expirée : aucun achat.';}}}catch(e){$('shopActionStatus').textContent=e.message;}finally{checking=false;$('shopCheckPayment').hidden=!pending.length;}
+  try{for(const id of [...pending]){const result=await api.paymentStatus(id);if(['paid','revoked','expired'].includes(result.state)){pending=pending.filter(n=>n!==id);if(result.state==='paid'){$('shopActionStatus').textContent=(result.test?'Paiement de test confirmé. ':'Paiement confirmé. ')+'Cette cape est ajoutée à votre compte.';const current=await api.catalogue();data=current;products=current.products;render();if(current.rights?.includes(result.product)){const product=products.find(p=>p.id===result.product);window.XrnPurchaseCelebration?.show({key:'cape:'+id,title:product?.name||'Nouvelle cape',image:product?.preview});}else pending.push(id);}else $('shopActionStatus').textContent=result.state==='revoked'?'Achat remboursé ou contesté : cape retirée.':'Session expirée : aucun achat.';}}}catch(e){$('shopActionStatus').textContent=e.message;}finally{savePending();checking=false;$('shopCheckPayment').hidden=!pending.length;}
  }
  $('shopCheckPayment').onclick=checkPayments;
  setInterval(()=>{if(document.visibilityState==='visible'&&$('view-boutique').classList.contains('active')&&Date.now()-lastCheck>10000)checkPayments();},3000);

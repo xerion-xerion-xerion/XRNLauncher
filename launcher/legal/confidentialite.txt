@@ -1,5 +1,5 @@
 CONFIDENTIALITÉ — XRN LAUNCHER
-Version du 30 octobre 2026 — XRN 4.12.0
+Version du 30 octobre 2026 — XRN 4.13.0
 
 Responsable et contact
 Xerion, développeur du projet XRN Launcher. Pour toute question ou demande concernant vos données : xrnlauncher@gmail.com.
@@ -47,6 +47,6 @@ Mods recommandés : les téléchargements officiels transmettent les information
 
 XRNPrime et images importées
 Le relais conserve par UUID Minecraft l’état de l’abonnement, les références Stripe utiles à sa vérification et à sa résiliation, les périodes validées servant à la couleur d’ancienneté, les accès offerts et les tenues. Les codes complets ne sont pas conservés par le service ; leur empreinte permet une utilisation unique.
-Une image importée et son nom sont transmis au service XRN après votre envoi. Le développeur peut examiner la texture complète et ses deux faces pour décider de l’autoriser ou de la refuser. Ce contrôle est manuel : aucun service tiers de classification automatique d’images n’est utilisé. Les images en attente ne sont pas publiées aux joueurs. Les images refusées sont retirées du stockage de textures ; l’état de traitement et le compteur d’import restent enregistrés pour éviter les contournements de quota.
+Une image importée et son nom sont transmis au service XRN après votre envoi. Cloudflare Workers AI analyse automatiquement la texture complète pour filtrer les contenus interdits. L’image n’est utilisable ou partagée qu’après une réponse d’acceptation. Une indisponibilité du service bloque l’import, sans attribuer de droit. Ce filtre peut se tromper ; un contenu peut être signalé à xrnlauncher@gmail.com. Les images refusées ne sont pas publiées. Les images acceptées et les métadonnées du contrôle sont conservées pour fournir le cosmétique. Les contrôles refusés ne consomment pas l’un des deux imports acceptés autorisés par période de sept jours.
 Lorsqu’une cape personnelle validée est équipée, sa texture et son empreinte sont accessibles aux autres clients XRN pour afficher cette cape. La publication cesse à l’expiration de l’accès Prime ou après suppression. Le badge, son palier d’ancienneté et les couleurs choisies sont également partagés avec les autres joueurs XRN pendant l’utilisation du client. Vous pouvez masquer le badge dans les options du pseudo.
 Vous pouvez supprimer vos images personnelles depuis « Mes imports », même après expiration de Prime. Les images restantes peuvent être conservées pour une réactivation ultérieure ; pour une suppression de l’ensemble des données de votre compte, contactez xrnlauncher@gmail.com. Les états de paiement et justificatifs nécessaires au suivi des achats sont distincts des images. XRN ne reçoit pas votre numéro de carte bancaire.

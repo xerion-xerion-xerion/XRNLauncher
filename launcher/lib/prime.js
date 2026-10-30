@@ -26,7 +26,7 @@ async function refreshState(account,force=false){
 async function load(account){await presence.sync(account);const state=await refreshState(account,true),outfits=await call(account,'outfits/list');return {...state,...outfits,style:presence.selectedStyle(),equipped:presence.selectedCosmetic(),capes:state.capes};}
 async function action(account,verb,body={}){
  const allowed=['checkout','cancel','gifts/create','gifts/list','gifts/redeem','gifts/revoke','capes/upload','capes/delete','capes/rename','capes/review-list','capes/review-preview','capes/review','outfits/save','outfits/delete','outfits/equip'];if(!allowed.includes(verb))throw Error('Action Prime inconnue.');accountCheck(account);
- const r=await call(account,verb,body);
+ let r;try{r=await call(account,verb,body);}catch(e){if(String(e.body||e.message).includes('image_rejected'))throw Error('✕ Image refusée : ce contenu n’est pas accepté pour une cape publique.');if(String(e.body||e.message).includes('moderation_unavailable'))throw Error('Vérification des images indisponible. Aucun import n’a été accepté ; réessayez plus tard.');throw e;}
  if(verb==='checkout'){const u=new URL(r.url);if(u.protocol!=='https:'||u.hostname!=='checkout.stripe.com'||u.username||u.password)throw Error('Lien Stripe refusé.');return {...r,url:u.href};}
  if(verb==='outfits/equip'){
   const o=r.outfit;await require('./cosmetics').equip(account,o.cosmetic);const file=path.join(config.load().gameDir,'config','xrnhud.json');let data={};try{if(fs.statSync(file).size>262144)throw Error('Fichier de réglages trop volumineux.');data=JSON.parse(fs.readFileSync(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}

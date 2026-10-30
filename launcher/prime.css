@@ -6,3 +6,8 @@
 .prime-cape-grid img{width:min(100%,210px);max-height:336px}.prime-mini-capes img{object-fit:cover}
 
 .prime-collection{align-items:start}.prime-cape-grid button{min-height:340px}.prime-cape-grid img{max-height:270px}.prime-preview{align-self:start}.prime-mini-capes{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}.prime-mini-capes img{width:34px;height:54px}.prime-benefits article{min-height:142px}
+
+/* The actual image is 10:16; grid stretch must never override its height. */
+.prime-cape-grid{align-content:start;align-items:start}.prime-cape-grid button{min-height:0;padding:20px 12px;gap:8px}.prime-cape-grid img:not(.prime-lock){flex:none;width:auto;height:240px;max-width:100%;max-height:none;aspect-ratio:10/16;object-fit:contain;margin:0 auto 10px}.prime-cape-grid small{min-height:24px}.prime-import-form input[type=file]::file-selector-button{background:#32263f;color:#eadff7;border:1px solid #77608c;border-radius:5px;padding:5px 12px;margin-right:12px;font:inherit;cursor:pointer}
+
+.prime-studio-preview{display:flex;align-items:center;gap:22px;min-height:170px;background:#19141f;padding:16px;border-radius:10px;margin-top:16px}.prime-studio-preview canvas{width:200px;height:160px;object-fit:contain}.prime-studio-preview p{color:var(--dim);font-size:12px}.prime-import-form{grid-template-columns:repeat(3,minmax(0,1fr))}.prime-import-form #primeUpload{height:40px}.prime-import-form input[type=file]{height:auto;min-height:40px;width:100%;font-size:11px}

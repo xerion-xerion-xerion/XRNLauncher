@@ -10,7 +10,7 @@ public final class NameTag {
   original.visit((style,value)->{int a=Math.max(start-at[0],0),b=Math.min(end-at[0],value.length());if(a<b)out.append(Component.literal(value.substring(a,b)).withStyle(style));at[0]+=value.length();return java.util.Optional.<Object>empty();},net.minecraft.network.chat.Style.EMPTY);return out;
  }
  public record Profil(boolean actif,boolean badge,boolean gradient,boolean nettoyer,int debut,int fin,boolean anime,boolean arcenciel){}
- public static Profil local(){return new Profil(actif,badge,gradient,masquerDecorations,debut,fin,anime&&PrimeClient.peutAnimer(),arcenciel&&PrimeClient.peutAnimer());}
+ public static Profil local(){return new Profil(actif,badge,gradient,masquerDecorations,debut,fin,anime,arcenciel);}
  public static Component personnaliser(Component original,String username){return appliquer(original,username,local());}
  public static Component distant(Component original,String username,java.util.UUID uuid){return appliquer(original,username,Connus.style(uuid));}
  public static boolean badgeDistant(java.util.UUID uuid){var p=Connus.style(uuid);return p==null||p.badge();}

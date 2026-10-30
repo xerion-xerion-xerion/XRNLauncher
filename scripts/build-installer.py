@@ -25,7 +25,7 @@ def main():
   folder=P(temp).resolve();assert folder.parent==P(tempfile.gettempdir()).resolve() and folder.name.startswith('xrn-setup-build-')
   for name in inputs:shutil.copy2(source/name,folder/name)
   script=folder/'XRN-Setup.iss';text=script.read_text(encoding='utf-8-sig');text=re.sub(r'#define AppVersion "[^"]+"','#define AppVersion "'+version+'"',text,count=1);script.write_text(text,encoding='utf-8-sig')
-  (folder/'payload.iss').write_text('#define PayloadHash "'+expected+'"\n#define PayloadBytes '+str(unpacked)+'\n',encoding='ascii')
+  (folder/'payload.iss').write_text('#define PayloadHash "'+expected+'"\n#define PayloadBytes '+str(unpacked)+'\n#define PayloadDownloadBytes '+str(payload.stat().st_size)+'\n',encoding='ascii')
   args=[str(a.iscc.resolve()),'/DOutputFolder='+str(out),'/DSetupRevision='+a.revision,'/DSetupBaseName='+a.name]
   if a.test_build:args.append('/DTestBuild')
   if a.test_url:args.append('/DPayloadUrl='+a.test_url)

@@ -125,7 +125,7 @@ final class Performance {
 
         Options.meteo(3);
         /*  Un plafond d images par seconde laisse la carte respirer. */
-        Options.ipsMax(ipsAvant>0?ipsAvant:260);
+        Options.ipsMax(260);
         Minecraft.getInstance().options.enableVsync().set(false);
     }
 
