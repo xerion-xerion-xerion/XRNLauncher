@@ -67,7 +67,7 @@ function pseudoSession() {
 }
 const bus = new EventEmitter();
 bus.setMaxListeners(64);
-bus.on('game:exit',()=>{session.game=null;presence.afterGameExit();});
+bus.on('game:exit',d=>{if(!session.game||session.game.attemptId===d.attemptId){session.game=null;presence.afterGameExit();}});
 
 /* Etat de session en memoire ---------------------------------------- */
 const session = {
@@ -759,6 +759,7 @@ const XRN = {
     clientBuilds() { return require('./lib/client-builds').manifest().map(b=>({minecraft:b.minecraft,loader:b.loader})); },
     async launch(opts) {
       const attempt=launchControl.begin(),checkpoint=()=>launchControl.check(attempt);
+      let spawned=false;bus.emit('game:preparing',{attemptId:attempt.id,version:opts.version});
       try{checkpoint();
       const acc = session.account;
       const offline = opts.offline;
@@ -830,10 +831,10 @@ const XRN = {
         world: opts.world || null,
         extraJavaArgs
       }, bus); } catch(error) { presence.afterGameExit();throw error; }
-      session.game = res;
+      spawned=true;session.game = res;
       cfgm.save({ lastVersion: entry.id, lastProfile: username });
       return res;
-      }catch(error){if(error.cancelled)presence.afterGameExit();throw error;}finally{launchControl.end(attempt);}
+      }catch(error){if(error.cancelled)presence.afterGameExit();throw error;}finally{if(!spawned)launchControl.end(attempt);}
     },
     cancelLaunch(){return launchControl.cancel();},
 

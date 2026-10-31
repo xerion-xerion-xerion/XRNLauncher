@@ -104,6 +104,7 @@ public class XrnHudClient implements ClientModInitializer {
                         context, Minecraft.getInstance().font));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            LaunchReady.tick();
             /*  Le mode Boost FPS attend le premier tick : c est le
                 premier moment ou le jeu a ses options.                 */
             fr.xerion.xrnhud.Performance.appliquerAuDemarrage();

@@ -1009,6 +1009,7 @@ function buildArgs(plan, opts) {
       qui ne depend pas de la carte graphique.                           */
   jvm.push(...require('./boost').optionsJVM(!!cfg.boostFps, cfg.javaArgs, ram));
   jvm.push('-Dfile.encoding=UTF-8');
+  if(opts.cancelToken?.id)jvm.push('-DXRNLaunchId='+opts.cancelToken.id);
   /*  Le mod XRN HUD affiche la version du launcher dans sa signature.
       On la lui passe donc ici : sinon il ne pourrait afficher que la
       sienne, qui n est pas la meme numerotation.                      */
@@ -1049,6 +1050,10 @@ function buildArgs(plan, opts) {
     jvm.push('-Dorg.lwjgl.librarypath=' + nativesDir);
     jvm.push('-Dio.netty.native.workdir=' + nativesDir);
     jvm.push('-cp', plan.classpath.join(';'));
+  }
+
+  if(plan.classpath.some(f=>/[\\/]org[\\/]lwjgl[\\/]lwjgl[\\/]3\./.test(f))){
+    for(let i=jvm.length-1;i>=0;i--)if(/^-D(?:java\.library\.path|org\.lwjgl\.librarypath|org\.lwjgl\.system\.SharedLibraryExtractPath)=/.test(jvm[i]))jvm.splice(i,1);
   }
 
   if (plan.arguments && plan.arguments.game && plan.arguments.game.length) {
@@ -1172,7 +1177,7 @@ async function launch(opts, bus) {
 
   const built = buildArgs(plan, opts);
   const args = built.jvm.concat([built.mainClass], built.jeu);
-  bus.emit('game:spawn', { exe, args: args.map((arg,index) => arg === opts.accessToken || args[index-1] === '--accessToken' ? '[REDACTED]' : arg) });
+  const spawnDetails={ exe, args: args.map((arg,index) => arg === opts.accessToken || args[index-1] === '--accessToken' ? '[REDACTED]' : arg) };
 
   /*  Le mod affiche la musique en cours : on lance la detection au
   moment ou le jeu demarre, et on l arrete avec le launcher.        */
@@ -1188,14 +1193,19 @@ async function launch(opts, bus) {
   try { if (child.pid) require('./media').demarrer(child.pid); } catch (e) { }
   child.on('exit', () => { try { require('./media').arreter(); } catch (e) { } });
 
-  child.stdout.on('data', d => bus.emit('game:log', { stream: 'out', line: clean(String(d)) }));
-  child.stderr.on('data', d => bus.emit('game:log', { stream: 'err', line: clean(String(d)) }));
-  child.on('error', e => bus.emit('game:exit', { code: -1, error: e.message }));
-  child.on('exit', code => bus.emit('game:exit', { code }));
+  const control=require('./launch-control'),token=opts.cancelToken,attemptId=token?.id||require('crypto').randomUUID();
+  control.attach(token,child);let finished=false,readBuffer='';
+  child.once('spawn',()=>bus.emit('game:spawn',{...spawnDetails,pid:child.pid,attemptId}));
+  function output(stream,d){const line=clean(String(d));bus.emit('game:log',{stream,line,attemptId});
+    if(stream==='out'&&token&&!token.ready){readBuffer=(readBuffer+String(d)).slice(-8192);
+      if(readBuffer.includes('XRN_CLIENT_READY '+token.id)&&control.ready(token))bus.emit('game:ready',{attemptId,pid:child.pid});}}
+  child.stdout.on('data',d=>output('out',d));child.stderr.on('data',d=>output('err',d));
+  function finish(code,error){if(finished)return;finished=true;control.end(token);bus.emit('game:exit',{code,error,attemptId,cancelled:!!token?.cancelled});}
+  child.once('error',e=>finish(-1,e.message));child.once('close',code=>finish(code));
 
   renommerFenetre(child.pid, built.titre, bus);
 
-  return { pid: child.pid, exe, version: plan.id, javaMajor: java.major };
+  return { pid: child.pid, exe, version: plan.id, javaMajor: java.major, attemptId };
 }
 
 function clean(s) {

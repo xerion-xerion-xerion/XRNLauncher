@@ -1408,3 +1408,6 @@ select option{background:#211b2a;color:#eee7f5;padding:10px 12px}
  select option:hover,select option:focus{background:#382a46}select option:checked{background:#30233e;color:#d8bcfa}
  select option::checkmark{color:#c4a3ed}
 }
+
+/* Launch actions remain above the decorative hero at every window size. */
+#launchProgress{position:relative;z-index:3;display:flex;align-items:center;gap:12px;flex-wrap:wrap}#launchProgress[hidden]{display:none}#btnCancelLaunch{position:relative;z-index:4;flex-shrink:0}

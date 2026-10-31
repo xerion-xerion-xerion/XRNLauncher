@@ -1197,12 +1197,13 @@ const Splash = {
       const pct = d.total ? Math.round(d.done * 100 / d.total) : 0;
       Dialog.progress(pct, pct + ' % · ' + Math.round(d.done / 1048576) + ' / ' + Math.round(d.total / 1048576) + ' Mo');
     });
+    X.on('game:ready',d=>{STATE.launching=false;$('#btnPlay').classList.remove('busy','ring');$('#launchStatus').textContent='Minecraft prêt · écran du jeu chargé.';});
     X.on('game:spawn', d => logGame('', 'Lancement : ' + d.exe));
     X.on('game:log', d => logGame(d.stream === 'err' ? 'err' : '', d.line));
     X.on('game:exit', d => {
       logGame(d.code === 0 ? 'ok' : 'warn', 'Le jeu s\'est arrêté (code ' + d.code + ').');
       $('#btnPlay').classList.remove('busy', 'ring');
-      $('#launchProgress').hidden=false;$('#launchStatus').textContent=d.code===0?'Jeu fermé.':'Le jeu s’est arrêté. Consultez le journal pour le diagnostic.';$('#btnCancelLaunch').hidden=true;
+      STATE.launching=false;$('#launchProgress').hidden=false;$('#launchStatus').textContent=d.cancelled?'Lancement annulé.':d.code===0?'Jeu fermé.':'Le jeu s’est arrêté · diagnostic dans le journal.';$('#btnCancelLaunch').hidden=false;$('#btnCancelLaunch').disabled=false;$('#btnCancelLaunch').textContent='Ouvrir le journal';
     });
   }
   function updateStrip(d) {
@@ -1238,7 +1239,8 @@ const Splash = {
    * ================================================================== */
   async function play(world) {
     if (!DESKTOP) return api(null);
-    if(STATE.launching)return;
+    if(STATE.launching){window.XrnDiagnostics?.open();return;}
+    if(X.game.running()?.running){window.XrnDiagnostics?.open();return;}
     if (!STATE.account) { Toast.show('Connexion requise', 'Connectez un compte dans l\'onglet Connexion.', 'warn'); return Nav.go('login'); }
     const id = STATE.selected;
     if (!id) { Toast.show('Aucune version', 'Installez d\'abord une version de Minecraft.', 'warn'); return Nav.go('versions'); }
@@ -1284,14 +1286,14 @@ const Splash = {
       }
     }
     if(STATE.launching)return;STATE.launching=true;const btn = $('#btnPlay');
-    btn.classList.add('busy', 'ring');$('#launchProgress').hidden=false;$('#launchStatus').textContent='Préparation du lancement…';$('#btnCancelLaunch').hidden=false;$('#btnCancelLaunch').disabled=false;$('#btnCancelLaunch').textContent='Annuler le lancement';
+    btn.classList.add('busy', 'ring');$('#launchProgress').hidden=false;$('#launchStatus').textContent='Préparation du lancement…';$('#btnCancelLaunch').hidden=false;$('#btnCancelLaunch').disabled=false;$('#btnCancelLaunch').textContent='Ouvrir le journal';
     logGame('', '>>> Préparation du lancement (' + id + ')');
     const res = await api(x => x.game.launch({
       version: id, ramGB: cfg.ramGB, world: world || null, extraJavaArgs: cfg.javaArgs
     }));
-    STATE.launching=false;$('#btnCancelLaunch').hidden=true;btn.classList.remove('busy','ring');$('#launchStatus').textContent=res?.cancelled?'Lancement annulé.':res?'Minecraft est lancé.':'Lancement impossible. Consultez le journal.';
+    if(!res||res.cancelled){STATE.launching=false;btn.classList.remove('busy','ring');}$('#btnCancelLaunch').hidden=false;$('#btnCancelLaunch').disabled=false;$('#btnCancelLaunch').textContent='Ouvrir le journal';$('#launchStatus').textContent=res?.cancelled?'Lancement annulé.':res?'Minecraft démarre · suivez le journal.':'Lancement interrompu · ouvrir le journal.';
   }
-  $('#btnCancelLaunch').onclick=()=>{if(!STATE.launching)return;X.game.cancelLaunch();$('#btnCancelLaunch').disabled=true;$('#launchStatus').textContent='Annulation du lancement…';};
+  $('#btnCancelLaunch').onclick=()=>window.XrnDiagnostics?.open();
   $('#btnPlay').addEventListener('click', () => play(null));
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); play(null); }

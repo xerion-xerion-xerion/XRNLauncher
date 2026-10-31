@@ -23,8 +23,9 @@ final class NameTagEcran extends Screen {
   button("Retour",x+240,y+230,100,this::close);
  }
  @Override public void render(DrawContext c,int mx,int my,float delta){int x=width/2-170,y=Math.max(22,height/2-132);Theme.arrondi(c,x-12,y-16,364,280,Theme.nuance(0xFA18151F),Theme.ACCENT_FORT);Theme.texte(c,textRenderer,"MON NAME TAG",x,y-5,Theme.TEXTE);
-  c.drawText(textRenderer,NameTag.personnaliser(Text.literal("Votre pseudo"),"Votre pseudo"),x+100,y+188,Theme.TEXTE,true);
-  Theme.texte(c,textRenderer,"Cliquez sur les couleurs pour ouvrir la palette.",x,y+212,Theme.TEXTE_DOUX);
+  var preview=NameTag.personnaliser(Text.literal(Langue.t("Votre pseudo")),Langue.t("Votre pseudo"));
+  c.drawText(textRenderer,preview,this.width/2-textRenderer.getWidth(preview)/2,y+188,Theme.TEXTE,true);
+  Theme.texteCentre(c,textRenderer,"Cliquez sur les couleurs pour ouvrir la palette.",this.width/2,y+212,Theme.TEXTE_DOUX);
   super.render(c,mx,my,delta);Theme.boutons(c,textRenderer,children(),mx,my);  Theme.rect(c,x+148,y+91,9,9,NameTag.debut);Theme.rect(c,x+324,y+91,9,9,NameTag.fin);
  }
  @Override public void close(){client.setScreen(parent);}@Override public boolean shouldPause(){return false;}

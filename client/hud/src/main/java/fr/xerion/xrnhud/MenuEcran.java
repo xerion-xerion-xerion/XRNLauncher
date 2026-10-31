@@ -118,7 +118,7 @@ public class MenuEcran extends Screen {
         int navStep=Math.max(13,Math.min(24,bodyH/tabs.length)),navHeight=Math.max(12,navStep-3);
         for(int i=0;i<tabs.length;i++){final int index=i;boolean active=i==5?settings:!settings&&category==i;
             int ty=bodyY+i*navStep;
-            button(c,tabs[i],px+9,ty,navWidth-4,navHeight,()->{if(index==7){Langue.choisir(Langue.actuelle().equals("fr")?"en":"fr");client.setScreen(new MenuEcran());return;}if(index==6){client.setScreen(new EcranGardeRobe(this));return;}settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
+            button(c,tabs[i],px+9,ty,navWidth-4,navHeight,()->{if(index==7){client.setScreen(new LangueEcran(this));return;}if(index==6){client.setScreen(new EcranGardeRobe(this));return;}settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
             if(active)Theme.rect(c,px+9,ty,2,navHeight,Theme.ACCENT);
         }
         Theme.rect(c,px+8,py+30,pw-16,1,Theme.BORDURE);

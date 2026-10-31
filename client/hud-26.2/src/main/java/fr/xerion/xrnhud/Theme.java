@@ -166,7 +166,8 @@ final class Theme {
         for(Object child:children)if(child instanceof net.minecraft.client.gui.components.Button b&&b.visible){
             boolean hover=b.active&&(mx>=b.getX()&&mx<b.getX()+b.getWidth()&&my>=b.getY()&&my<b.getY()+b.getHeight());
             arrondi(c,b.getX(),b.getY(),b.getWidth(),b.getHeight(),hover?nuance(0xFF3C2E50):nuance(0xFF26212F),hover||b.isFocused()?ACCENT:nuance(0xFF544661));
-            texteCentre(c,font,b.getMessage().getString(),b.getX()+b.getWidth()/2,b.getY()+(b.getHeight()-font.lineHeight)/2+1,b.active?TEXTE:TEXTE_FAIBLE);
+            String caption=Langue.t(b.getMessage().getString());while(caption.length()>1&&font.width(caption)>b.getWidth()-12)caption=caption.substring(0,caption.length()-2)+"…";
+            texteCentre(c,font,caption,b.getX()+b.getWidth()/2,b.getY()+(b.getHeight()-font.lineHeight)/2+1,b.active?TEXTE:TEXTE_FAIBLE);
         }
     }
     static void champs(GuiGraphicsExtractor c,java.util.List<? extends Object> children){for(Object child:children)if(child instanceof net.minecraft.client.gui.components.EditBox f&&f.visible)arrondi(c,f.getX()-5,f.getY()-2,f.getWidth()+10,f.getHeight()+4,nuance(0xFF141119),f.isFocused()?ACCENT:nuance(0xFF55475E));}
