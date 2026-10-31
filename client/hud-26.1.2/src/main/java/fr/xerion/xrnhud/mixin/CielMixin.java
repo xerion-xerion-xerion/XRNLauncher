@@ -21,9 +21,15 @@ public abstract class CielMixin {
  @ModifyArg(method="renderEndSky",at=@At(value="INVOKE",target="Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),index=0,require=1)
  private org.joml.Matrix4fc xrn$animation(org.joml.Matrix4fc original){return xrn$sky?Ciel.matrice(original):original;}
  @Inject(method="renderSunMoonAndStars",at=@At("HEAD"),cancellable=true,require=1)
- private void xrn$astres(com.mojang.blaze3d.vertex.PoseStack matrix,float a,float b,float d,net.minecraft.world.level.MoonPhase phase,float e,float f,CallbackInfo ci){if(Ciel.disponible()&&!Ciel.astres)ci.cancel();}
+ private void xrn$astres(com.mojang.blaze3d.vertex.PoseStack matrix,float a,float b,float d,net.minecraft.world.level.MoonPhase phase,float e,float f,CallbackInfo ci){if(Ciel.disponible()&&!Ciel.astres){if(Ciel.mode==0){xrn$stars=true;try{renderStars(.75f,matrix);}finally{xrn$stars=false;}}ci.cancel();}}
  @ModifyArg(method="renderEndSky",at=@At(value="INVOKE",target="Lcom/mojang/blaze3d/systems/RenderSystem$AutoStorageIndexBuffer;getBuffer(I)Lcom/mojang/blaze3d/buffers/GpuBuffer;"),index=0,require=1)
  private int xrn$indices(int count){return xrn$sky?Ciel.INDICES:count;}
  @ModifyArg(method="renderEndSky",at=@At(value="INVOKE",target="Lcom/mojang/blaze3d/systems/RenderPass;drawIndexed(IIII)V"),index=2,require=1)
  private int xrn$drawCount(int count){return xrn$sky?Ciel.INDICES:count;}
+ @Inject(method="renderStars",at=@At("HEAD"),cancellable=true,require=1)
+ private void xrn$noDoubleStars(CallbackInfo ci){if(Ciel.disponible()&&!xrn$stars)ci.cancel();}
+ @Unique private boolean xrn$stars;
+ @Shadow protected abstract void renderStars(float brightness,com.mojang.blaze3d.vertex.PoseStack matrix);
+ @Inject(method="renderSunMoonAndStars",at=@At("TAIL"),require=1)
+ private void xrn$sphericalStars(com.mojang.blaze3d.vertex.PoseStack matrix,float a,float b,float d,net.minecraft.world.level.MoonPhase phase,float e,float f,CallbackInfo ci){if(!Ciel.disponible()||Ciel.mode!=0)return;xrn$stars=true;try{renderStars(.75f,matrix);}finally{xrn$stars=false;}}
 }

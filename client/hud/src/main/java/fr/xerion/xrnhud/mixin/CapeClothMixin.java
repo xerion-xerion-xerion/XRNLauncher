@@ -8,6 +8,8 @@ public abstract class CapeClothMixin {
  @Unique private float xrn$age=Float.NaN,xrn$motion,xrn$strength;@Unique private int xrn$id;
  @Unique private ModelPart xrn$cloth;@Unique private List<ModelPart.Cuboid> xrn$cubes;
  @Unique private ModelPart.Quad[][] xrn$rest;@Unique private CapeSurface xrn$surface;
+ @Unique private ModelPart.Quad[] xrn$flatOriginal,xrn$flatSquare;
+ @Unique private void xrn$flat(boolean ours){var cube=((CapePartsAccessor)(Object)cape).xrn$cubes().getFirst();if(xrn$flatOriginal==null){xrn$flatOriginal=cube.sides.clone();xrn$flatSquare=new ModelPart.Quad[xrn$flatOriginal.length];for(int i=0;i<xrn$flatOriginal.length;i++){var q=xrn$flatOriginal[i];var vertices=new ModelPart.Vertex[q.vertices().length];for(int k=0;k<vertices.length;k++){var v=q.vertices()[k];vertices[k]=new ModelPart.Vertex(v.x(),v.y(),v.z(),v.u(),v.v()*.5f);}xrn$flatSquare[i]=new ModelPart.Quad(vertices,new Vector3f(q.direction()));}}System.arraycopy(ours?xrn$flatSquare:xrn$flatOriginal,0,cube.sides,0,xrn$flatOriginal.length);}
  @Inject(method="getTexturedModelData",at=@At("RETURN"),require=1)
  private static void xrn$layer(CallbackInfoReturnable<TexturedModelData> ci){
   var data=((CapeLayerDataAccessor)(Object)ci.getReturnValue()).xrn$data();var parent=data.getRoot().getChild("body").getChild("cape");ModelPartBuilder builder=ModelPartBuilder.create();
@@ -18,13 +20,13 @@ public abstract class CapeClothMixin {
  private void xrn$creer(ModelPart root,CallbackInfo ci){
   xrn$cloth=cape.getChild("xrn_cloth");xrn$cubes=((CapePartsAccessor)(Object)xrn$cloth).xrn$cubes();xrn$rest=new ModelPart.Quad[xrn$cubes.size()][];
   var flat=((CapePartsAccessor)(Object)cape).xrn$cubes().getFirst().sides;
-  for(int i=0;i<xrn$cubes.size();i++){var cube=xrn$cubes.get(i);for(int q=0;q<cube.sides.length;q++){var side=cube.sides[q];ModelPart.Quad reference=null;for(var candidate:flat)if(candidate.direction().dot(side.direction())>.99f){reference=candidate;break;}if(reference==null)throw new IllegalStateException("Missing cape UV face");var a=reference.vertices()[0];var b=reference.vertices()[1];var d=reference.vertices()[3];var ab=new Vector3f(b.x()-a.x(),b.y()-a.y(),b.z()-a.z());var ad=new Vector3f(d.x()-a.x(),d.y()-a.y(),d.z()-a.z());ModelPart.Vertex[] vertices=new ModelPart.Vertex[4];for(int k=0;k<4;k++){var old=side.vertices()[k];var ap=new Vector3f(old.x()-a.x(),old.y()-a.y(),old.z()-a.z());float u=ap.dot(ab)/ab.lengthSquared(),v=ap.dot(ad)/ad.lengthSquared();vertices[k]=new ModelPart.Vertex(old.x(),old.y(),old.z(),a.u()+u*(b.u()-a.u())+v*(d.u()-a.u()),a.v()+u*(b.v()-a.v())+v*(d.v()-a.v()));}cube.sides[q]=new ModelPart.Quad(vertices,new Vector3f(side.direction()));}xrn$rest[i]=cube.sides.clone();}
+  for(int i=0;i<xrn$cubes.size();i++){var cube=xrn$cubes.get(i);for(int q=0;q<cube.sides.length;q++){var side=cube.sides[q];ModelPart.Quad reference=null;for(var candidate:flat)if(candidate.direction().dot(side.direction())>.99f){reference=candidate;break;}if(reference==null)throw new IllegalStateException("Missing cape UV face");var a=reference.vertices()[0];var b=reference.vertices()[1];var d=reference.vertices()[3];var ab=new Vector3f(b.x()-a.x(),b.y()-a.y(),b.z()-a.z());var ad=new Vector3f(d.x()-a.x(),d.y()-a.y(),d.z()-a.z());ModelPart.Vertex[] vertices=new ModelPart.Vertex[4];for(int k=0;k<4;k++){var old=side.vertices()[k];var ap=new Vector3f(old.x()-a.x(),old.y()-a.y(),old.z()-a.z());float u=ap.dot(ab)/ab.lengthSquared(),v=ap.dot(ad)/ad.lengthSquared();vertices[k]=new ModelPart.Vertex(old.x(),old.y(),old.z(),a.u()+u*(b.u()-a.u())+v*(d.u()-a.u()),(a.v()+u*(b.v()-a.v())+v*(d.v()-a.v()))*.5f);}cube.sides[q]=new ModelPart.Quad(vertices,new Vector3f(side.direction()));}xrn$rest[i]=cube.sides.clone();}
   xrn$surface=new CapeSurface();xrn$cloth.visible=false;
  }
  @Inject(method="setAngles(Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;)V",at=@At("TAIL"),require=1)
  private void xrn$animer(PlayerEntityRenderState state,CallbackInfo ci){
   boolean ours=state.skinTextures!=null&&state.skinTextures.cape()!=null&&"xrnhud".equals(state.skinTextures.cape().texturePath().getNamespace());
-  boolean active=ours&&CapeMouvement.actif&&!((CapeApercu)(Object)state).xrn$apercuCape();cape.hidden=ours;xrn$cloth.visible=ours;if(!ours)return;
+  boolean active=ours&&CapeMouvement.actif&&!((CapeApercu)(Object)state).xrn$apercuCape();cape.hidden=ours&&!CapeMouvement.externe();xrn$cloth.visible=ours&&!CapeMouvement.externe();xrn$flat(ours);if(!ours||CapeMouvement.externe())return;
   if(!active){for(int i=0;i<xrn$cubes.size();i++)System.arraycopy(xrn$rest[i],0,xrn$cubes.get(i).sides,0,xrn$rest[i].length);xrn$age=Float.NaN;return;}
   float motion=Math.clamp(state.limbSwingAmplitude*2.2f+Math.abs(state.field_53537)/120,0,1.5f);
   float clothAge=(float)Math.floor(state.age*3f)/3f;motion=Math.round(motion*20f)/20f;

@@ -70,10 +70,10 @@ Source: "{tmp}\payload\XRNLauncher\*"; DestDir: "{app}"; ExternalSize: {#Payload
 
 [Icons]
 #ifdef TestBuild
-Name: "{app}\shortcuts\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\xrn-launcher-{#AppVersion}.ico"; Tasks: desktopicon
+Name: "{app}\shortcuts\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\xrn-launcher-{#AppVersion}.ico"; Tasks: desktopicon; AppUserModelID: "XRNLauncher.Client"
 #else
-Name: "{autodesktop}\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\xrn-launcher-{#AppVersion}.ico"; Tasks: desktopicon
-Name: "{autoprograms}\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\xrn-launcher-{#AppVersion}.ico"
+Name: "{autodesktop}\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\xrn-launcher-{#AppVersion}.ico"; Tasks: desktopicon; AppUserModelID: "XRNLauncher.Client"
+Name: "{autoprograms}\XRN Launcher"; Filename: "{app}\XRNLauncher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\assets\xrn-launcher-{#AppVersion}.ico"; AppUserModelID: "XRNLauncher.Client"
 #endif
 
 [Run]

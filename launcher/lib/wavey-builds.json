@@ -1,0 +1,59 @@
+{
+  "project": "kYuIpRLv",
+  "builds": [
+    {
+      "minecraft": "1.21.11",
+      "loader": "fabric",
+      "version": "NR0hCf95",
+      "name": "1.11.3-1.21.11 - Fabric",
+      "filename": "waveycapes-fabric-1.11.3-mc1.21.11.jar",
+      "url": "https://cdn.modrinth.com/data/kYuIpRLv/versions/NR0hCf95/waveycapes-fabric-1.11.3-mc1.21.11.jar",
+      "size": 1788406,
+      "sha512": "0e76d901c4dfe83197f6df7d84c925b9c70e3d64215984a74494af438e6ba67fffbb21cbe299389dfc65a8dba52f01fbef4d98243a4f19f9a698e15dae989ac1",
+      "dependencies": [
+        {
+          "version_id": null,
+          "project_id": "P7dR8mSH",
+          "file_name": null,
+          "dependency_type": "required"
+        }
+      ]
+    },
+    {
+      "minecraft": "26.1.2",
+      "loader": "fabric",
+      "version": "TQ8147bZ",
+      "name": "1.11.3-26.1 - Fabric",
+      "filename": "waveycapes-fabric-1.11.3-mc26.1.jar",
+      "url": "https://cdn.modrinth.com/data/kYuIpRLv/versions/TQ8147bZ/waveycapes-fabric-1.11.3-mc26.1.jar",
+      "size": 1763314,
+      "sha512": "fb15d267d5a0e3c9be13809b6bc7f3c65820cbe4b0ca74af8f3b613dcb635336c0b3e98173fa0f189f188a225aa86b0bb9dfd37fb661f627935b6f9f57cdf34d",
+      "dependencies": [
+        {
+          "version_id": null,
+          "project_id": "P7dR8mSH",
+          "file_name": null,
+          "dependency_type": "required"
+        }
+      ]
+    },
+    {
+      "minecraft": "26.2",
+      "loader": "fabric",
+      "version": "qADFZPJi",
+      "name": "1.11.3-26.2 - Fabric",
+      "filename": "waveycapes-fabric-1.11.3-mc26.2.jar",
+      "url": "https://cdn.modrinth.com/data/kYuIpRLv/versions/qADFZPJi/waveycapes-fabric-1.11.3-mc26.2.jar",
+      "size": 1765020,
+      "sha512": "3f47f2deb0f273a7f593bcfac5c23b2d19d5f30ec138f465148a3c5d299022e58ac3a3524be5200f02e561ff3e78d6920b1176b2776f2b5d6e3427e975a9ad78",
+      "dependencies": [
+        {
+          "version_id": null,
+          "project_id": "P7dR8mSH",
+          "file_name": null,
+          "dependency_type": "required"
+        }
+      ]
+    }
+  ]
+}

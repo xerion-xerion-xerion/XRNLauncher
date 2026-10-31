@@ -1,6 +1,6 @@
 'use strict';
-// Personal opt-in only: use the user-installed WaveyCapes and download its matching official variant.
-// No WaveyCapes binary/code is bundled, rehosted, enabled by default, or sold as a Prime perk.
+// Official files downloaded from Modrinth, never rehosted or sold.
+// XRN renderer interoperability is independent; the upstream license stays inside its JAR.
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),zlib=require('zlib');
 const http=require('./http'),safe=require('./safe-path'),config=require('./config');
 const PROJECT='kYuIpRLv',MR='https://api.modrinth.com/v2',locks=new Set();
@@ -34,8 +34,8 @@ async function resolve(c,cache){
  const v=versions.filter(v=>v.project_id===PROJECT&&v.version_type==='release'&&v.game_versions?.includes(c.version)&&v.loaders?.includes(c.loader)).sort((a,b)=>Date.parse(b.date_published)-Date.parse(a.date_published))[0];if(!v)return null;if(v.dependencies?.some(d=>d.dependency_type==='required'&&d.project_id!=='P7dR8mSH'))throw Error('Cette version WaveyCapes exige une dependance supplementaire ; installez-la via Decouvrir les mods.');
  const f=v.files.find(f=>f.primary)||v.files[0];b=validated({minecraft:c.version,loader:c.loader,version:v.id,name:v.name,filename:f.filename,url:f.url,size:f.size,sha512:f.hashes?.sha512},c);const tmp=meta+'.tmp';fs.writeFileSync(tmp,JSON.stringify(b));fs.renameSync(tmp,meta);return b;
 }
-async function ensure(versionId,gameDir,bus){
- const root=path.resolve(gameDir),settingsFile=safe.confine(root,path.join(root,'.xrn-waveycapes','settings.json'),false);if(!fs.existsSync(settingsFile))return {status:'not_requested'};if(fs.statSync(settingsFile).size>4096)throw Error('Configuration du mod de cape invalide.');const settings=JSON.parse(fs.readFileSync(settingsFile,'utf8'));if(settings.personalInstall!==true)return {status:'not_requested'};if(locks.has(root))throw Error('WaveyCapes est deja en cours de preparation.');locks.add(root);
+async function ensure(versionId,gameDir,bus,options={}){
+ const root=path.resolve(gameDir),settingsFile=safe.confine(root,path.join(root,'.xrn-waveycapes','settings.json'),false);if(!options.automatic&&!fs.existsSync(settingsFile))return {status:'not_requested'};if(fs.existsSync(settingsFile)&&fs.statSync(settingsFile).size>4096)throw Error('Configuration du mod de cape invalide.');const settings=options.automatic?{personalInstall:true,enabled:true}:JSON.parse(fs.readFileSync(settingsFile,'utf8'));if(settings.personalInstall!==true)return {status:'not_requested'};if(locks.has(root))throw Error('WaveyCapes est deja en cours de preparation.');locks.add(root);
  try{
   const dir=safe.confine(root,path.join(root,'mods')),data=safe.confine(root,path.join(root,'.xrn-waveycapes')),cache=safe.confine(root,path.join(data,'cache'));fs.mkdirSync(dir,{recursive:true});fs.mkdirSync(cache,{recursive:true});
   const recordFile=safe.confine(root,path.join(data,'state.json'),false);let record={schema:1,files:{}};
@@ -44,10 +44,10 @@ async function ensure(versionId,gameDir,bus){
   const entries=fs.readdirSync(dir).filter(n=>/\.jar(?:\.disabled)?$/i.test(n));const waveycapes=entries.filter(n=>record.files[n.replace(/\.disabled$/i,'')]||/^waveycapes(?:[_ .-]|\.jar)/i.test(n)||isWaveyCapes(safe.confine(dir,path.join(dir,n),false)));
   const active=waveycapes.filter(n=>/\.jar$/i.test(n));
   async function park(names){for(const name of names){const item=record.files[name];if(!item)continue;const target=safe.confine(dir,path.join(dir,name),false);if(!fs.existsSync(target))continue;if(await hash(target)!==item.sha512)throw Error('Le fichier WaveyCapes gere a ete modifie : '+name);const parked=safe.confine(dir,path.join(dir,name+'.xrn-incompatible.'+crypto.randomBytes(4).toString('hex')),false);fs.renameSync(target,parked);}}
-  const c=context(versionId);if(!c||settings.enabled===false||waveycapes.some(n=>/\.disabled$/i.test(n))){await park(active);return {status:'disabled',reason:!c?'Installation sans chargeur compatible.':'Votre choix de desactivation WaveyCapes est conserve.'};}
+  const c=context(versionId);if(!c||settings.enabled===false||(!options.automatic&&waveycapes.some(n=>/\.disabled$/i.test(n)))){await park(active);return {status:'disabled',reason:!c?'Installation sans chargeur compatible.':'Votre choix de desactivation WaveyCapes est conserve.'};}
   const manual=active.filter(n=>!record.files[n]);if(manual.length>1)throw Error('Plusieurs fichiers WaveyCapes sont presents. Gardez-en un seul dans Mods.');if(manual.length){await park(active.filter(n=>record.files[n]));return {status:'existing',file:manual[0],reason:'WaveyCapes deja installe manuellement : votre fichier est conserve.'};}
   if(c.loader==='fabric'&&!fs.readdirSync(dir).some(n=>/^fabric-api-.*\.jar$/i.test(n))){await park(active);return {status:'unsupported',reason:'WaveyCapes nécessite Fabric API pour cette installation. Ajoutez sa version compatible dans Mods.'};}
-  const b=await resolve(c,cache);if(!b){await park(active);return {status:'unsupported',reason:'WaveyCapes ne propose pas de version compatible pour '+c.version+' / '+c.loader+'.'};}
+  const b=options.pinned?validated(options.pinned,c):await resolve(c,cache);if(!b){await park(active);return {status:'unsupported',reason:'WaveyCapes ne propose pas de version compatible pour '+c.version+' / '+c.loader+'.'};}
   const target=safe.confine(dir,path.join(dir,b.filename),false);
   // Preflight existing managed JARs before downloading or moving any file.
   for(const name of active)if(await hash(safe.confine(dir,path.join(dir,name),false))!==record.files[name].sha512)throw Error('Le fichier WaveyCapes gere a ete modifie : '+name);

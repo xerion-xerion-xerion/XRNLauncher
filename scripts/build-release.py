@@ -6,7 +6,7 @@ ROOT=P(__file__).resolve().parents[1]
 APP=ROOT/'launcher'
 RUNTIME_SUFFIXES={'.dll','.pak','.bin'}
 RUNTIME_NAMES={'XRNLauncher.exe','notification_helper.exe','icudtl.dat','vk_swiftshader_icd.json'}
-TOOLS={'appliquer-maj.ps1','media-session.ps1','XrnMedia.exe','rename-window.ps1'}
+TOOLS={'appliquer-maj.ps1','media-session.ps1','XrnMedia.exe','rename-window.ps1','window-icon.ps1'}
 DIRS={'lib','assets','mods-integres','legal','vendor','locales'}
 def digest(p):
  h=hashlib.sha256()

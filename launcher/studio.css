@@ -22,3 +22,6 @@ body{background:var(--bg);letter-spacing:0;font-size:13px}
 .hero .sub{font-family:var(--font)}.integre-ver:empty{display:none}.banner{border:1px solid #635334;background:#221d29;color:#d7c38c;box-shadow:none;border-radius:6px;font-size:11px;margin-bottom:16px}.panel-h h4{text-transform:none;letter-spacing:0}.t-top{text-transform:none;letter-spacing:0}.badge{letter-spacing:0}.view-head h2{-webkit-text-fill-color:initial}.v-loader{letter-spacing:.04em}
 
 .brand-mark{background:transparent;border-radius:8px;overflow:hidden}.brand-mark img{display:block;width:34px;height:34px;object-fit:contain}.brand-mark:before{display:none}
+
+/* Anchor the artwork to the complete hero, including its lower edge. */
+.hero{overflow:hidden}.hero-top{position:static}.hero-art{inset:0 0 0 auto;height:100%;border-radius:0 9px 9px 0}.hero-top>div:first-child{z-index:2}.hero .playbar{z-index:3}@media(min-width:1600px){.hero-art{height:100%}}@media(max-width:1200px){.hero-art{right:0;top:0}}

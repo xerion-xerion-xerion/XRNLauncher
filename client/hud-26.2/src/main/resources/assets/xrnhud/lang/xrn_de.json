@@ -232,5 +232,8 @@
   "actifs": "aktiv",
   "actives": "aktiv",
   "inactifs": "inaktiv",
-  "inactives": "inaktiv"
+  "inactives": "inaktiv",
+  "Uniquement les objets jetes au sol.": "Nur auf den Boden geworfene Gegenstände.",
+  "Objets jetes au sol uniquement": "Nur fallengelassene Gegenstände",
+  "Selectionner l’objet tenu": "Gehaltenen Gegenstand auswählen"
 }

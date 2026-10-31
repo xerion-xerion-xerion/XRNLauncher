@@ -532,5 +532,8 @@
   "actifs": "enabled",
   "actives": "enabled",
   "inactifs": "disabled",
-  "inactives": "disabled"
+  "inactives": "disabled",
+  "Uniquement les objets jetes au sol.": "Only items dropped on the ground.",
+  "Objets jetes au sol uniquement": "Dropped items only",
+  "Selectionner l’objet tenu": "Select held item"
 }

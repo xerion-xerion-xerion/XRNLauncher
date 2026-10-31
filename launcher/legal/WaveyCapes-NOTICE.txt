@@ -1,0 +1,4 @@
+Wavey Capes — tr7zw
+Téléchargement séparé des fichiers officiels via Modrinth : https://modrinth.com/mod/wavey-capes
+Licence amont conservée dans le fichier officiel : https://github.com/tr7zw/WaveyCapes/blob/main/LICENSE
+Le rendu des capes flottantes est gratuit pour tous les comptes, sans condition XRNPrime. Aucun code ni fichier du mod n’est revendu ou inclus dans le paquet XRN.

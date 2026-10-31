@@ -8,7 +8,9 @@ public abstract class WaveyPreviewMixin {
  @Inject(method="submit(Lnet/minecraft/class_4587;Lnet/minecraft/class_11659;ILnet/minecraft/class_10055;FF)V",at=@At("HEAD"),cancellable=true,remap=false,require=0)
  private void xrn$preview(MatrixStack matrices,OrderedRenderCommandQueue queue,int light,PlayerEntityRenderState state,float yaw,float pitch,CallbackInfo ci){
   if((!((CapeApercu)(Object)state).xrn$apercuCape()&&CapeMouvement.actif)||state.skinTextures==null||state.skinTextures.cape()==null)return;
+  if(state.equippedChestStack.isOf(net.minecraft.item.Items.ELYTRA))return;
   if(xrn$previewModel==null)xrn$previewModel=new PlayerCapeModel(PlayerCapeModel.getTexturedModelData().createModel());
+  xrn$previewModel.setAngles(state);
   queue.submitModel(xrn$previewModel,state,matrices,RenderLayers.entitySolid(state.skinTextures.cape().texturePath()),light,OverlayTexture.DEFAULT_UV,state.outlineColor,null);CapeMouvement.apercusWavey++;ci.cancel();
  }
 }

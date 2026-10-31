@@ -19,9 +19,15 @@ public abstract class CielMixin {
  @Redirect(method="renderEndSky",at=@At(value="INVOKE",target="Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4f;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),require=1)
  private com.mojang.blaze3d.buffers.GpuBufferSlice xrn$color(net.minecraft.client.renderer.DynamicUniforms uniforms,org.joml.Matrix4f matrix){return xrn$sky?uniforms.writeTransform(Ciel.matrice(matrix),Ciel.couleur(),new org.joml.Vector3f(),new org.joml.Matrix4f()):uniforms.writeTransform(matrix);}
  @Inject(method="renderSunMoonAndStars",at=@At("HEAD"),cancellable=true,require=1)
- private void xrn$astres(com.mojang.blaze3d.vertex.PoseStack matrix,float a,float b,float d,net.minecraft.world.level.MoonPhase phase,float e,float f,CallbackInfo ci){if(Ciel.disponible()&&!Ciel.astres)ci.cancel();}
+ private void xrn$astres(com.mojang.blaze3d.vertex.PoseStack matrix,float a,float b,float d,net.minecraft.world.level.MoonPhase phase,float e,float f,CallbackInfo ci){if(Ciel.disponible()&&!Ciel.astres){if(Ciel.mode==0){xrn$stars=true;try{renderStars(.75f,matrix);}finally{xrn$stars=false;}}ci.cancel();}}
  @ModifyArg(method="renderEndSky",at=@At(value="INVOKE",target="Lcom/mojang/blaze3d/systems/RenderSystem$AutoStorageIndexBuffer;getBuffer(I)Lcom/mojang/blaze3d/buffers/GpuBuffer;"),index=0,require=1)
  private int xrn$indices(int count){return xrn$sky?Ciel.INDICES:count;}
  @ModifyArg(method="renderEndSky",at=@At(value="INVOKE",target="Lcom/mojang/blaze3d/systems/RenderPass;drawIndexed(IIIII)V"),index=0,require=1)
  private int xrn$drawCount(int count){return xrn$sky?Ciel.INDICES:count;}
+ @Inject(method="renderStars",at=@At("HEAD"),cancellable=true,require=1)
+ private void xrn$noDoubleStars(CallbackInfo ci){if(Ciel.disponible()&&!xrn$stars)ci.cancel();}
+ @Unique private boolean xrn$stars;
+ @Shadow protected abstract void renderStars(float brightness,com.mojang.blaze3d.vertex.PoseStack matrix);
+ @Inject(method="renderSunMoonAndStars",at=@At("TAIL"),require=1)
+ private void xrn$sphericalStars(com.mojang.blaze3d.vertex.PoseStack matrix,float a,float b,float d,net.minecraft.world.level.MoonPhase phase,float e,float f,CallbackInfo ci){if(!Ciel.disponible()||Ciel.mode!=0)return;xrn$stars=true;try{renderStars(.75f,matrix);}finally{xrn$stars=false;}}
 }

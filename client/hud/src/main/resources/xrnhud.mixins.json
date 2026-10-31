@@ -18,17 +18,15 @@
     "RenderPipelinesAccessor",
     "MotionBlurMixin",
     "PlayerEntityRendererMixin",
-    "ItemScaleHandMixin",
-    "ItemScaleGuiMixin",
     "FullbrightMixin",
     "CapePartsAccessor",
-    "CapeClothMixin",
     "CapePreviewMixin",
     "WaveyPreviewMixin",
     "CapeSkinMixin",
-    "CapeLayerDataAccessor",
-    "CapeModelIsolationMixin",
-    "ParticleBudgetMixin"
+    "ParticleBudgetMixin",
+    "DroppedItemStateMixin",
+    "ItemScaleDropMixin",
+    "CielCloudMixin"
   ],
   "injectors": {
     "defaultRequire": 0

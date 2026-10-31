@@ -81,7 +81,7 @@ public class MenuEcran extends Screen {
         modules.add(new Module("Shader Monitor","Etat Iris si installe",()->ModulesPlus.shaders,()->{ModulesPlus.shaders=!ModulesPlus.shaders;ModulesPlus.SHADERS.hidden=false;},0));
         modules.add(new Module("Memoire","Utilisation de la JVM",()->Hud.memoire,()->{Hud.memoire=!Hud.memoire;Placement.MEMOIRE.hidden=false;},5));
 
-        modules.add(new Module("Taille des objets","En main et inventaire",()->TailleObjets.actif,()->TailleObjets.actif=!TailleObjets.actif,0));
+        modules.add(new Module("Taille des objets","Objets jetes au sol uniquement",()->TailleObjets.actif,()->TailleObjets.actif=!TailleObjets.actif,0));
         modules.add(new Module("Motion Blur","Flou de mouvement reglable",()->MotionBlur.enabled,()->MotionBlur.setEnabled(!MotionBlur.enabled),0));
         modules.add(new Module("Free Look","Maintenir V · touche configurable",()->FreeLook.enabled,()->FreeLook.enabled=!FreeLook.enabled,0));
         modules.add(new Module("Informations", "Coordonnees et FPS", ()->Hud.informations, ()->Hud.informations=!Hud.informations, 0));

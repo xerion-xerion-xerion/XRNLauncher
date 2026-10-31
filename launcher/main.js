@@ -814,11 +814,11 @@ const XRN = {
       if(pose.poses.length)XRN.report('MODS',pose.poses.join(', '));
       if(pose.echecs.length)throw new Error(pose.echecs.map(e=>e.nom+' : '+e.raison).join('\n'));
       if(!pose.compatibility.supported)bus.emit('mods:notice',{text:pose.compatibility.reason});
-      const capeMod=await require('./lib/internal-cape').prepare(cfgm.load().gameDir,pose.compatibility.supported);
-      checkpoint();if(capeMod.reason)bus.emit('mods:notice',{text:capeMod.reason});
       const essentialResults=await require('./lib/recommended').ensure(entry.id,cfgm.load().gameDir,bus);
       checkpoint();const essential=essentialResults.find(r=>r.name==='Essential')||{};
       if(essential.reason)bus.emit('mods:notice',{text:essential.reason});
+      checkpoint();const capeMod=await require('./lib/internal-cape').prepare(cfgm.load().gameDir,pose.compatibility.supported,entry.id,bus);
+      checkpoint();if(capeMod.reason)bus.emit('mods:notice',{text:capeMod.reason});
 
       await presence.beforeGameStart(session.account).catch(()=>XRN.report('PRESENCE','Apparence partagée indisponible ; lancement du jeu maintenu.'));
       checkpoint();let res;
@@ -1348,19 +1348,10 @@ XRN.report = function (kind, msg) { writeLog(kind || 'UI', msg); };
 
 /* Icone de la fenetre / barre des taches : le .exe porte celle de NW.js,
    on la remplace a l'execution par le logo XRN.                          */
-(function applyWindowIcon() {
-  const candidates = ['assets/icon.png', 'assets/icon.ico'].map(p => path.join(appDir(), p));
-  const icon = candidates.find(p => util.exists(p));
-  if (!icon) { writeLog('ICONE', 'introuvable : ' + candidates.join(', ')); return; }
-  try {
-    const win = nwWindow();
-    if (!win || typeof win.setIcon !== 'function') { writeLog('ICONE', 'setIcon indisponible'); return; }
-    win.setIcon(icon);
-    writeLog('ICONE', 'appliquee : ' + icon);
-  } catch (e) {
-    writeLog('ICONE', 'echec : ' + e.message);
-  }
-})();
+window.XrnApplyWindowIcon=function applyWindowIcon(){
+ if(process.platform!=='win32')return;
+ try{const root=path.dirname(process.execPath),script=path.join(root,'tools/window-icon.ps1');let icon=path.join(root,'assets','xrn-launcher-'+pkg.version+'.ico');if(!util.exists(icon))icon=path.join(root,'assets/icon.ico');if(!util.exists(script)||!util.exists(icon))return;const child=spawn('powershell',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',script,'-Exe',process.execPath,'-Icon',icon],{windowsHide:true,stdio:['ignore','pipe','pipe']});child.stdout.on('data',d=>writeLog('ICONE',String(d)));child.stderr.on('data',()=>writeLog('ICONE','Application de l’icône Windows indisponible'));child.on('error',e=>writeLog('ICONE',e.message));child.unref();}catch(e){writeLog('ICONE',e.message);}
+};window.XrnApplyWindowIcon();
 
 function writeLog(kind, msg) {
   try {
