@@ -7,6 +7,7 @@
 
  async function refresh(){
   const g=++generation;
+  if(!data){products=require('./cosmetics.json').products;data={products,rights:['cape_job'],equipped:'',presence:{},gifts:{},connected:false,paymentAvailable:false};render();}
   try{
    const result=api?await api.catalogue():{...await(await fetch('cosmetics.json')).json(),rights:['cape_job'],equipped:'',presence:{},connected:false};
    if(g!==generation)return;data=result;loadPending();products=result.products;render();if(data.gifts?.canGenerate)await giftHistory();

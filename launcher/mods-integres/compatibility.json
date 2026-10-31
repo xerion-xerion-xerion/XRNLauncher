@@ -5,11 +5,11 @@
       "minecraft": "1.21.11",
       "loader": "fabric",
       "java": 21,
-      "version": "1.54.0",
+      "version": "1.54.1",
       "files": [
         {
-          "name": "xrn-hud-1.54.0-mc1.21.11.jar",
-          "sha256": "a6ffa87b6815b1fe1278782d1c765b267e0bc370c459c7fd442996d3a2ce0a07"
+          "name": "xrn-hud-1.54.1-mc1.21.11.jar",
+          "sha256": "3c9b8e7e644eb486258ab8526acc014c91d64bb2b2267359e51e83049d72604e"
         },
         {
           "name": "fabric-api-0.141.6+1.21.11.jar",
@@ -21,11 +21,11 @@
       "minecraft": "26.2",
       "loader": "fabric",
       "java": 25,
-      "version": "1.54.0",
+      "version": "1.54.1",
       "files": [
         {
-          "name": "xrn-hud-1.54.0-mc26.2.jar",
-          "sha256": "06e7dd0391af4c8e0720bc3fde47a744ecbeb25ad85dd2233325f5c575292659"
+          "name": "xrn-hud-1.54.1-mc26.2.jar",
+          "sha256": "8930114d9ea993bdab869c379bef9c661918a3ea079f6e8e9051632eb0bf339c"
         },
         {
           "name": "fabric-api-0.161.0+26.2.jar",
@@ -37,11 +37,11 @@
       "minecraft": "26.1.2",
       "loader": "fabric",
       "java": 25,
-      "version": "1.54.0",
+      "version": "1.54.1",
       "files": [
         {
-          "name": "xrn-hud-1.54.0-mc26.1.2.jar",
-          "sha256": "28e8bcf33568d69ba1414ecd63975578a62c95320dc2293d3fb9c7d1383a7864"
+          "name": "xrn-hud-1.54.1-mc26.1.2.jar",
+          "sha256": "d976dd69dabf583101447041c45799cf57fb587d53a902da12c570db966354c8"
         },
         {
           "name": "fabric-api-0.155.3+26.1.2.jar",

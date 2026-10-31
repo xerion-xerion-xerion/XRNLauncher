@@ -19,6 +19,15 @@ def verify(directory, record_name='XRN-Setup-build.json'):
  for name,digest in r['sourceHashes'].items():assert sha(ROOT/'installer'/name)==digest,'Installer sources changed: '+name
  if r.get('authenticodeThumbprint'):
   subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(ROOT/'scripts/sign-windows.ps1'),'-FilePath',str(directory/r['setupName']),'-CertificateThumbprint',r['authenticodeThumbprint'],'-VerifyOnly'],check=True)
+ import zipfile,io
+ with zipfile.ZipFile(directory/r['payloadName'])as payload:
+  compatibility=json.loads(payload.read('XRNLauncher/mods-integres/compatibility.json'))
+  for build in compatibility['builds']:
+   for item in build['files']:
+    name=item['name'];assert P(name).name==name,'Invalid bundled client filename'
+    content=payload.read('XRNLauncher/mods-integres/'+name)
+    assert hashlib.sha256(content).hexdigest()==item['sha256'],'Bundled client checksum mismatch: '+name
+    with zipfile.ZipFile(io.BytesIO(content))as client:assert json.loads(client.read('fabric.mod.json'))['version']==build['version'],'Bundled client version mismatch'
  return r
 if __name__=='__main__':
  a=argparse.ArgumentParser();a.add_argument('--directory',type=P,required=True);a.add_argument('--record',default='XRN-Setup-build.json');o=a.parse_args();r=verify(o.directory,o.record);print('PASS: production setup, payload, fixed URL and source fingerprints agree ('+r['appVersion']+').')

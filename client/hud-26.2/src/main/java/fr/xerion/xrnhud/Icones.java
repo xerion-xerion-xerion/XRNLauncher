@@ -14,7 +14,7 @@ final class Icones {
   switch(name){
    case "Fullbright"->{Theme.arrondi(c,x+7,y+7,11,11,color,0);for(int n=0;n<8;n++){double a=n*Math.PI/4;int rx=12+(int)Math.round(Math.cos(a)*10),ry=12+(int)Math.round(Math.sin(a)*10);line(c,x,y,rx,ry,12+(int)Math.round(Math.cos(a)*13),12+(int)Math.round(Math.sin(a)*13),color);}}
 
-   case "Motion Blur"->{Theme.cadre(c,x+10,y+3,13,18,0,color);Theme.cadre(c,x+6,y+5,10,14,0,color);line(c,x,y,0,8,4,8,color);line(c,x,y,0,12,4,12,color);line(c,x,y,0,16,4,16,color);}
+   case "Motion Blur"->{path(c,x,y,Theme.alpha(color,.25),4,5,4,18,10,18,10,5,4,5);path(c,x,y,Theme.alpha(color,.5),8,3,8,20,16,20,16,3,8,3);Theme.arrondi(c,x+13,y+1,11,22,0,color);line(c,x,y,0,8,2,8,color);line(c,x,y,0,12,5,12,color);line(c,x,y,0,16,2,16,color);Theme.rect(c,x+17,y+6,3,3,color);line(c,x,y,16,16,21,16,color);}
    case "Free Look"->{Theme.arrondi(c,x+2,y+6,21,13,0,color);Theme.cadre(c,x+9,y+9,7,7,0,color);line(c,x,y,5,2,19,2,color);line(c,x,y,19,2,22,5,color);}
    case "Auto Text"->{Theme.arrondi(c,x+1,y+3,22,15,0,color);path(c,x,y,color,5,17,5,22,11,17);for(int i=0;i<3;i++)Theme.rect(c,x+5+i*5,y+9,2,2,color);}
    case "Auto Connect"->{Theme.cadre(c,x+2,y+3,13,17,0,color);path(c,x,y,color,10,11,23,11,19,7,23,11,19,15);}

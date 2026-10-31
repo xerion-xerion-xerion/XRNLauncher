@@ -745,5 +745,10 @@
   "Minecraft est lancé.": "Minecraft is running.",
   "Lancement impossible. Consultez le journal.": "Unable to launch. Check the log.",
   "Jeu fermé.": "Game closed.",
-  "Le jeu s’est arrêté. Consultez le journal pour le diagnostic.": "The game stopped. Check the log for details."
+  "Le jeu s’est arrêté. Consultez le journal pour le diagnostic.": "The game stopped. Check the log for details.",
+  "Studio photo HD · PNG": "HD photo studio · PNG",
+  "Exportez votre skin et votre cape en image transparente haute définition, avec l’angle et l’image de l’animation de votre choix.": "Export your skin and cape as a high-definition transparent image, with your chosen angle and animation frame.",
+  "XRNPrime actif et aperçu du skin requis.": "Active XRNPrime and a loaded skin preview are required.",
+  "Image HD enregistrée.": "HD image saved.",
+  "Export impossible.": "Unable to export."
 }

@@ -1,12 +1,14 @@
 ## XRN 4.14.1
 
+Finition : boutique immédiatement prévisualisable avant la vérification réseau des droits, textures d’aperçu allégées et deux animations conservées en cache. Fenêtre ajustée à la zone de travail Windows, formulaire de code accessible par défilement à faible hauteur. Choix de langue explicite dans le launcher et le menu en jeu. Onglet Optimiseurs retiré ; ses budgets visuels sûrs sont rattachés à FPS Plus. Studio photo HD Prime : export local PNG transparent 1080 × 1440 du skin et de la cape.
+
 Stabilité : correction du plantage de feu d’artifice reproduit avec le code de sortie 4294967295. L’optimiseur ne remplace plus le retour de création d’une particule par null ; il limite seulement son ajout à la file d’affichage. Les appels Minecraft qui configurent ensuite la particule gardent leur objet valide. Régression testée avec toutes les formes de feu d’artifice, traînée et scintillement, à proximité et à distance, sur les trois versions prises en charge. Ce correctif ciblé ne constitue pas une garantie contre tous les plantages possibles d’autres mods.
 
 Lancement annulable pendant sa préparation, avec contrôles avant le démarrage Java. Progression affichée sous le bouton Jouer, sans accumulation de notifications de préparation. Le catalogue Modrinth se parcourt sans installation ; les téléchargements restent désactivés tant qu’une version compatible n’est pas installée. Le panneau Découvrir des mods dupliqué est retiré et ses contrôles sont mieux alignés.
 
 Site : écran d’accueil réactif au pointeur, captures WebP environ 88 % plus légères et mises en cache, capes animées sélectionnables et orientables avec leurs deux faces tirées des textures réelles. Présentation des prochaines nouveautés et du fonctionnement des mises à jour. Publication sur GitHub Pages, sans changement d’hébergement ni du HTTPS du propriétaire.
 
-Client 1.54.0 pour Fabric 1.21.11, 26.1.2 et 26.2. Les prototypes de nouveaux cosmétiques et la fenêtre de logs séparée restent privés dans l’atelier Dev ; ils ne sont pas inclus dans cette release.
+Client 1.54.1 pour Fabric 1.21.11, 26.1.2 et 26.2. Les prototypes de nouveaux cosmétiques et la fenêtre de logs séparée restent privés dans l’atelier Dev ; ils ne sont pas inclus dans cette release.
 
 ## XRN 4.14.0
 

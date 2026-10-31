@@ -2364,11 +2364,9 @@ const Login = {
     const w = nwWin();
     if (w) w.minimize(); else Toast.show('Reduire', 'Disponible uniquement dans l application.', 'info', 2000);
   });
-  $('#winMax').addEventListener('click', () => {
-    const w = nwWin();
-    if (!w) return Toast.show('Agrandir', 'Disponible uniquement dans l application.', 'info', 2000);
-    if (w.windowState === 'maximized') w.unmaximize(); else w.maximize();
-  });
+  let maximized=false;const nativeWindow=nwWin();
+  if(nativeWindow){nativeWindow.on('maximize',()=>{maximized=true;X.env.saveConfig({windowMaximized:true});});nativeWindow.on('unmaximize',()=>{maximized=false;X.env.saveConfig({windowMaximized:false});});const width=Math.max(800,Math.min(1440,screen.availWidth-32)),height=Math.max(480,Math.min(860,screen.availHeight-32));nativeWindow.setMinimumSize(Math.min(1000,width),Math.min(560,height));nativeWindow.resizeTo(width,height);nativeWindow.moveTo((screen.availLeft||0)+Math.round((screen.availWidth-width)/2),(screen.availTop||0)+Math.round((screen.availHeight-height)/2));if(X.env.config().windowMaximized)nativeWindow.maximize();}
+  $('#winMax').addEventListener('click',()=>{const w=nwWin();if(!w)return;if(maximized)w.unmaximize();else w.maximize();});
   $('#winClose').addEventListener('click', () => { const w = nwWin(); if (w) w.close(); else window.close(); });
 
   /* Toute erreur de l interface atterrit dans les journaux -------------- */

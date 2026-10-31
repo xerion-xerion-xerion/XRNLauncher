@@ -1,6 +1,6 @@
 (function(){
  'use strict';const $=id=>document.getElementById(id),stage=$('shopStage'),canvas=$('shopPlayer'),angle=$('shopAngle');
- let viewer=null,current='',paused=false,images=[],frames=0,generation=0,frameIndex=-1,lastTime=0,lastSkin='',skinLoading=false,orbitRadius=50,frameMillis=80;
+ let viewer=null,current='',paused=false,images=[],frames=0,generation=0,frameIndex=-1,lastTime=0,lastSkin='',skinLoading=false,orbitRadius=50,frameMillis=80;const atlases=new Map();
  const fallback=()=>{
   const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');
   x.fillStyle='#30283c';x.fillRect(0,0,64,64);x.fillStyle='#b8a2cc';x.fillRect(8,8,8,8);x.fillStyle='#20172e';x.fillRect(9,10,2,2);x.fillRect(13,10,2,2);x.fillStyle='#71608f';x.fillRect(20,20,8,12);x.fillRect(4,20,8,12);x.fillRect(20,52,8,12);return c;
@@ -21,15 +21,15 @@
   if(skinLoading||!viewer)return;skinLoading=true;
   try{const s=await window.XRN?.env?.cosmetics?.skin();if(s?.dataUrl&&s.dataUrl!==lastSkin){await viewer.loadSkin(s.dataUrl);lastSkin=s.dataUrl;viewer.render();}$('shopSkinCaption').textContent=s?.dataUrl?(s.name+' · Glissez pour tourner'):'Mannequin · Connectez votre compte pour afficher votre skin';}finally{skinLoading=false;}
  }
- function image(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src;});}
+ function image(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{if(img.width<=512)return resolve(img);const c=document.createElement('canvas');c.width=512;c.height=Math.round(img.height*512/img.width);c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c);};img.onerror=reject;img.src=src;});}
  async function select(p,stop){
   paused=stop;frameMillis=p.frameMillis||80;if(!start())return;skin();
   if(current===p.id)return;current=p.id;const g=++generation;frameIndex=-1;images=[];frames=p.animated?p.frames:1;
   const folder='assets/cosmetics/uv/'+p.id;
   try{
-   const first=await image(p.animated?folder+'/00.png':folder+'.png');if(g!==generation)return;
+   if(atlases.has(p.id)){images=atlases.get(p.id);await viewer.loadCape(images[0]);viewer.render();return;}const first=await image(p.animated?folder+'/00.png':folder+'.png');if(g!==generation)return;
    await viewer.loadCape(first);images[0]=first;viewer.render();
-   if(p.animated){const loaded=await Promise.all(Array.from({length:frames-1},(_,i)=>image(folder+'/'+String(i+1).padStart(2,'0')+'.png')));if(g===generation)images=[first,...loaded];}
+   if(p.animated){const loaded=[first];for(let offset=1;offset<frames;offset+=4){const batch=await Promise.all(Array.from({length:Math.min(4,frames-offset)},(_,i)=>image(folder+'/'+String(offset+i).padStart(2,'0')+'.png')));if(g!==generation)return;loaded.push(...batch);}images=loaded;}atlases.set(p.id,images);while(atlases.size>2)atlases.delete(atlases.keys().next().value);
   }catch{if(g===generation)$('shopSkinCaption').textContent='Texture de cape indisponible.';}
  }
  function update(now){
