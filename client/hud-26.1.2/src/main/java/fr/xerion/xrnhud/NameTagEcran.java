@@ -1,32 +1,27 @@
 package fr.xerion.xrnhud;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.gui.GuiGraphicsExtractor;import net.minecraft.client.input.MouseButtonEvent;import net.minecraft.client.gui.screens.Screen;import net.minecraft.network.chat.Component;import java.util.*;
 final class NameTagEcran extends Screen {
- private Button animatedButton,rainbowButton;
- private final Screen parent;NameTagEcran(Screen parent){super(Component.literal("Mon name tag"));this.parent=parent;}
- private Button button(String text,int x,int y,int w,Runnable action){return addRenderableWidget(Button.builder(Component.literal(text),b->{action.run();Placement.sauver();if(minecraft.screen==this)rebuildWidgets();}).bounds(x,y,w,22).build());}
- @Override protected void init(){int x=width/2-170,y=Math.max(22,height/2-132);
-  button("Couleur : "+(NameTag.actif?"active":"vanilla"),x,y+24,164,()->NameTag.actif=!NameTag.actif);
-  button("Degrade : "+(NameTag.gradient?"oui":"non"),x+176,y+24,164,()->NameTag.gradient=!NameTag.gradient);
-  button("Badge XRN : "+(NameTag.badge?"visible":"masque"),x,y+54,164,()->NameTag.badge=!NameTag.badge);
-  button("Decorations : "+(NameTag.masquerDecorations?"masquees":"conservees"),x+176,y+54,164,()->NameTag.masquerDecorations=!NameTag.masquerDecorations);
-  button("Couleur de depart",x,y+84,164,()->minecraft.setScreen(new CouleurEcran(this,NameTag.debut,c->NameTag.debut=c)));
-  button("Couleur de fin",x+176,y+84,164,()->minecraft.setScreen(new CouleurEcran(this,NameTag.fin,c->NameTag.fin=c)));
-  animatedButton=button("Degrade anime : "+(NameTag.anime?"oui":"non"),x,y+114,164,()->{NameTag.anime=!NameTag.anime;if(NameTag.anime){NameTag.actif=true;NameTag.gradient=true;NameTag.arcenciel=false;}});
-  rainbowButton=button("Arc-en-ciel : "+(NameTag.arcenciel?"oui":"non"),x+176,y+114,164,()->{NameTag.arcenciel=!NameTag.arcenciel;if(NameTag.arcenciel){NameTag.actif=true;NameTag.anime=false;}});
-  animatedButton.active=rainbowButton.active=true;
-  button("Violet / blanc",x,y+146,108,()->{NameTag.debut=0xFFA78BFA;NameTag.fin=0xFFF4EEFF;NameTag.gradient=true;});
-  button("Aurore",x+116,y+146,108,()->{NameTag.debut=0xFF60CFFA;NameTag.fin=0xFFCB9CFF;NameTag.gradient=true;});
-  button("Crepuscule",x+232,y+146,108,()->{NameTag.debut=0xFFFF87C4;NameTag.fin=0xFFFFD8B0;NameTag.gradient=true;});
-  button("Retour",x+240,y+230,100,this::onClose);
+ private record Hit(int x,int y,int w,int h,Runnable action){}private final java.util.List<Hit> hits=new ArrayList<>();private final Screen parent;private float scale=1,angle=0;private int px,py,ax,ay,aw,ah;private boolean dragging;private double previousX;private final long opened=System.nanoTime();private long last=System.nanoTime();private final Map<String,Float> toggles=new HashMap<>();
+ NameTagEcran(Screen parent){super(Component.literal("Mon name tag"));this.parent=parent;}
+ @Override protected void init(){scale=(float)Math.min(1,Math.min((width-20)/820.0,(height-20)/440.0));px=(Math.round(width/scale)-820)/2;py=(Math.round(height/scale)-440)/2;}
+ private void hit(int x,int y,int w,int h,Runnable action){hits.add(new Hit(x,y,w,h,action));}
+ private void option(GuiGraphicsExtractor c,String title,String desc,String icon,boolean value,int x,int y,int w,double mx,double my,float ease,Runnable action){boolean hover=AtelierUi.over(mx,my,x,y,w,62);AtelierUi.card(c,x,y,w,62,hover,value);AtelierUi.icon(c,icon,x+12,y+13,25);AtelierUi.text(c,title,x+48,y+12,1.25f,Theme.TEXTE);AtelierUi.detail(c,desc,x+48,y+30,w-57);float p=toggles.getOrDefault(title,value?1f:0f);p+=((value?1:0)-p)*ease;toggles.put(title,p);Theme.interrupteur(c,x+w-37,y+11,p,1);hit(x,y,w,62,action);}
+ private void color(GuiGraphicsExtractor c,String label,int color,int x,int y,int w,double mx,double my,java.util.function.IntConsumer choose){AtelierUi.card(c,x,y,w,62,AtelierUi.over(mx,my,x,y,w,62),false);Theme.arrondi(c,x+12,y+14,29,29,color,Theme.alpha(0xFFFFFFFF,.3f));AtelierUi.text(c,label,x+51,y+14,1.25f,Theme.TEXTE);AtelierUi.text(c,String.format("#%06X",color&0xFFFFFF),x+51,y+34,.95f,Theme.TEXTE_DOUX);hit(x,y,w,62,()->minecraft.setScreen(new CouleurEcran(this,color,choose)));}
+ @Override public void extractRenderState(GuiGraphicsExtractor c,int mx,int my,float delta){long now=System.nanoTime();float ease=(float)(1-Math.exp(-18*Math.min(.1,(now-last)/1e9)));last=now;double vx=mx/scale,vy=my/scale;float entrance=Anime.sortie((now-opened)/200_000_000f);int top=py+Math.round((1-entrance)*8);c.pose().pushMatrix();c.pose().scale(scale,scale);hits.clear();
+ Theme.arrondi(c,px,top,820,440,AtelierUi.BACK,AtelierUi.LINE);Theme.marque(c,px+20,top+18,3);AtelierUi.text(c,"Pseudo & identité",px+58,top+17,1.8f,Theme.TEXTE);AtelierUi.text(c,"Prévisualisez votre apparence avant de la partager.",px+58,top+39,.95f,Theme.TEXTE_DOUX);Theme.rect(c,px+20,top+62,780,1,AtelierUi.LINE);
+ int x=px+20,y=top+80,w=234;option(c,"Couleur","Votre couleur dans le jeu.","Name Tag",NameTag.actif,x,y,w,vx,vy,ease,()->NameTag.actif=!NameTag.actif);option(c,"Dégradé","Deux couleurs sur votre pseudo.","Name Tag",NameTag.gradient,x+w+12,y,w,vx,vy,ease,()->{NameTag.gradient=!NameTag.gradient;NameTag.actif=true;});
+ option(c,"Badge XRN","Afficher le logo à côté du nom.","Badge",NameTag.badge,x,y+74,w,vx,vy,ease,()->NameTag.badge=!NameTag.badge);option(c,"Décorations","Conserver le format du serveur.","Informations",!NameTag.masquerDecorations,x+w+12,y+74,w,vx,vy,ease,()->NameTag.masquerDecorations=!NameTag.masquerDecorations);
+ color(c,"Couleur de départ",NameTag.debut,x,y+148,w,vx,vy,v->NameTag.debut=v);color(c,"Couleur de fin",NameTag.fin,x+w+12,y+148,w,vx,vy,v->NameTag.fin=v);
+ option(c,"Animé","Déplacer doucement le dégradé.","Motion Blur",NameTag.anime,x,y+222,w,vx,vy,ease,()->{NameTag.anime=!NameTag.anime;NameTag.arcenciel=false;NameTag.actif=NameTag.gradient=true;});option(c,"Arc-en-ciel","Faire défiler toutes les couleurs.","Ciel XRN",NameTag.arcenciel,x+w+12,y+222,w,vx,vy,ease,()->{NameTag.arcenciel=!NameTag.arcenciel;NameTag.anime=false;NameTag.actif=true;});
+ ax=px+528;ay=top+80;aw=272;ah=310;Theme.arrondi(c,ax,ay,aw,ah,0xFF101217,AtelierUi.LINE);AtelierUi.text(c,"APERÇU",ax+16,ay+14,.85f,Theme.TEXTE_DOUX);
+ String username=minecraft.getGameProfile().name();var tag=Logo.decorerPrime(NameTag.personnaliser(Component.literal(username),username),PrimeClient.actif(minecraft.getGameProfile().id()),NameTag.badge,PrimeClient.niveau(minecraft.getGameProfile().id()));float tagScale=Math.min(2f,(aw-32f)/font.width(tag));c.pose().pushMatrix();c.pose().translate(ax+(aw-font.width(tag)*tagScale)/2,ay+37);c.pose().scale(tagScale,tagScale);
+ if(NameTag.lueur)for(int[] o:new int[][]{{-1,0},{1,0},{0,-1},{0,1}})c.text(font,Component.literal(username),(font.width(tag)-font.width(username))+o[0],o[1],Theme.alpha(NameTag.debut,.22f),false);c.text(font,tag,0,0,Theme.TEXTE,true);c.pose().popMatrix();
+ AtelierUi.center(c,"Glissez pour tourner",ax+aw/2,ay+ah-18,.88f,Theme.TEXTE_DOUX);int foot=top+402;AtelierUi.capsule(c,NameTag.lueur?"Lueur : oui":"Lueur : non",x,foot,128,AtelierUi.over(vx,vy,x,foot,128,28));hit(x,foot,128,28,()->NameTag.lueur=!NameTag.lueur);
+ for(int i=0;i<3;i++){final int preset=i;int bx=x+142+i*110;AtelierUi.capsule(c,new String[]{"Violet / blanc","Aurore","Crépuscule"}[i],bx,foot,104,AtelierUi.over(vx,vy,bx,foot,104,28));hit(bx,foot,104,28,()->{NameTag.debut=new int[]{0xFFA78BFA,0xFF60CFFA,0xFFFF87C4}[preset];NameTag.fin=new int[]{0xFFF4EEFF,0xFFCB9CFF,0xFFFFD8B0}[preset];NameTag.actif=NameTag.gradient=true;});}
+ AtelierUi.capsule(c,"Retour",px+704,foot,96,AtelierUi.over(vx,vy,px+704,foot,96,28));hit(px+704,foot,96,28,this::onClose);c.pose().popMatrix();ApercuJoueur.dessiner(c,Math.round((ax+8)*scale),Math.round((ay+59)*scale),Math.round((aw-16)*scale),Math.round((ah-74)*scale),angle,Droits.equipe());
  }
- @Override public void extractRenderState(GuiGraphicsExtractor c,int mx,int my,float delta){int x=width/2-170,y=Math.max(22,height/2-132);Theme.arrondi(c,x-12,y-16,364,280,Theme.nuance(0xFA18151F),Theme.ACCENT_FORT);Theme.texte(c,font,"MON NAME TAG",x,y-5,Theme.TEXTE);
-  var preview=NameTag.personnaliser(Component.literal(Langue.t("Votre pseudo")),Langue.t("Votre pseudo"));
-  c.text(font,preview,this.width/2-font.width(preview)/2,y+188,Theme.TEXTE,true);
-  Theme.texteCentre(c,font,"Cliquez sur les couleurs pour ouvrir la palette.",this.width/2,y+212,Theme.TEXTE_DOUX);
-  super.extractRenderState(c,mx,my,delta);Theme.boutons(c,font,children(),mx,my);  Theme.rect(c,x+148,y+91,9,9,NameTag.debut);Theme.rect(c,x+324,y+91,9,9,NameTag.fin);
- }
+ @Override public boolean mouseClicked(MouseButtonEvent e,boolean twice){if(e.button()!=0)return super.mouseClicked(e,twice);double x=e.x()/scale,y=e.y()/scale;if(AtelierUi.over(x,y,ax,ay+58,aw,ah-84)){dragging=true;previousX=x;return true;}for(Hit h:hits)if(AtelierUi.over(x,y,h.x,h.y,h.w,h.h)){h.action.run();Placement.sauver();return true;}return super.mouseClicked(e,twice);}
+ @Override public boolean mouseDragged(MouseButtonEvent e,double dx,double dy){if(dragging){double x=e.x()/scale;angle=(float)Math.clamp(angle+(x-previousX)*.8,-175,175);previousX=x;return true;}return super.mouseDragged(e,dx,dy);}
+ @Override public boolean mouseReleased(MouseButtonEvent e){dragging=false;return super.mouseReleased(e);}
  @Override public void onClose(){minecraft.setScreen(parent);}@Override public boolean isPauseScreen(){return false;}
 }

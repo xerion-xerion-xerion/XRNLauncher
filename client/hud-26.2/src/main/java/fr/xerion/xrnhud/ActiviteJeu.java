@@ -1,0 +1,6 @@
+package fr.xerion.xrnhud;
+import java.nio.file.*;import com.google.gson.JsonObject;
+/** Minimal local status, never includes an address, position, token or chat. */
+final class ActiviteJeu {
+ private static long last;static void tick(){long now=System.currentTimeMillis();if(now-last<2000)return;last=now;try{var c=net.minecraft.client.Minecraft.getInstance();String dimension=c.level==null?"menu":c.level.dimension().identifier().toString();if(!java.util.Set.of("menu","minecraft:overworld","minecraft:the_nether","minecraft:the_end").contains(dimension))dimension="other";var o=new JsonObject();o.addProperty("uuid",c.getGameProfile().id().toString().replace("-",""));o.addProperty("dimension",dimension);o.addProperty("at",now);o.addProperty("pid",ProcessHandle.current().pid());o.addProperty("startedAt",java.lang.management.ManagementFactory.getRuntimeMXBean().getStartTime());o.addProperty("attempt",System.getProperty("XRNLaunchId",""));Path dir=net.fabricmc.loader.api.FabricLoader.getInstance().getGameDir().resolve(".xrn-menu");Files.createDirectories(dir);Path tmp=dir.resolve("activity.tmp");Files.writeString(tmp,o.toString());Files.move(tmp,dir.resolve("activity.json"),StandardCopyOption.REPLACE_EXISTING);}catch(Exception ignored){}}
+}

@@ -50,8 +50,8 @@ public class MenuEcran extends Screen {
     @Override protected void init() {
         uiScale=(float)Math.min(1,2.0/minecraft.getWindow().getGuiScale());
         virtualWidth=Math.round(width/uiScale);virtualHeight=Math.round(height/uiScale);
-        pw = Math.min(virtualWidth-18, Math.max(220, Math.min(730, (int)(virtualWidth * .87))));
-        ph = Math.min(virtualHeight-18, Math.max(164, Math.min(410, (int)(virtualHeight * .84))));
+        pw = Math.min(virtualWidth-18, Math.max(220, Math.min(640, (int)(virtualWidth * .80))));
+        ph = Math.min(virtualHeight-18, Math.max(164, Math.min(360, (int)(virtualHeight * .76))));
         px = Math.clamp(Math.round((virtualWidth-pw)*fenetreX),8,Math.max(8,virtualWidth-pw-8)); baseY=Math.clamp(Math.round((virtualHeight-ph)*fenetreY),8,Math.max(8,virtualHeight-ph-8));py=baseY;
         navWidth=pw>=400?100:84;contentX=px+navWidth+16;contentWidth=pw-navWidth-26;
         bodyY = py+38; bodyH = ph-68;
@@ -68,6 +68,7 @@ public class MenuEcran extends Screen {
         modules.add(new Module("Name Tag","Couleurs, degrade et badges",()->NameTag.actif,()->NameTag.actif=!NameTag.actif,0));
         modules.add(new Module("Scoreboard","Tableau du serveur",()->Elements.scoreboard,()->Elements.scoreboard=!Elements.scoreboard,5));
         modules.add(new Module("Inventory HUD","27 cases de votre inventaire",()->ModulesPlus.sac,()->ModulesPlus.sac=!ModulesPlus.sac,5));
+        modules.add(new Module("Hit Color","Couleur visuelle des dégâts",()->HitColor.actif,()->HitColor.actif=!HitColor.actif,0));
         modules.add(new Module("Hitboxes","Couleur et epaisseur",()->Visuels.hitboxes,()->Visuels.hitboxes=!Visuels.hitboxes,0));
         modules.add(new Module("Contours blocs","Couleur et epaisseur",()->Visuels.contours,()->Visuels.contours=!Visuels.contours,0));
         modules.add(new Module("Balises","Points par monde · B",()->Balises.visible,()->Balises.visible=!Balises.visible,0));
@@ -113,11 +114,11 @@ public class MenuEcran extends Screen {
         Theme.marque(c,px+10,py+10,1);
         if (pw >= 260) Theme.texte(c,font,"XRN CLIENT",px+24,py+10,Theme.TEXTE);
         button(c,"×",px+pw-23,py+5,18,18,this::onClose,mx,my);
-        String[] tabs={"Tous les mods","HUD","Visuels","Outils","Apparence","Reglages","Garde-robe","Langue"};
+        String[] tabs={"Modules","HUD","Visuels","Outils","Apparence","Reglages","Garde-robe","Langue","Boutique"};
         int navStep=Math.max(13,Math.min(24,bodyH/tabs.length)),navHeight=Math.max(12,navStep-3);
         for(int i=0;i<tabs.length;i++){final int index=i;boolean active=i==5?settings:!settings&&category==i;
             int ty=bodyY+i*navStep;
-            button(c,tabs[i],px+9,ty,navWidth-4,navHeight,()->{if(index==7){minecraft.setScreen(new LangueEcran(this));return;}if(index==6){minecraft.setScreen(new EcranGardeRobe(this));return;}settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
+            navButton(c,tabs[i],new String[]{"Inventory HUD","Touches","Ciel XRN","Auto Connect","Name Tag","Reglages","Cape","Langue","Boutique"}[i],px+9,ty,navWidth-4,navHeight,()->{if(index==8){minecraft.setScreen(new CoinsEcran(this));return;}if(index==7){minecraft.setScreen(new LangueEcran(this));return;}if(index==6){minecraft.setScreen(new EcranGardeRobe(this));return;}settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
             if(active)Theme.rect(c,px+9,ty,2,navHeight,Theme.ACCENT);
         }
         Theme.rect(c,px+8,py+30,pw-16,1,Theme.BORDURE);
@@ -140,7 +141,7 @@ public class MenuEcran extends Screen {
     private void renderModules(GuiGraphicsExtractor c,int mx,int my) {
         String query=search.getValue().trim().toLowerCase(Locale.ROOT);
         List<Module> filtered=modules.stream().filter(m->Langue.t(m.name).toLowerCase(Locale.ROOT).contains(query)&&(category==0||groupe(m.name)==category)).toList();
-        int columns=contentWidth>=430?3:(contentWidth>=250?2:1), gap=9, cw=(contentWidth-(columns-1)*gap)/columns, ch=96;
+        int columns=contentWidth>=430?3:(contentWidth>=250?2:1), gap=12, cw=(contentWidth-(columns-1)*gap)/columns, ch=112;
         maxScroll=Math.max(0,((filtered.size()+columns-1)/columns)*(ch+gap)-bodyH);
         scroll=Math.max(0,Math.min(scroll,maxScroll));targetScroll=Math.max(0,Math.min(targetScroll,maxScroll));
         c.enableScissor(contentX,bodyY,contentX+contentWidth,bodyY+bodyH);
@@ -151,8 +152,8 @@ public class MenuEcran extends Screen {
             boolean on=m.enabled.getAsBoolean()&&(element==null||!element.hidden),hover=mx>=x&&mx<x+cw&&my>=Math.max(y,bodyY)&&my<Math.min(y+ch,bodyY+bodyH);
             Theme.arrondi(c,x,y,cw,ch,hover?Theme.nuance(0xFF292332):Theme.nuance(0xFF1E1B24),on?Theme.nuance(0xFF68517E):Theme.nuance(0xFF39323F));
             Theme.texteCentre(c,font,fit(m.name,cw-35),x+cw/2,y+8,on?Theme.TEXTE:Theme.TEXTE_DOUX);
-            Icones.draw(c,m.name,x+cw/2-12,y+26,on?Theme.nuance(0xFFD9C5FF):Theme.nuance(0xFFA89EBA));
-            Theme.texteCentre(c,font,fit(m.detail,cw-18),x+cw/2,y+64,Theme.TEXTE_DOUX);
+            AtelierUi.icon(c,m.name,x+cw/2-18,y+29,36);
+            Theme.texteCentre(c,font,fit(m.detail,cw-18),x+cw/2,y+75,Theme.TEXTE_DOUX);
             Theme.texte(c,font,on?"Actif":"Inactif",x+9,y+ch-16,on?Theme.ACCENT:Theme.TEXTE_FAIBLE);
             float progress=animations.getOrDefault(m.name,on?1f:0f);progress+=((on?1:0)-progress)*frameEase;animations.put(m.name,progress);
             Theme.interrupteur(c,x+cw-35,y+ch-18,progress,1);
@@ -171,11 +172,12 @@ public class MenuEcran extends Screen {
         }
     }
 
-    private int groupe(String name){return switch(name){case "Name Tag","Ciel XRN"->4;case "Fullbright","Taille des objets","Motion Blur","Hitboxes","Contours blocs","Shader Monitor"->2;case "Free Look","FPS Plus","Balises","Auto Text","Auto Connect","Nether","Rappel de pause"->3;default->1;};}
+    private int groupe(String name){return switch(name){case "Name Tag","Ciel XRN"->4;case "Hit Color","Fullbright","Taille des objets","Motion Blur","Hitboxes","Contours blocs","Shader Monitor"->2;case "Free Look","FPS Plus","Balises","Auto Text","Auto Connect","Nether","Rappel de pause"->3;default->1;};}
     private Runnable configuration(String name){return switch(name){
         case "Taille des objets"->()->minecraft.setScreen(new TailleObjetsEcran(this));
         case "Motion Blur"->()->minecraft.setScreen(new MotionBlurEcran(this));
         case "Ciel XRN"->()->minecraft.setScreen(new CielEcran(this));
+        case "Hit Color"->()->minecraft.setScreen(new CouleurEcran(this,HitColor.couleur,v->{HitColor.couleur=v;Placement.sauver();}));
         case "Name Tag"->()->minecraft.setScreen(new NameTagEcran(this));
         case "Hitboxes","Contours blocs"->()->minecraft.setScreen(new VisuelsEcran(this));
         case "Balises"->()->minecraft.setScreen(new BalisesEcran(this));
@@ -208,6 +210,7 @@ public class MenuEcran extends Screen {
         button(c,text,x,y,67,17,action,mx,my);
         if(active)Theme.rect(c,x,y+16,67,1,Theme.ACCENT);
     }
+    private void navButton(GuiGraphicsExtractor c,String text,String icon,int x,int y,int w,int h,Runnable action,int mx,int my){boolean hover=mx>=x&&mx<x+w&&my>=y&&my<y+h;Theme.arrondi(c,x,y,w,h,hover?Theme.nuance(0xFF3B2F49):Theme.nuance(0xFF282130),0);AtelierUi.icon(c,icon,x+5,y+(h-13)/2,13);Theme.texte(c,font,fit(text,w-27),x+23,y+(h-font.lineHeight)/2+1,Theme.TEXTE);hits.add(new Hit(x,y,w,h,action));}
     private void button(GuiGraphicsExtractor c,String text,int x,int y,int w,int h,Runnable action,int mx,int my) {
         boolean hover=mx>=x&&mx<x+w&&my>=y&&my<y+h;
         Theme.arrondi(c,x,y,w,h,hover?Theme.nuance(0xFF3B2F49):Theme.nuance(0xFF282130),0);

@@ -22,4 +22,8 @@ async function image(name){
   return pathToFileURL(p).href;
  }finally{await file.close();}
 }
-module.exports={list,image,folder};
+async function saveAs(name,destination){
+ await image(name);if(typeof destination!=='string'||!path.isAbsolute(destination)||!/\.(png|jpe?g)$/i.test(destination)||path.extname(destination).toLowerCase()!==path.extname(name).toLowerCase())throw Error('Choisissez un fichier du même format.');
+ const source=safe.confine(folder(),path.join(folder(),name),false);if(path.resolve(source)===path.resolve(destination))return {saved:true};await fs.promises.copyFile(source,destination);return {saved:true};
+}
+module.exports={list,image,folder,saveAs};

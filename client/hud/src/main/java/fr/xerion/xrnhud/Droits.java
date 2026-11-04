@@ -217,7 +217,7 @@ public final class Droits {
     /** Note l'equipement choisi, a la lecture des reglages. */
     public static void memoriserEquipe(String id) {
         String n = id == null ? "" : id.trim();
-        equipe = (!n.isEmpty() && possede(n)) ? n : "";
+        equipe = n.isEmpty() || CATALOGUE.stream().anyMatch(c -> c.id.equals(n)) || n.matches("prime_[a-f0-9]{32}") ? n : "";
     }
 
 
@@ -230,7 +230,7 @@ public final class Droits {
       try{
         String droits=cheminFichier();if(droits!=null&&!droits.isEmpty()){
           Path f=Path.of(droits);long stamp=Files.exists(f)?Files.getLastModifiedTime(f).toMillis():0;
-          if(stamp!=droitsStamp){droitsStamp=stamp;charger();if(!equipe.isEmpty()&&!possede(equipe))equipe="";}
+          if(stamp!=droitsStamp){droitsStamp=stamp;charger();}
         }
         Path f=choixFichier();if(f==null||!Files.exists(f)||Files.size(f)>4096)return;
         long stamp=Files.getLastModifiedTime(f).toMillis();if(stamp==choixStamp)return;

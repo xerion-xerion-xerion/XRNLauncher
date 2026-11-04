@@ -139,28 +139,14 @@ final class Theme {
 
     /** Idem, avec une transparence pour les fondus. */
     static void marque(GuiGraphicsExtractor c, int x, int y, int echelle, float alpha) {
-        for (int ligne = 0; ligne < MARQUE.length; ligne++) {
-            for (int col = 0; col < MARQUE[ligne].length; col++) {
-                int v = MARQUE[ligne][col];
-                if (v == 0) continue;
-                c.fill(x + col * echelle, y + ligne * echelle,
-                       x + (col + 1) * echelle, y + (ligne + 1) * echelle,
-                       alpha(v == 1 ? ACCENT : 0xFFF2E9FF, alpha));
-            }
-        }
+        int size=8*echelle;c.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,net.minecraft.resources.Identifier.fromNamespaceAndPath("xrnhud","textures/gui/brand-mask.png"),x,y,0f,0f,size,size,256,256,256,256,alpha(ACCENT,alpha));
     }
 
-    private static void forme(GuiGraphicsExtractor c,int x,int y,int w,int h,int color){
-        if(w<8||h<8){rect(c,x,y,w,h,color);return;}
-        rect(c,x+3,y,w-6,1,color);rect(c,x+1,y+1,w-2,2,color);rect(c,x,y+3,w,h-6,color);rect(c,x+1,y+h-3,w-2,2,color);rect(c,x+3,y+h-1,w-6,1,color);
-    }
-    static void arrondi(GuiGraphicsExtractor c,int x,int y,int w,int h,int fill,int border){
-        if(border!=0&&(fill>>>24)==0){
-            rect(c,x+3,y,w-6,1,border);rect(c,x+3,y+h-1,w-6,1,border);rect(c,x,y+3,1,h-6,border);rect(c,x+w-1,y+3,1,h-6,border);
-            for(int sx:new int[]{0,1})for(int sy:new int[]{0,1}){int cx=sx==0?x+1:x+w-3,cy=sy==0?y+1:y+h-3;rect(c,cx,cy,2,2,border);}return;
-        }
-        if(border!=0){forme(c,x,y,w,h,border);forme(c,x+1,y+1,w-2,h-2,fill);}else forme(c,x,y,w,h,fill);
-    }
+    private static final net.minecraft.resources.Identifier[][] ROUNDS=new net.minecraft.resources.Identifier[2][13];
+    static {for(int type=0;type<2;type++)for(int radius=1;radius<=12;radius++)ROUNDS[type][radius]=net.minecraft.resources.Identifier.fromNamespaceAndPath("xrnhud","textures/gui/round-"+(type==0?"fill":"border")+"-"+radius+".png");}
+    private static void corners(GuiGraphicsExtractor c,int x,int y,int w,int h,int radius,int color,boolean border){var image=ROUNDS[border?1:0][radius];for(int yy=0;yy<2;yy++)for(int xx=0;xx<2;xx++)c.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,image,xx==0?x:x+w-radius,yy==0?y:y+h-radius,xx*64f,yy*64f,radius,radius,64,64,128,128,color);}
+    private static void forme(GuiGraphicsExtractor c,int x,int y,int w,int h,int color,int radius){if(w<=0||h<=0||(color>>>24)==0)return;if(radius<1){rect(c,x,y,w,h,color);return;}rect(c,x+radius,y,w-radius*2,h,color);rect(c,x,y+radius,radius,h-radius*2,color);rect(c,x+w-radius,y+radius,radius,h-radius*2,color);corners(c,x,y,w,h,radius,color,false);}
+    static void arrondi(GuiGraphicsExtractor c,int x,int y,int w,int h,int fill,int border){if(w<=0||h<=0)return;int small=Math.min(w,h);int radius=Math.min(2,small/2);if(radius<1){rect(c,x,y,w,h,fill!=0?fill:border);return;}if(border==0){forme(c,x,y,w,h,fill,radius);return;}if((fill>>>24)==0){rect(c,x+radius,y,w-radius*2,1,border);rect(c,x+radius,y+h-1,w-radius*2,1,border);rect(c,x,y+radius,1,h-radius*2,border);rect(c,x+w-1,y+radius,1,h-radius*2,border);corners(c,x,y,w,h,radius,border,true);return;}forme(c,x,y,w,h,border,radius);forme(c,x+1,y+1,w-2,h-2,fill,Math.max(0,radius-1));}
     static void cadenas(GuiGraphicsExtractor c,int x,int y,int color){rect(c,x+2,y,5,1,color);rect(c,x+1,y+1,1,4,color);rect(c,x+7,y+1,1,4,color);arrondi(c,x,y+4,9,7,color,0);rect(c,x+4,y+6,1,3,0xFF19161D);}
     static void boutons(GuiGraphicsExtractor c,Font font,java.util.List<? extends Object> children,int mx,int my){
         for(Object child:children)if(child instanceof net.minecraft.client.gui.components.Button b&&b.visible){

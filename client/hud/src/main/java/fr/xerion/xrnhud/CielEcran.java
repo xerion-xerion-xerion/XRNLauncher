@@ -10,7 +10,7 @@ final class CielEcran extends Screen {
   slider("Vitesse du ciel",()->String.format(java.util.Locale.ROOT,"%.2f ×",Ciel.vitesse),(Ciel.vitesse-.25)/2.75,x,y+78,360,v->Ciel.vitesse=(float)(.25+v*2.75));
   button("Ambiance sonore : "+(Ciel.ambiance?"oui":"non"),x,y+118,176,()->Ciel.ambiance=!Ciel.ambiance);button("Soleil / lune : "+(Ciel.astres?"oui":"non"),x+184,y+118,176,()->Ciel.astres=!Ciel.astres);
   slider("Volume de l'ambiance",()->Math.round(Ciel.volume*100)+" %",Ciel.volume,x,y+148,360,v->Ciel.volume=(float)v);
-  button("Teinte",x,y+188,176,()->client.setScreen(new CouleurEcran(this,Ciel.teinte,color->Ciel.teinte=color)));button("Luminosite : "+Ciel.luminosite,x+184,y+188,176,()->Ciel.luminosite=Ciel.luminosite>=3?.5f:Ciel.luminosite+.5f);
+  button("Teinte",x,y+188,112,()->client.setScreen(new CouleurEcran(this,Ciel.teinte,color->Ciel.teinte=color)));button("Teinte d’origine",x+120,y+188,112,()->Ciel.teinte=0xFFFFFFFF);button("Luminosite : "+Ciel.luminosite,x+240,y+188,120,()->Ciel.luminosite=Ciel.luminosite>=3?.5f:Ciel.luminosite+.5f);
   button("Reinitialiser",x,y+240,130,()->{Ciel.luminosite=1;Ciel.teinte=0xFFFFFFFF;Ciel.astres=true;Ciel.anime=true;Ciel.effets=true;Ciel.vitesse=1;Ciel.ambiance=false;Ciel.volume=.2f;});button("Retour",x+260,y+240,100,this::close);
  }
  public void render(DrawContext c,int mx,int my,float dt){int x=width/2-180,y=height/2-132;Theme.arrondi(c,x-12,y-17,384,287,Theme.nuance(0xFA18151F),Theme.ACCENT_FORT);Theme.texte(c,textRenderer,"CIELS ET AMBIANCES",x,y-5,Theme.TEXTE);Theme.texte(c,textRenderer,"Overworld · Priorite aux shaders actifs",x,y+216,Theme.TEXTE_DOUX);super.render(c,mx,my,dt);Theme.boutons(c,textRenderer,children(),mx,my);}

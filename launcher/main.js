@@ -207,7 +207,7 @@ const XRN = {
   off(evt, fn) { bus.off(evt, fn); },
   emit(evt, data) { bus.emit(evt, data); },
 
-  
+
   env: {
     language: require('./lib/language'),
     features: require('./lib/features'),
@@ -229,6 +229,9 @@ const XRN = {
       async load(){const account=session.account;const result=await require('./lib/prime').load(account);if(account?.id!==session.account?.id)throw Error('Le compte a changé. Actualisez cet onglet.');return result;},
       async action(verb,body){const r=await require('./lib/prime').action(session.account,verb,body);if(verb==='checkout')nw.Shell.openExternal(r.url);return r;},
       equip(id){if(!/^prime_[a-f0-9]{32}$/.test(id||''))throw Error('Cape inconnue.');return cosmetics.equip(session.account,id);}
+    },
+    coins: {
+      async action(action,body={}){if(!['balance','claim','buy','checkout'].includes(action))throw Error('Action inconnue.');if(!session.account?.minecraftVerified||presence.status().uuid!==session.account.id)throw Error('Connectez votre compte Microsoft.');if(action==='checkout'){if(![100,300,500,1000].includes(body.coins))throw Error('Pack inconnu.');const r=await presence.shop('checkout',{product:'coins_'+body.coins});const u=new URL(r.url);if(u.protocol!=='https:'||u.hostname!=='checkout.stripe.com')throw Error('Paiement refusé.');nw.Shell.openExternal(u.href);return {order:r.order};}const r=await presence.shop('coins/'+action,body);if(action==='buy')await presence.refreshRights();return r;}
     },
     cosmetics: {
       gift(action,body){if(!['redeem','create','list','revoke'].includes(action))throw Error('Action inconnue.');return cosmetics.gift(session.account,action,body);},
@@ -814,6 +817,7 @@ const XRN = {
       if(pose.poses.length)XRN.report('MODS',pose.poses.join(', '));
       if(pose.echecs.length)throw new Error(pose.echecs.map(e=>e.nom+' : '+e.raison).join('\n'));
       if(!pose.compatibility.supported)bus.emit('mods:notice',{text:pose.compatibility.reason});
+      require('./lib/mod-compat').check(cfgm.load().gameDir);
       const essentialResults=await require('./lib/recommended').ensure(entry.id,cfgm.load().gameDir,bus);
       checkpoint();const essential=essentialResults.find(r=>r.name==='Essential')||{};
       if(essential.reason)bus.emit('mods:notice',{text:essential.reason});
@@ -1373,4 +1377,8 @@ process.on('exit', code => writeLog('EXIT', 'code=' + code));
   /*  Le detecteur de musique est un processus a part : on le ferme
   avec le launcher, sinon il continuerait d interroger Windows.     */
   process.on('exit', () => { try { if (session.game) media.detacher(); else media.arreter(); } catch (e) { } });
+const xrnMenuBridge=require('./lib/menu-bridge').start({account:()=>session.account,emit:(name,value)=>bus.emit(name,value)});
+process.once('exit',()=>{try{xrnDiscordActivity.stop();}catch{}});
+const xrnDiscordActivity=require('./lib/discord-activity').start({bus,account:()=>session.account,gameDir:()=>cfgm.load().gameDir,diagnostic:value=>{const folder=path.join(util.appRoot(),'logs');util.ensureDir(folder);fs.writeFileSync(path.join(folder,'discord-activity.json'),JSON.stringify(value));}});
+XRN.env.discordActivity=()=>xrnDiscordActivity.status();
 }

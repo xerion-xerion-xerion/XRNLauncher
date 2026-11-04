@@ -14,7 +14,7 @@ async function run(){
  const log=path.join(util.appRoot(),'logs/relay-local.log');fs.mkdirSync(path.dirname(log),{recursive:true});const fd=fs.openSync(log,'a');
  const preload=path.join(__dirname,'private-spawn.js');
  const nodeOptions=[process.env.NODE_OPTIONS||'','--require='+JSON.stringify(preload)].join(' ').trim();
- const child=spawn(node,[script,'dev','--local','--ip','127.0.0.1','--port','8789'],{cwd:directory,windowsHide:true,detached:true,env:{...process.env,NODE_OPTIONS:nodeOptions,WRANGLER_SEND_METRICS:'false'},stdio:['pipe',fd,fd]});fs.closeSync(fd);child.unref();let spawnError=null;child.on('error',e=>{spawnError=e;});
+ const child=spawn(node,[script,'dev','--local','--ip','127.0.0.1','--port','8789'],{cwd:directory,windowsHide:true,detached:true,env:{...process.env,NODE_OPTIONS:nodeOptions,WRANGLER_SEND_METRICS:'false'},stdio:['pipe',fd,fd]});fs.closeSync(fd);child.unref();child.stdin.unref?.();let spawnError=null;child.on('error',e=>{spawnError=e;});
  for(let i=0;i<40;i++){if(spawnError)throw Error('Le relais privé n’a pas démarré.');await new Promise(r=>setTimeout(r,500));if(await health(url))return {private:true,running:true};}
  throw Error('Le relais privé ne répond pas encore. Consultez son journal local.');
 }

@@ -16,7 +16,7 @@ import net.minecraft.world.level.storage.LevelResource;
 /** Private local waypoints, isolated by server/world and dimension. */
 final class Balises {
     static boolean visible=true;
-    static int couleur=0xFFC4AEFF,hauteur=256;
+    static int couleur=0xFFC4AEFF,hauteur=1024;
     record Point(String id,String name,String world,String dimension,double x,double y,double z,boolean enabled){}
     private static final List<Point> points=new ArrayList<>();
     private static boolean loaded;
@@ -51,7 +51,7 @@ final class Balises {
         var camera=cl.gameRenderer.mainCamera();var pos=camera.position();
         double yaw=Math.toRadians(camera.yRot()),pitch=Math.toRadians(camera.xRot());
         int w=cl.getWindow().getGuiScaledWidth(),h=cl.getWindow().getGuiScaledHeight();
-        double focal=h/(2*Math.tan(Math.toRadians(cl.options.fov().get())/2));
+        double focal=h/(2*Math.tan(Math.toRadians(camera.getFov())/2));
         String dimension=cl.level.dimension().identifier().toString();
         for(Point p:liste(cl)){
             if(!p.enabled||!p.dimension.equals(dimension))continue;
@@ -61,14 +61,14 @@ final class Balises {
             var mask=masque(cl,p,pos);
             // Draw only intervals with clear world-space sight lines. Roofs and walls occlude the beam.
             for(int part=0;part<24;part++){
-                if(!mask[part] || !mask[part+1])continue;
-                double[] low=vue(dx,dy+hauteur*part/24.0,dz,yaw,pitch),high=vue(dx,dy+hauteur*(part+1)/24.0,dz,yaw,pitch);
+                if(!Double.isFinite(mask[part*2]))continue;
+                double[] low=vue(dx,dy+mask[part*2],dz,yaw,pitch),high=vue(dx,dy+mask[part*2+1],dz,yaw,pitch);
                 if(low[2]<=.05&&high[2]<=.05)continue;
                 if(low[2]<.05)pres(low,high);if(high[2]<.05)pres(high,low);
                 double[] segment={w/2.0+low[0]*focal/low[2],h/2.0-low[1]*focal/low[2],w/2.0+high[0]*focal/high[2],h/2.0-high[1]*focal/high[2]};
                 if(decouper(segment,w,h))trait(c,segment);
             }
-            if(!mask[0] || base[2]<=.05)continue;
+            if(base[2]<=.05)continue;
             double sx=w/2.0+base[0]*focal/base[2],sy=h/2.0-base[1]*focal/base[2];
             if(sx<5||sx>w-5||sy<5||sy>h-24)continue;
             int x=(int)Math.round(sx),y=(int)Math.round(sy);
@@ -78,16 +78,20 @@ final class Balises {
             Theme.texte(c,cl.font,label,textX,y+11,Theme.TEXTE);
         }
     }
-    private record Visibilite(long time,net.minecraft.world.phys.Vec3 from,int height,boolean[] mask){}
+    private record Visibilite(long time,net.minecraft.world.phys.Vec3 from,int height,double[] mask){}
     private static final java.util.Map<String,Visibilite> cache=new java.util.HashMap<>();
-    private static boolean[] masque(Minecraft cl,Point p,net.minecraft.world.phys.Vec3 from){
+    private static double[] masque(Minecraft cl,Point p,net.minecraft.world.phys.Vec3 from){
         long now=System.nanoTime();var old=cache.get(p.id);
         if(old!=null && old.height==hauteur && now-old.time<250_000_000L && from.distanceToSqr(old.from)<.25)return old.mask;
-        boolean[] mask=new boolean[25];
-        for(int i=0;i<mask.length;i++)mask[i]=libre(cl,from,new net.minecraft.world.phys.Vec3(p.x,p.y+.7+hauteur*i/24.0,p.z));
+        double[] mask=new double[48];java.util.Arrays.fill(mask,Double.NaN);
+        boolean previous=libre(cl,from,new net.minecraft.world.phys.Vec3(p.x,p.y+.7,p.z));
+        for(int i=0;i<24;i++){double low=hauteur*i/24.0,high=hauteur*(i+1)/24.0;boolean next=libre(cl,from,new net.minecraft.world.phys.Vec3(p.x,p.y+.7+high,p.z));
+            if(previous||next){double edgeLow=low,edgeHigh=high;if(previous!=next){double a=low,b=high;for(int n=0;n<6;n++){double mid=(a+b)/2;boolean clear=libre(cl,from,new net.minecraft.world.phys.Vec3(p.x,p.y+.7+mid,p.z));if(clear==previous)a=mid;else b=mid;}if(previous)edgeHigh=a;else edgeLow=b;}mask[i*2]=edgeLow;mask[i*2+1]=edgeHigh;}previous=next;
+        }
         if(cache.size()>256)cache.clear();cache.put(p.id,new Visibilite(now,from,hauteur,mask));return mask;
     }
     static boolean libre(Minecraft cl,net.minecraft.world.phys.Vec3 from,net.minecraft.world.phys.Vec3 to){
+        double distance=from.distanceTo(to);double range=cl.options.renderDistance().get()*16.0+32;if(distance>range)to=from.lerp(to,range/distance);
         var hit=cl.level.clip(new net.minecraft.world.level.ClipContext(from,to,net.minecraft.world.level.ClipContext.Block.VISUAL,net.minecraft.world.level.ClipContext.Fluid.NONE,cl.player));
         return hit.getType()==net.minecraft.world.phys.HitResult.Type.MISS;
     }
@@ -106,7 +110,7 @@ final class Balises {
     private static void trait(GuiGraphicsExtractor c,double[] line){
         float length=(float)Math.hypot(line[2]-line[0],line[3]-line[1]);
         c.pose().pushMatrix();c.pose().translate((float)line[0],(float)line[1]);c.pose().rotate((float)Math.atan2(line[3]-line[1],line[2]-line[0]));
-        Theme.rect(c,0,-1,(int)Math.ceil(length),3,Theme.alpha(couleur,.20));Theme.rect(c,0,0,(int)Math.ceil(length),1,Theme.alpha(couleur,.92));c.pose().popMatrix();
+        Theme.rect(c,0,-3,(int)Math.ceil(length),7,Theme.alpha(couleur,.07));Theme.rect(c,0,-1,(int)Math.ceil(length),3,Theme.alpha(couleur,.30));Theme.rect(c,0,0,(int)Math.ceil(length),1,Theme.alpha(couleur,.92));c.pose().popMatrix();
     }
 
 }

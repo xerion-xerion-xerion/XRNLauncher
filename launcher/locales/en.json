@@ -799,5 +799,20 @@
   "actifs": "enabled",
   "actives": "enabled",
   "inactifs": "disabled",
-  "inactives": "disabled"
+  "inactives": "disabled",
+  "Cosmétiques": "Cosmetics",
+  "Coins XRN": "XRN Coins",
+  "COINS XRN": "XRN COINS",
+  "Acheter des coins": "Buy coins",
+  "Récompense quotidienne": "Daily reward",
+  "Connexion au launcher…": "Connecting to launcher…",
+  "Traitement dans le launcher…": "Processing in launcher…",
+  "Launcher indisponible": "Launcher unavailable",
+  "10 coins par jour": "10 coins per day",
+  "Lueur": "Glow",
+  "Apercu en jeu": "In-game preview",
+  "Capes": "Capes",
+  "Enregistrer sous…": "Save as…",
+  "Afficher le fichier": "Show file",
+  "Acheter la cape en coins": "Buy cape with coins"
 }

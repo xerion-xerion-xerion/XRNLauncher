@@ -33,6 +33,10 @@
  document.getElementById('shotRefresh').onclick=()=>refresh();more.onclick=()=>refresh(true);
  document.getElementById('shotFolder').onclick=async()=>{if(api)api.env.openExplorer(await api.screenshots.folder());};
  document.getElementById('shotClose').onclick=()=>viewer.close();
+ const savePath=document.getElementById('shotSavePath');let savingName='';
+ document.getElementById('shotSave').onclick=()=>{const item=items[selected];if(!item||!api)return;savingName=item.name;savePath.value='';savePath.setAttribute('nwsaveas',item.name);savePath.click();};
+ savePath.onchange=async()=>{if(!savePath.value||!savingName)return;try{await api.screenshots.saveAs(savingName,savePath.value);caption.textContent=savingName+' · Enregistrée';}catch(e){caption.textContent=e.message;}finally{savePath.value='';}};
+ document.getElementById('shotReveal').onclick=async()=>{const item=items[selected];if(!item)return;try{const url=await api.screenshots.image(item.name);require('nw.gui').Shell.showItemInFolder(require('url').fileURLToPath(url));}catch{caption.textContent='Fichier indisponible';}};
  document.getElementById('shotPrev').onclick=()=>show(selected-1);document.getElementById('shotNext').onclick=()=>show(selected+1);
  viewer.addEventListener('close',()=>image.removeAttribute('src'));
  viewer.addEventListener('click',e=>{if(e.target===viewer)viewer.close();});

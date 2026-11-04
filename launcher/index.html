@@ -51,7 +51,7 @@
   <g id="i-arrow"><path d="M5 12h14M13 6l6 6-6 6"></path></g>
   <g id="i-external"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path></g>
   <g id="i-clock"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></g>
-  <g id="i-plus"><path d="M12 5v14M5 12h14"></path></g>
+  <g id="i-prime"><path d="m12 3 6 9-6 9-6-9Z"/><path d="M3 9c-4 5 9 10 18 4M18 3v5m-2.5-2.5h5"/></g><g id="i-plus"><path d="M12 5v14M5 12h14"></path></g>
   <g id="i-x"><path d="M18 6 6 18M6 6l12 12"></path></g>
   <g id="i-zap"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"></path></g>
   <g id="i-palette"><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h4a5 5 0 0 0 5-5c0-3-4-5-9-5Z"></path><circle cx="7.5" cy="11.5" r="1"></circle><circle cx="10" cy="7.5" r="1"></circle><circle cx="15" cy="8" r="1"></circle></g>
@@ -115,7 +115,7 @@
       <button class="nav-item" data-view="mods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-package"></use></svg>Mods</button>
       <button class="nav-item" data-view="discover"><img src="assets/modrinth.svg" width="18" height="18" alt="">Découvrir des mods</button>
       <button class="nav-item" data-view="boutique"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gem"></use></svg>Boutique</button>
-      <button class="nav-item" data-view="prime"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><use href="#i-plus"></use></svg>XRNPrime</button>
+      <button class="nav-item" data-view="prime"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><use href="#i-prime"></use></svg>XRNPrime</button>
       <button class="nav-item" data-view="saves"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-save"></use></svg>Sauvegardes</button>
       <button class="nav-item" data-view="shots"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><use href="#i-image"></use></svg>Captures</button>
       <button class="nav-item" data-view="files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><use href="#i-folder"></use></svg>Fichiers</button>
@@ -289,7 +289,7 @@
       <!-- ========== SAUVEGARDES ========== -->
       <!-- ========== MODS ========== -->
       <section class="view" id="view-boutique">
-        <header class="shop-heading"><div><p class="shop-kicker">XRN / COSMÉTIQUES</p><h2>La première collection.</h2><p>Job Application offerte. Huit capes premium.</p></div><span class="shop-development" id="shopMode">Paiement sécurisé par Stripe</span></header>
+        <header class="shop-heading"><div><p class="shop-kicker">XRN / COSMÉTIQUES</p><h2>Capes</h2><p>Job Application gratuite. Capes fixes et animées.</p></div><span class="shop-development" id="shopMode">Paiement sécurisé par Stripe</span></header>
         <div class="shop-layout">
           <div class="shop-preview">
             <div class="shop-preview-top"><span id="shopPreviewLabel">XRN</span><span id="shopAnimationLabel">Cape originale</span></div>
@@ -316,7 +316,7 @@
         </section>
       </section>
 <section class="view" id="view-prime">
-<header class="prime-top"><div><p class="prime-overline">XRN / PRIME</p><h2><img src="assets/prime-badge.png" alt="">XRN<span>Prime</span></h2><p id="primeMembership">Connexion au compte…</p><p id="primeTenure" title="Violet · 0 j / Cyan · 30 j / Rose · 90 j / Or · 180 j / Nacré · 365 j"></p></div><div class="prime-cost">4,99 €<span>/ mois</span></div></header>
+<header class="prime-top"><div><p class="prime-overline">XRN / PRIME</p><h2><img src="assets/prime-mark.svg" alt="">XRN<span>Prime</span></h2><p id="primeMembership">Connexion au compte…</p><p id="primeTenure" title="Violet · 0 j / Cyan · 30 j / Rose · 90 j / Or · 180 j / Nacré · 365 j"></p></div><div class="prime-cost">4,99 €<span>/ mois</span></div></header>
 <nav class="prime-tabs"><button data-prime-tab="membership" aria-selected="true">Abonnement</button><button data-prime-tab="collection">Collection Prime</button><button data-prime-tab="imports">Mes imports</button><button data-prime-tab="outfits">Tenues</button><button data-prime-tab="codes" id="primeAdminTab" hidden>Codes Prime</button></nav>
 <p id="primeStatus" role="status" aria-live="polite"></p>
 <div class="prime-pane" data-prime-pane="membership"><div class="prime-benefits"><article><b>Le catalogue complet</b><p>Toutes les capes du catalogue sont accessibles pendant votre période Prime. Vos achats à l’unité restent acquis après son expiration.</p></article><article><b>Quatre créations exclusives</b><p>Pulsar, Zénith, Aurore et Équinoxe, dessinées pour Prime. Elles suivent les mêmes mouvements de cape en jeu.</p><div class="prime-mini-capes"><img src="assets/cosmetics/cape_prime_pulsar.gif" alt="Pulsar"><img src="assets/cosmetics/cape_prime_zenith.gif" alt="Zénith"><img src="assets/cosmetics/cape_prime_aurore.gif" alt="Aurore"><img src="assets/cosmetics/cape_prime_equinoxe.gif" alt="Équinoxe"></div></article><article><b>Studio recto-verso</b><p>Créez une cape à deux faces différentes. Choisissez le cadrage et une bordure, puis retrouvez votre création dans vos imports personnels.</p></article><article><b>Deux imports chaque semaine</b><p>Vos propres images de capes, vérifiées avant leur partage. Les imports et les effets Prime se verrouillent à la fin de votre accès.</p><b>Cinq tenues enregistrées</b><p>Retrouvez une combinaison de cape et de couleurs sans tout reconfigurer.</p></article></div>
@@ -371,7 +371,7 @@
         </div>
       </section>
 
-      
+
       <!-- ========== SAUVEGARDES ========== -->
       <section class="view" id="view-saves">
         <div class="view-head">
@@ -513,16 +513,7 @@
                 <label for="setJava">Chemin de java.exe / javaw.exe</label>
                 <div class="inline"><input class="input mono" id="setJava" placeholder="Détection automatique"><button class="btn" id="btnTestJava">Tester</button></div>
                 <p class="hint" id="javaHint">Recherche dans JAVA_HOME, Program Files et le registre.</p>
-              </div><button class="btn" id="btnDownloadJava">Télécharger un JDK Temurin</button><div class="field"><label>Arguments JVM additionnels</label><input class="input mono" id="setJavaArgs" placeholder="-XX:+UseZGC"></div></div></div><div class="panel">
-            <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"></use></svg><h4>Connexion Microsoft</h4></div>
-  <div class="panel-b">
-  <div class="field">
-  <label for="setClientId">Identifiant d'application Azure</label>
-  <div class="inline"><input class="input mono" id="setClientId" placeholder="00000000-0000-0000-0000-000000000000"><button class="btn" id="btnSaveClientId">Enregistrer</button></div>
-  <p class="hint" id="clientIdHint">Anciennes sessions Azure uniquement. La connexion standard utilise Xbox et PKCE, indépendamment de ce champ.</p>
-  </div>
-  </div>
-  </div></div><div class="settings-column"><div class="panel">
+              </div><button class="btn" id="btnDownloadJava">Télécharger un JDK Temurin</button><div class="field"><label>Arguments JVM additionnels</label><input class="input mono" id="setJavaArgs" placeholder="-XX:+UseZGC"></div></div></div></div><div class="settings-column"><div class="panel">
             <div class="panel-h"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-palette"></use></svg><h4>Jeu &amp; fenêtre</h4></div>
             <div class="panel-b">
               <div class="grid-2 tight">
@@ -654,7 +645,7 @@
 <script src="diagnostics.js"></script>
 <script src="ui.js"></script>
 <script src="language.js"></script>
-<dialog id="shotViewer"><div class="shot-viewbar"><button class="btn" id="shotPrev" aria-label="Capture précédente">←</button><span id="shotCaption"></span><button class="btn" id="shotNext" aria-label="Capture suivante">→</button><button class="btn" id="shotClose">Fermer</button></div><img id="shotLarge" alt=""></dialog>
+<dialog id="shotViewer"><div class="shot-viewbar"><button class="btn" id="shotPrev" aria-label="Capture précédente">←</button><span id="shotCaption"></span><button class="btn" id="shotNext" aria-label="Capture suivante">→</button><button class="btn" id="shotSave">Enregistrer sous…</button><button class="btn" id="shotReveal">Afficher le fichier</button><input id="shotSavePath" type="file" nwsaveas="capture.png" hidden><button class="btn" id="shotClose">Fermer</button></div><img id="shotLarge" alt=""></dialog>
 <script src="gallery.js"></script>
 <script src="purchase-celebration.js"></script>
 <script src="cosmetics.js"></script>

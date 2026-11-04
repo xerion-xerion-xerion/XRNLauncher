@@ -26,7 +26,11 @@
     "ParticleBudgetMixin",
     "DroppedItemStateMixin",
     "ItemScaleDropMixin",
-    "CielCloudMixin"
+    "CielCloudMixin",
+    "NameTagLightMixin",
+    "NameTagGlowMixin",
+    "HitColorMixin",
+    "ProjectionBalisesMixin"
   ],
   "injectors": {
     "defaultRequire": 0

@@ -50,8 +50,8 @@ public final class Logo {
     /** Le caractere du logo, avec le style qui pointe vers sa police. */
     public static Text texte() {
         return Text.literal(CARACTERE)
-                .styled(style -> style.withFont(new StyleSpriteSource.Font(POLICE)));
+                .styled(style -> style.withFont(new StyleSpriteSource.Font(POLICE)).withColor(Theme.ACCENT_FORT & 0xFFFFFF));
     }
     public static Text decorerPrime(Text nom,boolean prime,boolean logo){return decorerPrime(nom,prime,logo,0);}
-    public static Text decorerPrime(Text nom,boolean prime,boolean logo,int tier){if(!logo)return nom;if(!prime)return decorer(nom);String glyph=String.valueOf((char)(0xE010+Math.max(0,Math.min(4,tier))));return Text.empty().append(Text.literal(glyph).styled(style->style.withFont(new StyleSpriteSource.Font(POLICE)).withColor(0xffffff).withShadowColor(0))).append(Text.literal(" ")).append(nom);}
+    public static Text decorerPrime(Text nom,boolean prime,boolean logo,int tier){if(!logo)return nom;if(!prime)return decorer(nom);String glyph=String.valueOf((char)(0xE010+Math.max(0,Math.min(4,tier))));return Text.empty().append(Text.literal(glyph).styled(style->style.withFont(new StyleSpriteSource.Font(POLICE)).withColor(Theme.ACCENT_FORT & 0xFFFFFF).withColor(0xffffff).withShadowColor(0))).append(Text.literal(" ")).append(nom);}
 }

@@ -612,6 +612,7 @@ const Splash = {
 
     }
   };
+  X.on('launcher:open',value=>{if(typeof nw!=='undefined'){nw.Window.get().show();nw.Window.get().focus();}Nav.go(value?.view==='login'?'login':'boutique');});
   Nav.items.forEach(b => b.addEventListener('click', () => Nav.go(b.dataset.view)));
   document.addEventListener('click', e => {
     const g = e.target.closest('[data-goto]');
@@ -2097,20 +2098,6 @@ const Login = {
       $('#setGameDir').value = cfg.gameDir;
       $('#setUserDir').value = X.env.userDataPath;
       $('#setJava').value = cfg.javaPath || '';
-      /*  On montre l identifiant de l application en cours, masque.
-          Le champ reste modifiable : sur une distribution publique,
-          chacun declare sa propre application Azure.                  */
-      const clientId = await api(x => x.auth.clientIdUsed(), { soft: true });
-      const champ = $('#setClientId');
-      if (champ) champ.value = (cfg.workingClientId || '').trim();
-      const astuce = $('#clientIdHint');
-      if (astuce && clientId) {
-        astuce.innerHTML = clientId.configure
-          ? 'Application en cours : <b class="mono">' + clientId.masque + '</b>' +
-            (clientId.personnel ? ' (la tienne)' : ' (celle du launcher)') +
-            '. Vide pour revenir a celle du launcher.'
-          : 'Aucune application configuree : colle un identifiant Azure pour pouvoir te connecter.';
-      }
       $('#setJavaArgs').value = cfg.javaArgs || '';
       $('#setGw').value = cfg.gameWidth; $('#setGh').value = cfg.gameHeight;
       $('#setGui').value = String(cfg.guiScale || 3);
@@ -2209,29 +2196,6 @@ const Login = {
   $('#setJavaArgs').addEventListener('change', e => Settings.save({ javaArgs: e.target.value }));
   $('#setJava').addEventListener('change', e => Settings.save({ javaPath: e.target.value.trim() }));
 
-  /*  Identifiant d application Azure : c est ce qui permet a une
-      distribution publique de fonctionner sans imposer l application
-      de l auteur. Un identifiant erronee est refuse par Microsoft, on
-      verifie donc avant d enregistrer.                                */
-  $('#btnSaveClientId').addEventListener('click', async () => {
-    const valeur = ($('#setClientId').value || '').trim();
-    if (valeur) {
-      const verdict = await api(x => x.auth.check(valeur), { soft: true });
-      if (verdict && verdict.ok === false) {
-        Toast.show('Identifiant refuse', verdict.message || 'Microsoft ne reconnait pas cet identifiant.', 'err', 7000);
-        return;
-      }
-    }
-    try {
-      await api(x => x.auth.setClientId(valeur), { soft: true });
-      Toast.show(valeur ? 'Identifiant enregistre' : 'Identifiant efface',
-        valeur ? 'Il sera utilise des la prochaine connexion.' : 'Le launcher reprendra son identifiant par defaut.',
-        'ok', 3200);
-      Settings.refresh();
-    } catch (e) {
-      Toast.show('Erreur', String((e && e.message) || e).slice(0, 200), 'err', 6000);
-    }
-  });
   $('#copyTechnicalId').addEventListener('click',async()=>{const id=await api(x=>x.env.installationId(),{soft:true});if(!id)return;try{await navigator.clipboard.writeText(id);Toast.show('Identifiant copié','Identifiant technique de cette installation.','ok');}catch{Toast.show('Identifiant',id,'info',10000);}});
   $$('[data-switch]').forEach(s => s.addEventListener('click', () => {
     s.classList.toggle('on');s.setAttribute('aria-checked',String(s.classList.contains('on')));
@@ -2454,4 +2418,3 @@ const Login = {
 
   })();
 })();
-

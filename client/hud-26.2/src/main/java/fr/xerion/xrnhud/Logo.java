@@ -50,8 +50,8 @@ public final class Logo {
     /** Le caractere du logo, avec le style qui pointe vers sa police. */
     public static Component texte() {
         return Component.literal(CARACTERE)
-                .withStyle(style -> style.withFont(new FontDescription.Resource(POLICE)));
+                .withStyle(style -> style.withFont(new FontDescription.Resource(POLICE)).withColor(Theme.ACCENT_FORT & 0xFFFFFF));
     }
     public static Component decorerPrime(Component nom,boolean prime,boolean logo){return decorerPrime(nom,prime,logo,0);}
-    public static Component decorerPrime(Component nom,boolean prime,boolean logo,int tier){if(!logo)return nom;if(!prime)return decorer(nom);String glyph=String.valueOf((char)(0xE010+Math.max(0,Math.min(4,tier))));return Component.empty().append(Component.literal(glyph).withStyle(style->style.withFont(new FontDescription.Resource(POLICE)).withColor(0xffffff).withShadowColor(0))).append(Component.literal(" ")).append(nom);}
+    public static Component decorerPrime(Component nom,boolean prime,boolean logo,int tier){if(!logo)return nom;if(!prime)return decorer(nom);String glyph=String.valueOf((char)(0xE010+Math.max(0,Math.min(4,tier))));return Component.empty().append(Component.literal(glyph).withStyle(style->style.withFont(new FontDescription.Resource(POLICE)).withColor(Theme.ACCENT_FORT & 0xFFFFFF).withColor(0xffffff).withShadowColor(0))).append(Component.literal(" ")).append(nom);}
 }

@@ -106,6 +106,7 @@ public class XrnHudClient implements ClientModInitializer {
                         context, MinecraftClient.getInstance().textRenderer));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            HitColor.actualiser();ActiviteJeu.tick();
             LaunchReady.tick();
             /*  Le mode Boost FPS attend le premier tick : c est le
                 premier moment ou le jeu a ses options.                 */
@@ -202,6 +203,7 @@ public class XrnHudClient implements ClientModInitializer {
 
     private static void basculerMenu() {
         MinecraftClient c = MinecraftClient.getInstance();
+        if (c.currentScreen instanceof AccueilClientEcran) {c.setScreen(null); return;}
         if (c.currentScreen instanceof MenuEcran menu) {
             /*  Une frappe pendant l'animation de fermeture rouvrait
                 rien : fermer() ignorait les appels suivants et la
