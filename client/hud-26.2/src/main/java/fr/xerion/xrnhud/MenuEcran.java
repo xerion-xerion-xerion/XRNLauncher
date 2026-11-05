@@ -114,11 +114,11 @@ public class MenuEcran extends Screen {
         Theme.marque(c,px+10,py+10,1);
         if (pw >= 260) Theme.texte(c,font,"XRN CLIENT",px+24,py+10,Theme.TEXTE);
         button(c,"×",px+pw-23,py+5,18,18,this::onClose,mx,my);
-        String[] tabs={"Modules","HUD","Visuels","Outils","Apparence","Reglages","Garde-robe","Langue","Boutique"};
+        String[] tabs={"Modules","HUD","Visuels","Outils","Apparence","Reglages","Garde-robe","Langue"};
         int navStep=Math.max(13,Math.min(24,bodyH/tabs.length)),navHeight=Math.max(12,navStep-3);
         for(int i=0;i<tabs.length;i++){final int index=i;boolean active=i==5?settings:!settings&&category==i;
             int ty=bodyY+i*navStep;
-            navButton(c,tabs[i],new String[]{"Inventory HUD","Touches","Ciel XRN","Auto Connect","Name Tag","Reglages","Cape","Langue","Boutique"}[i],px+9,ty,navWidth-4,navHeight,()->{if(index==8){minecraft.gui.setScreen(new CoinsEcran(this));return;}if(index==7){minecraft.gui.setScreen(new LangueEcran(this));return;}if(index==6){minecraft.gui.setScreen(new EcranGardeRobe(this));return;}settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
+            navButton(c,tabs[i],new String[]{"Inventory HUD","Touches","Ciel XRN","Auto Connect","Name Tag","Reglages","Cape","Langue"}[i],px+9,ty,navWidth-4,navHeight,()->{if(index==8){minecraft.gui.setScreen(new CoinsEcran(this));return;}if(index==7){minecraft.gui.setScreen(new LangueEcran(this));return;}if(index==6){minecraft.gui.setScreen(new EcranGardeRobe(this));return;}settings=index==5;if(!settings)category=index;scroll=0;targetScroll=0;smoothScroll=0;},mx,my);
             if(active)Theme.rect(c,px+9,ty,2,navHeight,Theme.ACCENT);
         }
         Theme.rect(c,px+8,py+30,pw-16,1,Theme.BORDURE);

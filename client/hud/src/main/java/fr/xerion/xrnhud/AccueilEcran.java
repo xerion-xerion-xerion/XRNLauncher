@@ -36,11 +36,10 @@ public final class AccueilEcran extends Screen {
    button(c,"Jouer en solo","Monde",x,oy+205,300,36,vx,vy,()->client.setScreen(new SelectWorldScreen(this)));
    button(c,"Multijoueur","Serveurs",x,oy+253,300,36,vx,vy,()->client.setScreen(new MultiplayerScreen(this)));
    button(c,"Cosmétiques","Cape",x,oy+301,300,36,vx,vy,()->client.setScreen(new EcranGardeRobe(this)));
-   button(c,"Boutique","Boutique",x,oy+349,300,36,vx,vy,()->client.setScreen(new CoinsEcran(this)));
-   button(c,"Options","Reglages",x,oy+404,145,32,vx,vy,()->client.setScreen(new OptionsScreen(this,client.options)));
-   button(c,"Quitter","",x+155,oy+404,145,32,vx,vy,()->client.scheduleStop());
-   button(c,"Langue","",x,oy+487,98,26,vx,vy,()->client.setScreen(new LangueEcran(this)));
-   button(c,"Accueil classique","",x+108,oy+487,192,26,vx,vy,()->{classique=true;client.setScreen(new TitleScreen());});
+   button(c,"Options","Reglages",x,oy+357,145,32,vx,vy,()->client.setScreen(new OptionsScreen(this,client.options)));
+   button(c,"Quitter","",x+155,oy+357,145,32,vx,vy,()->client.scheduleStop());
+   button(c,"Langue","",x,oy+428,98,26,vx,vy,()->client.setScreen(new LangueEcran(this)));
+   button(c,"Accueil classique","",x+108,oy+428,192,26,vx,vy,()->{classique=true;client.setScreen(new TitleScreen());});
 
   ax=ox+710;ay=oy+170;aw=220;ah=325;
   String capeName=cape.isEmpty()?"Aucune cape":Droits.nom(cape);
