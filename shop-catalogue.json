@@ -1,0 +1,104 @@
+{
+  "products": [
+    {
+      "id": "cape_space",
+      "name": "Singularité",
+      "description": "Ton animation spatiale bleue, sur toute la cape.",
+      "animated": true,
+      "rarity": "legendary",
+      "amount": 299,
+      "image": "assets/shop/cape_space.webp",
+      "animatedImage": "assets/shop/cape_space.gif"
+    },
+    {
+      "id": "cape_scream",
+      "name": "Scream",
+      "description": "Le masque en noir et blanc.",
+      "animated": false,
+      "rarity": "rare",
+      "amount": 199,
+      "image": "assets/shop/cape_scream.webp"
+    },
+    {
+      "id": "cape_spine",
+      "name": "Spine",
+      "description": "Une silhouette blanche sur fond noir.",
+      "animated": false,
+      "rarity": "rare",
+      "amount": 199,
+      "image": "assets/shop/cape_spine.webp"
+    },
+    {
+      "id": "cape_crimson",
+      "name": "Crimson Knight",
+      "description": "Un chevalier sous un ciel rouge.",
+      "animated": false,
+      "rarity": "epic",
+      "amount": 199,
+      "image": "assets/shop/cape_crimson.webp"
+    },
+    {
+      "id": "cape_eclipse",
+      "name": "Éclipse",
+      "description": "Une nuit noire, des etoiles et une lune discrete.",
+      "animated": false,
+      "rarity": "rare",
+      "amount": 199,
+      "image": "assets/shop/cape_eclipse.webp"
+    },
+    {
+      "id": "cape_rose",
+      "name": "Rose blanche",
+      "description": "Une rose noire sur un fond blanc minimaliste.",
+      "animated": false,
+      "rarity": "rare",
+      "amount": 199,
+      "image": "assets/shop/cape_rose.webp"
+    },
+    {
+      "id": "cape_seraphine",
+      "name": "Séraphine",
+      "description": "Un ange en noir et blanc, entre ailes et aureole.",
+      "animated": false,
+      "rarity": "rare",
+      "amount": 199,
+      "image": "assets/shop/cape_seraphine.webp"
+    },
+    {
+      "id": "cape_moonlight",
+      "name": "Clair de lune",
+      "description": "Un croissant de lune dans un ciel bleu etoile.",
+      "animated": false,
+      "rarity": "rare",
+      "amount": 199,
+      "image": "assets/shop/cape_moonlight.webp"
+    },
+    {
+      "id": "cape_vesper",
+      "name": "Vesper",
+      "description": "Un corbeau céleste argenté autour d’un croissant violet.",
+      "animated": false,
+      "rarity": "rare",
+      "amount": 199,
+      "image": "assets/shop/cape_vesper.webp"
+    },
+    {
+      "id": "cape_solstice",
+      "name": "Solstice",
+      "description": "Une éclipse au milieu des aurores violettes.",
+      "animated": false,
+      "rarity": "epic",
+      "amount": 199,
+      "image": "assets/shop/cape_solstice.webp"
+    },
+    {
+      "id": "cape_regent",
+      "name": "Régent astral",
+      "description": "Une couronne orbitale autour d’une étoile cristalline.",
+      "animated": false,
+      "rarity": "legendary",
+      "amount": 199,
+      "image": "assets/shop/cape_regent.webp"
+    }
+  ]
+}
