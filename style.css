@@ -22,3 +22,9 @@
 
 .cape-floor,.cape-edge{display:none}.cape-face{border-color:#4b3d5c}.cape-art{background:transparent}
 .feature-panel figure{max-height:none;overflow:visible}.feature-panel img{aspect-ratio:auto}
+
+/* Local display type: no third-party font request. */
+@font-face{font-family:XRN Display;src:url('assets/fonts/Rajdhani-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}
+h1,h2,h3,.brand{font-family:"XRN Display","Segoe UI",sans-serif;font-weight:700}h1,h2{letter-spacing:-.025em}.hero h1{letter-spacing:-.025em}.hero h1,.prime-section h2{background:linear-gradient(110deg,#faf5ff 15%,#c6adff 65%,#9471df);background-clip:text;-webkit-background-clip:text;color:transparent}
+
+body{font-family:"Segoe UI",system-ui,Arial,sans-serif}
